@@ -1,4 +1,3 @@
-
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -42,7 +41,6 @@ router.post("/signup", async (req, res) => {
     });
   }
 });
-
 
 // LOGIN
 router.post("/login", async (req, res) => {
@@ -96,5 +94,43 @@ router.post("/login", async (req, res) => {
   }
 });
 
-module.exports = router;
+// CREATE ADMIN
+router.get("/create-admin", async (req, res) => {
+  try {
+    const existingAdmin = await User.findOne({
+      email: "admin@ebay.com",
+    });
 
+    if (existingAdmin) {
+      return res.json({
+        success: true,
+        message: "Admin already exists",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(
+      "admin123",
+      10
+    );
+
+    const admin = await User.create({
+      name: "Admin",
+      email: "penkraft.ltd@gmail.com",
+      password: "Temp@12345",
+      role: "admin",
+    });
+
+    res.json({
+      success: true,
+      message: "Admin Created Successfully",
+      admin,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+module.exports = router;
