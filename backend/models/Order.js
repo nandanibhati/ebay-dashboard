@@ -2,20 +2,35 @@ const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema(
   {
+    site: String,
+    date: String,
+
     orderId: String,
     employeeId: String,
+
+    employeeName: String,
+    employeeEmail: String,
+
     sku: String,
     product: String,
-    category: String,
+
     quantity: Number,
+
     costPrice: Number,
     sellingPrice: Number,
+
     ebayFee: Number,
     adFee: Number,
     deliveryCost: Number,
+
     revenue: Number,
     profit: Number,
     margin: Number,
+
+    trackingNo: String,
+    status: String,
+    courierScanned: String,
+    notes: String,
   },
   { timestamps: true }
 );

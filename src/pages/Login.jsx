@@ -27,16 +27,19 @@ export default function Login() {
       const data = await response.json();
 
      
-      if (data.success) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("role", data.role);
+   if (data.success) {
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("role", data.role);
 
-        if (data.role === "admin") {
-          navigate("/dashboard");
-        } else {
-          navigate("/manual-entry");
-        }
-      } else {
+  localStorage.setItem("employeeName", data.name);
+  localStorage.setItem("employeeEmail", data.email);
+
+  if (data.role === "admin") {
+    navigate("/dashboard");
+  } else {
+    navigate("/manual-entry");
+  }
+} else {
         alert(data.message);
       }
     } catch (error) {
@@ -93,3 +96,4 @@ export default function Login() {
   );
 }
 
+                                

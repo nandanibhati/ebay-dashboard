@@ -34,5 +34,39 @@ router.get("/", async (req, res) => {
     });
   }
 });
+router.delete("/:id", async (req, res) => {
+  try {
+    await Order.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: "Order Deleted",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+router.put("/:id", async (req, res) => {
+  try {
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      order,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 
 module.exports = router;

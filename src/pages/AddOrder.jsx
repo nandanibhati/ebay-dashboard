@@ -1,20 +1,24 @@
-
 import EmployeeSidebar from "../components/EmployeeSidebar";
 import { useState } from "react";
 
 export default function AddOrder() {
   const [form, setForm] = useState({
-    orderId: "",
-    sku: "",
-    product: "",
-    category: "",
-    quantity: "",
-    costPrice: "",
-    sellingPrice: "",
-    ebayFee: "",
-    adFee: "",
-    deliveryCost: "",
-  });
+  site: "",
+  date: new Date().toISOString().split("T")[0],
+  orderId: "",
+  sku: "",
+  product: "",
+  quantity: "",
+  costPrice: "",
+  sellingPrice: "",
+  ebayFee: "",
+  adFee: "",
+  deliveryCost: "",
+  trackingNo: "",
+  status: "Pending",
+  courierScanned: "",
+  notes: "",
+});
 
   const handleChange = (e) => {
     setForm({
@@ -22,9 +26,26 @@ export default function AddOrder() {
       [e.target.name]: e.target.value,
     });
   };
+  const employeeName =
+  localStorage.getItem("employeeName") || "Employee";
+
+const employeeEmail =
+  localStorage.getItem("employeeEmail") || "";                       
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (
+  !form.site ||
+  !form.date ||
+  !form.orderId ||
+  !form.sku ||
+  !form.quantity
+) {
+  alert(
+    "Please fill Site, Date, Order ID, SKU and Quantity"
+  );
+  return;
+}
 
     const quantity = Number(form.quantity);
     const costPrice = Number(form.costPrice);
@@ -57,20 +78,34 @@ export default function AddOrder() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            site: form.site,
+            date: form.date,
+
             orderId: form.orderId,
             employeeId: "EMP001",
+
+             employeeName,
+             employeeEmail,
+
             sku: form.sku,
             product: form.product,
-            category: form.category,
+
             quantity,
             costPrice,
             sellingPrice,
+
             ebayFee,
             adFee,
             deliveryCost,
-            revenue,
+
+            revenue, 
             profit,
             margin,
+
+            trackingNo: form.trackingNo,
+            status: form.status,
+            courierScanned: form.courierScanned,
+            notes: form.notes,
           }),
         }
       );
@@ -81,17 +116,22 @@ export default function AddOrder() {
         alert("Order Saved Successfully ✅");
 
         setForm({
-          orderId: "",
-          sku: "",
-          product: "",
-          category: "",
-          quantity: "",
-          costPrice: "",
-          sellingPrice: "",
-          ebayFee: "",
-          adFee: "",
-          deliveryCost: "",
-        });
+  site: "",
+  date: new Date().toISOString().split("T")[0],
+  orderId: "",
+  sku: "",
+  product: "",
+  quantity: "",
+  costPrice: "",
+  sellingPrice: "",
+  ebayFee: "",
+  adFee: "",
+  deliveryCost: "",
+  trackingNo: "",
+  status: "Pending",
+  courierScanned: "",
+  notes: "",
+});
       }
     } catch (error) {
       console.log(error);
@@ -109,13 +149,35 @@ export default function AddOrder() {
         </h1>
 
         <p className="text-gray-500 mt-2 mb-8">
-          Logged in as EMP001
+         Logged in as {employeeName}
         </p>
 
         <form
           onSubmit={handleSubmit}
           className="bg-white rounded-2xl shadow p-8 w-full max-w-6xl grid md:grid-cols-2 gap-5"
         >
+          <select
+            name="site"
+            value={form.site}
+            onChange={handleChange}
+            className="border p-3 rounded-lg"
+          >
+            <option value="">Select Site</option>
+            <option value="TPS">TPS</option>
+            <option value="Smartzone">Smartzone</option>
+            <option value="Veluntra">Veluntra</option>
+            <option value="Amazon">Amazon</option>
+            <option value="TikTok">TikTok</option>
+          </select>
+
+          <input
+            type="date"
+            name="date"
+            value={form.date}
+            onChange={handleChange}
+            className="border p-3 rounded-lg"
+          />
+
           <input
             type="text"
             name="orderId"
@@ -126,8 +188,8 @@ export default function AddOrder() {
           />
 
           <div className="border p-3 rounded-lg bg-slate-50">
-            EMP001
-          </div>
+  {employeeName}
+</div>
 
           <input
             type="text"
@@ -148,18 +210,9 @@ export default function AddOrder() {
           />
 
           <input
-            type="text"
-            name="category"
-            placeholder="Category"
-            value={form.category}
-            onChange={handleChange}
-            className="border p-3 rounded-lg"
-          />
-
-          <input
             type="number"
             name="quantity"
-            placeholder="Quantity"
+            placeholder="Quantity Sold"
             value={form.quantity}
             onChange={handleChange}
             className="border p-3 rounded-lg"
@@ -169,7 +222,7 @@ export default function AddOrder() {
             type="number"
             step="0.01"
             name="costPrice"
-            placeholder="Cost Price (£)"
+            placeholder="Unit LP / Cost (£)"
             value={form.costPrice}
             onChange={handleChange}
             className="border p-3 rounded-lg"
@@ -179,7 +232,7 @@ export default function AddOrder() {
             type="number"
             step="0.01"
             name="sellingPrice"
-            placeholder="Selling Price (£)"
+            placeholder="Sales Amount (£)"
             value={form.sellingPrice}
             onChange={handleChange}
             className="border p-3 rounded-lg"
@@ -189,7 +242,7 @@ export default function AddOrder() {
             type="number"
             step="0.01"
             name="ebayFee"
-            placeholder="eBay Fee (£)"
+            placeholder="eBay Transaction Fee (£)"
             value={form.ebayFee}
             onChange={handleChange}
             className="border p-3 rounded-lg"
@@ -209,8 +262,50 @@ export default function AddOrder() {
             type="number"
             step="0.01"
             name="deliveryCost"
-            placeholder="Delivery Cost (£)"
+            placeholder="Shipping Cost (£)"
             value={form.deliveryCost}
+            onChange={handleChange}
+            className="border p-3 rounded-lg"
+          />
+
+          <input
+            type="text"
+            name="trackingNo"
+            placeholder="Tracking Number"
+            value={form.trackingNo}
+            onChange={handleChange}
+            className="border p-3 rounded-lg"
+          />
+
+          <select
+            name="status"
+            value={form.status}
+            onChange={handleChange}
+            className="border p-3 rounded-lg"
+          >
+           
+            <option value="Pending">Pending</option>
+            <option value="Packed">Packed</option>
+            <option value="Shipped">Shipped</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Returned">Returned</option>
+          </select>
+
+          <select
+            name="courierScanned"
+            value={form.courierScanned}
+            onChange={handleChange}
+            className="border p-3 rounded-lg"
+          >
+            <option value="">Courier Scanned?</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+
+          <textarea
+            name="notes"
+            placeholder="Notes"
+            value={form.notes}
             onChange={handleChange}
             className="border p-3 rounded-lg"
           />
@@ -226,4 +321,3 @@ export default function AddOrder() {
     </div>
   );
 }
-
