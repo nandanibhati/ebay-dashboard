@@ -95,10 +95,11 @@ router.post("/login", async (req, res) => {
 });
 
 // CREATE ADMIN
+// CREATE ADMIN
 router.get("/create-admin", async (req, res) => {
   try {
     const existingAdmin = await User.findOne({
-      email: "admin@ebay.com",
+      email: "penkraft.ltd@gmail.com",
     });
 
     if (existingAdmin) {
@@ -109,14 +110,14 @@ router.get("/create-admin", async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(
-      "admin123",
+      "Temp@12345",
       10
     );
 
     const admin = await User.create({
       name: "Admin",
       email: "penkraft.ltd@gmail.com",
-      password: "Temp@12345",
+      password: hashedPassword,
       role: "admin",
     });
 
