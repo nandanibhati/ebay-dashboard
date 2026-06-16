@@ -6,9 +6,18 @@ const stockSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+
+    isParent: {
+      type: Boolean,
+      default: false,
+    },
+
     sku: String,
+
     product: String,
+
     quantity: Number,
+
     minimumStock: {
       type: Number,
       default: 5,

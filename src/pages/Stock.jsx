@@ -8,6 +8,7 @@ const [editingId, setEditingId] = useState(null);
 
 const [form, setForm] = useState({
   parentSku: "",
+  isParent: false,
   sku: "",
   product: "",
   quantity: "",
@@ -64,12 +65,13 @@ const addStock = async (e) => {
       }
 
       setForm({
-        parentSku: "",
-        sku: "",
-        product: "",
-        quantity: "",
-        minimumStock: 5,
-      });
+  parentSku: "",
+  isParent: false,
+  sku: "",
+  product: "",
+  quantity: "",
+  minimumStock: 5,
+});
     }
   } catch (error) {
     console.log(error);
@@ -108,6 +110,7 @@ const editStock = (item) => {
 
   setForm({
     parentSku: item.parentSku || "",
+    isParent: item.isParent || false,
     sku: item.sku,
     product: item.product,
     quantity: item.quantity,
@@ -135,6 +138,19 @@ return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
   onChange={handleChange}
   className="border p-3 rounded"
 />
+<label className="flex items-center gap-2">
+  <input
+    type="checkbox"
+    checked={form.isParent}
+    onChange={(e) =>
+      setForm({
+        ...form,
+        isParent: e.target.checked,
+      })
+    }
+  />
+  Parent Stock
+</label>
       <input
         type="text"
         name="sku"
@@ -193,7 +209,9 @@ return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
         </thead>
 
         <tbody>
-          {stock.map((item) => (
+          {stock
+  .filter((item) => !item.isParent)
+  .map((item) => (
             <tr
               key={item._id}
               className="border-b"
