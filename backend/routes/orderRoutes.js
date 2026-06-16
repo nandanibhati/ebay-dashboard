@@ -44,6 +44,35 @@ if (stock) {
     });
   }
 });
+router.post("/bulk", async (req, res) => {
+  try {
+    await Order.insertMany(req.body);
+
+    for (const order of req.body) {
+      const stock = await Stock.findOne({
+        sku: order.sku,
+      });
+
+      if (stock) {
+        stock.quantity =
+          Number(stock.quantity) -
+          Number(order.quantity);
+
+        await stock.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      message: "Orders Imported",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 
 router.get("/", async (req, res) => {
   try {

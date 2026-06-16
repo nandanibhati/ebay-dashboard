@@ -1,6 +1,7 @@
 import EmployeeSidebar from "../components/EmployeeSidebar";
 import { useEffect, useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
+import * as XLSX from "xlsx";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -73,6 +74,63 @@ export default function Orders() {
       alert("Failed to delete order");
     }
   };
+  const handleExcelUpload = (e) => {
+  const file = e.target.files[0];
+
+  const reader = new FileReader();
+
+  reader.onload = async (evt) => {
+    const data = evt.target.result;
+
+    const workbook = XLSX.read(data, {
+      type: "binary",
+    });
+
+    const sheetName = workbook.SheetNames[0];
+
+    const worksheet =
+      workbook.Sheets[sheetName];
+
+    const jsonData =
+      XLSX.utils.sheet_to_json(worksheet);
+
+    console.log(jsonData);
+
+    await uploadOrders(jsonData);
+  };
+
+  reader.readAsBinaryString(file);
+};
+const uploadOrders = async (orders) => {
+  try {
+    const response = await fetch(
+      "https://ebay-dashboard-z7h2.onrender.com/api/orders/bulk",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orders),
+      }
+    );
+
+    const data = await response.json();
+
+   if (data.success) {
+  alert("Orders Imported Successfully");
+
+  const res = await fetch(
+    "https://ebay-dashboard-z7h2.onrender.com/api/orders"
+  );
+
+  const updatedOrders = await res.json();
+
+  setOrders(updatedOrders);
+}
+  } catch (error) {
+    console.log(error);
+  }
+};
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
@@ -150,6 +208,14 @@ export default function Orders() {
             <option value="Returned">Returned</option>
           </select>
         </div>
+        <div className="mb-6">
+  <input
+    type="file"
+    accept=".xlsx,.xls"
+    onChange={handleExcelUpload}
+    className="border p-2 rounded"
+  />
+</div>
 
         {/* Edit Modal */}
         {editingOrder && (
@@ -170,6 +236,7 @@ export default function Orders() {
                 }
                 className="border p-3 rounded w-full mb-3"
               />
+            
 
               <input
                 type="number"
@@ -273,20 +340,20 @@ export default function Orders() {
                   <td>{order.quantity}</td>
 
                   <td>
-                    £{order.sellingPrice || 0}
+                   £{Number(order.sellingPrice || 0).toFixed(2)}
                   </td>
 
                   <td>
-                    £{order.costPrice || 0}
+                   £{Number(order.costPrice || 0).toFixed(2)}
                   </td>
 
                   <td>
-                    £{order.revenue || 0}
+                   £{Number(order.revenue || 0).toFixed(2)}
                   </td>
 
-                  <td className="font-semibold text-green-600">
-                    £{order.profit || 0}
-                  </td>
+                 <td className="font-semibold text-green-600">
+  £{Number(order.profit || 0).toFixed(2)}
+</td>
 
                  <td
   className="max-w-[180px] truncate"
