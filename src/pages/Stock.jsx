@@ -48,6 +48,8 @@ const addStock = async (e) => {
     });
 
     const data = await response.json();
+    console.log("Response:", data);
+alert(JSON.stringify(data));
 
     if (data.success) {
       if (editingId) {

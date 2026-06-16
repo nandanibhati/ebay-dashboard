@@ -22,47 +22,7 @@ router.get("/", async (req, res) => {
 // Add Stock
 router.post("/", async (req, res) => {
   try {
-    // Parent stock create
-    if (req.body.isParent) {
-      const stock = new Stock(req.body);
-
-      await stock.save();
-
-      return res.json({
-        success: true,
-        stock,
-      });
-    }
-
-    // Child SKU add
-    const parent = await Stock.findOne({
-      parentSku: req.body.parentSku,
-      isParent: true,
-    });
-
-    if (!parent) {
-      return res.status(400).json({
-        success: false,
-        message: "Parent SKU not found",
-      });
-    }
-
-    const qty = Number(req.body.quantity);
-
-    if (parent.quantity < qty) {
-      return res.status(400).json({
-        success: false,
-        message: "Insufficient Parent Stock",
-      });
-    }
-
-    parent.quantity -= qty;
-    await parent.save();
-
-    const stock = new Stock({
-      ...req.body,
-      isParent: false,
-    });
+    const stock = new Stock(req.body);
 
     await stock.save();
 
