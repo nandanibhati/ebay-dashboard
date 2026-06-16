@@ -8,6 +8,7 @@ import Employees from "./pages/Employees";
 import Analytics from "./pages/Analytics";
 import AdminOrders from "./pages/AdminOrders";
 import Signup from "./pages/Signup";
+import Stock from "./pages/Stock";
 
 function App() {
   return (
@@ -24,6 +25,8 @@ function App() {
         <Route path="/employees" element={<Employees />} />
 
         <Route path="/analytics" element={<Analytics />} />
+
+        <Route path="/stock" element={<Stock />} />
 
         <Route path="/admin-orders" element={<AdminOrders />} />
 

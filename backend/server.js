@@ -13,6 +13,7 @@ app.use(express.json());
 // Routes
 const authRoutes = require("./routes/authRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const stockRoutes = require("./routes/stockRoutes");
 
 // MongoDB Connection
 mongoose
@@ -23,6 +24,7 @@ mongoose
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/stock", stockRoutes);
 
 app.get("/", (req, res) => {
   res.send("Backend Running 🚀");

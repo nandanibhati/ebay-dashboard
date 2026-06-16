@@ -2,12 +2,35 @@ const express = require("express");
 const router = express.Router();
 
 const Order = require("../models/Order");
+const Stock = require("../models/Stock");
 
 router.post("/", async (req, res) => {
+  console.log("POST ROUTE HIT");
   try {
     const order = new Order(req.body);
 
     await order.save();
+const stock = await Stock.findOne({
+  sku: req.body.sku,
+});
+
+console.log("ORDER SKU:", req.body.sku);
+console.log("ORDER QTY:", req.body.quantity);
+console.log("FOUND STOCK:", stock);
+
+
+if (stock) {
+  stock.quantity =
+    Number(stock.quantity) -
+    Number(req.body.quantity);
+
+  console.log(
+    "NEW STOCK QTY:",
+    stock.quantity
+  );
+
+  await stock.save();
+}
 
     res.status(201).json({
       success: true,
