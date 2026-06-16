@@ -233,7 +233,7 @@ export default function Orders() {
 
         {/* Table */}
         <div className="bg-white rounded-xl shadow p-6 overflow-x-auto">
-          <table className="w-full min-w-[1500px]">
+          <table className="min-w-[2200px]">
             <thead>
               <tr className="border-b text-gray-600">
                 <th className="text-left py-3">Site</th>
@@ -264,7 +264,12 @@ export default function Orders() {
                   <td>{order.date}</td>
                   <td>{order.orderId}</td>
                   <td>{order.sku}</td>
-                  <td>{order.product}</td>
+                  <td
+  className="max-w-[300px] truncate"
+  title={order.product}
+>
+  {order.product}
+</td>
                   <td>{order.quantity}</td>
 
                   <td>
@@ -283,7 +288,12 @@ export default function Orders() {
                     £{order.profit || 0}
                   </td>
 
-                  <td>{order.trackingNo}</td>
+                 <td
+  className="max-w-[180px] truncate"
+  title={order.tracking}
+>
+  {order.tracking}
+</td>
 
                   <td>
                     <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
@@ -302,29 +312,25 @@ export default function Orders() {
                     </span>
                   </td>
 
-                  <td>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() =>
-                          editOrder(order)
-                        }
-                        className="bg-blue-100 text-blue-600 p-2 rounded-full hover:bg-blue-200"
-                        title="Edit"
-                      >
-                        <FaEdit size={14} />
-                      </button>
+                 <td className="min-w-[120px]">
+  <div className="flex gap-2">
+    <button
+      onClick={() => editOrder(order)}
+      className="bg-blue-100 text-blue-600 p-2 rounded-full hover:bg-blue-200"
+      title="Edit"
+    >
+      <FaEdit size={14} />
+    </button>
 
-                      <button
-                        onClick={() =>
-                          deleteOrder(order._id)
-                        }
-                        className="bg-red-100 text-red-600 p-2 rounded-full hover:bg-red-200"
-                        title="Delete"
-                      >
-                        <FaTrash size={14} />
-                      </button>
-                    </div>
-                  </td>
+    <button
+      onClick={() => deleteOrder(order._id)}
+      className="bg-red-100 text-red-600 p-2 rounded-full hover:bg-red-200"
+      title="Delete"
+    >
+      <FaTrash size={14} />
+    </button>
+  </div>
+</td>
                 </tr>
               ))}
             </tbody>
