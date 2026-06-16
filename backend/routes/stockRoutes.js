@@ -53,5 +53,25 @@ router.delete("/:id", async (req, res) => {
     });
   }
 });
+// Update Stock
+router.put("/:id", async (req, res) => {
+  try {
+    const stock = await Stock.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      stock,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 
 module.exports = router;

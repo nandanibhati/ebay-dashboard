@@ -4,12 +4,14 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 
 export default function Stock() {
 const [stock, setStock] = useState([]);
+const [editingId, setEditingId] = useState(null);
 
 const [form, setForm] = useState({
-sku: "",
-product: "",
-quantity: "",
-minimumStock: 5,
+  parentSku: "",
+  sku: "",
+  product: "",
+  quantity: "",
+  minimumStock: 5,
 });
 
 useEffect(() => {
@@ -27,39 +29,51 @@ setForm({
 };
 
 const addStock = async (e) => {
-e.preventDefault();
+  e.preventDefault();
 
+  try {
+    const url = editingId
+      ? `https://ebay-dashboard-z7h2.onrender.com/api/stock/${editingId}`
+      : "https://ebay-dashboard-z7h2.onrender.com/api/stock";
 
-try {
-  const response = await fetch(
-  "https://ebay-dashboard-z7h2.onrender.com/api/stock",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(form),
-  }
-);
-  const data = await response.json();
+    const method = editingId ? "PUT" : "POST";
 
-  if (data.success) {
-    alert("Stock Added ✅");
-
-    setStock([...stock, data.stock]);
-
-    setForm({
-      sku: "",
-      product: "",
-      quantity: "",
-      minimumStock: 5,
+    const response = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(form),
     });
+
+    const data = await response.json();
+
+    if (data.success) {
+      if (editingId) {
+        setStock(
+          stock.map((item) =>
+            item._id === editingId ? data.stock : item
+          )
+        );
+
+        alert("Stock Updated ✅");
+        setEditingId(null);
+      } else {
+        setStock([...stock, data.stock]);
+        alert("Stock Added ✅");
+      }
+
+      setForm({
+        parentSku: "",
+        sku: "",
+        product: "",
+        quantity: "",
+        minimumStock: 5,
+      });
+    }
+  } catch (error) {
+    console.log(error);
   }
-} catch (error) {
-  console.log(error);
-}
-
-
 };
 
 const deleteStock = async (id) => {
@@ -90,12 +104,15 @@ try {
 };
 
 const editStock = (item) => {
-setForm({
-sku: item.sku,
-product: item.product,
-quantity: item.quantity,
-minimumStock: item.minimumStock || 5,
-});
+  setEditingId(item._id);
+
+  setForm({
+    parentSku: item.parentSku || "",
+    sku: item.sku,
+    product: item.product,
+    quantity: item.quantity,
+    minimumStock: item.minimumStock || 5,
+  });
 };
 
 return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
@@ -110,6 +127,14 @@ return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
       onSubmit={addStock}
       className="bg-white rounded-xl shadow p-6 mb-6 flex flex-wrap gap-4"
     >
+        <input
+  type="text"
+  name="parentSku"
+  placeholder="Parent SKU"
+  value={form.parentSku}
+  onChange={handleChange}
+  className="border p-3 rounded"
+/>
       <input
         type="text"
         name="sku"
@@ -147,17 +172,18 @@ return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
       />
 
       <button
-        type="submit"
-        className="bg-blue-600 text-white px-6 rounded"
-      >
-        Add Stock
-      </button>
+  type="submit"
+  className="bg-blue-600 text-white px-6 rounded"
+>
+  {editingId ? "Update Stock" : "Add Stock"}
+</button>
     </form>
 
     <div className="bg-white rounded-xl shadow p-6 overflow-x-auto">
       <table className="w-full">
         <thead>
           <tr className="border-b text-gray-600">
+            <th className="text-left py-3">Parent SKU</th>
             <th className="text-left py-3">SKU</th>
             <th className="text-left py-3">Product</th>
             <th className="text-left py-3">Quantity</th>
@@ -172,6 +198,7 @@ return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
               key={item._id}
               className="border-b"
             >
+             <td>{item.parentSku || "-"}</td>
               <td>{item.sku}</td>
 
               <td>{item.product}</td>
@@ -200,21 +227,21 @@ return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
 
               <td>
                 <div className="flex gap-3">
-                  <button
-                    onClick={() => editStock(item)}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    <FaEdit />
-                  </button>
+                 <button
+  type="button"
+  onClick={() => editStock(item)}
+  className="text-blue-600 hover:text-blue-800"
+>
+  <FaEdit />
+</button>
 
-                  <button
-                    onClick={() =>
-                      deleteStock(item._id)
-                    }
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    <FaTrash />
-                  </button>
+<button
+  type="button"
+  onClick={() => deleteStock(item._id)}
+  className="text-red-600 hover:text-red-800"
+>
+  <FaTrash />
+</button>
                 </div>
               </td>
             </tr>

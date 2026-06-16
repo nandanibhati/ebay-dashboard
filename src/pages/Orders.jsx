@@ -206,6 +206,7 @@ const uploadOrders = async (orders) => {
             <option value="Shipped">Shipped</option>
             <option value="Delivered">Delivered</option>
             <option value="Returned">Returned</option>
+            <option value="Cancelled">Cancelled</option>
           </select>
         </div>
         <div className="mb-6">
@@ -220,22 +221,60 @@ const uploadOrders = async (orders) => {
         {/* Edit Modal */}
         {editingOrder && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-xl w-[500px]">
+            <div className="bg-white p-6 rounded-xl w-[700px] max-h-[90vh] overflow-y-auto">
               <h2 className="text-xl font-bold mb-4">
                 Edit Order
               </h2>
-
               <input
-                type="text"
-                value={editingOrder.product}
-                onChange={(e) =>
-                  setEditingOrder({
-                    ...editingOrder,
-                    product: e.target.value,
-                  })
-                }
-                className="border p-3 rounded w-full mb-3"
-              />
+  type="text"
+  placeholder="Site"
+  value={editingOrder.site || ""}
+  onChange={(e) =>
+    setEditingOrder({
+      ...editingOrder,
+      site: e.target.value,
+    })
+  }
+  className="border p-3 rounded w-full mb-3"
+/>
+
+<input
+  type="text"
+  placeholder="Order ID"
+  value={editingOrder.orderId || ""}
+  onChange={(e) =>
+    setEditingOrder({
+      ...editingOrder,
+      orderId: e.target.value,
+    })
+  }
+  className="border p-3 rounded w-full mb-3"
+/>
+
+<input
+  type="text"
+  placeholder="SKU"
+  value={editingOrder.sku || ""}
+  onChange={(e) =>
+    setEditingOrder({
+      ...editingOrder,
+      sku: e.target.value,
+    })
+  }
+  className="border p-3 rounded w-full mb-3"
+/>
+              
+<input
+  type="date"
+  value={editingOrder.date}
+  onChange={(e) =>
+    setEditingOrder({
+      ...editingOrder,
+      date: e.target.value,
+    })
+  }
+  className="border p-3 rounded w-full mb-3"
+/>
             
 
               <input
@@ -249,6 +288,70 @@ const uploadOrders = async (orders) => {
                 }
                 className="border p-3 rounded w-full mb-3"
               />
+              <input
+  type="number"
+  placeholder="Sales"
+  value={editingOrder.sellingPrice || ""}
+  onChange={(e) =>
+    setEditingOrder({
+      ...editingOrder,
+      sellingPrice: e.target.value,
+    })
+  }
+  className="border p-3 rounded w-full mb-3"
+/>
+
+<input
+  type="number"
+  placeholder="Cost"
+  value={editingOrder.costPrice || ""}
+  onChange={(e) =>
+    setEditingOrder({
+      ...editingOrder,
+      costPrice: e.target.value,
+    })
+  }
+  className="border p-3 rounded w-full mb-3"
+/>
+
+<input
+  type="text"
+  placeholder="Tracking"
+  value={editingOrder.tracking || ""}
+  onChange={(e) =>
+    setEditingOrder({
+      ...editingOrder,
+      tracking: e.target.value,
+    })
+  }
+  className="border p-3 rounded w-full mb-3"
+/>
+
+<input
+  type="text"
+  placeholder="Courier"
+  value={editingOrder.courierScanned || ""}
+  onChange={(e) =>
+    setEditingOrder({
+      ...editingOrder,
+      courierScanned: e.target.value,
+    })
+  }
+  className="border p-3 rounded w-full mb-3"
+/>
+
+<input
+  type="text"
+  placeholder="Employee"
+  value={editingOrder.employeeName || ""}
+  onChange={(e) =>
+    setEditingOrder({
+      ...editingOrder,
+      employeeName: e.target.value,
+    })
+  }
+  className="border p-3 rounded w-full mb-3"
+/>
 
               <select
                 value={editingOrder.status}
@@ -307,7 +410,6 @@ const uploadOrders = async (orders) => {
                 <th className="text-left py-3">Date</th>
                 <th className="text-left py-3">Order ID</th>
                 <th className="text-left py-3">SKU</th>
-                <th className="text-left py-3">Product</th>
                 <th className="text-left py-3">Qty</th>
                 <th className="text-left py-3">Sales</th>
                 <th className="text-left py-3">Cost</th>
@@ -331,12 +433,8 @@ const uploadOrders = async (orders) => {
                   <td>{order.date}</td>
                   <td>{order.orderId}</td>
                   <td>{order.sku}</td>
-                  <td
-  className="max-w-[300px] truncate"
-  title={order.product}
->
-  {order.product}
-</td>
+                 
+ 
                   <td>{order.quantity}</td>
 
                   <td>
@@ -363,9 +461,15 @@ const uploadOrders = async (orders) => {
 </td>
 
                   <td>
-                    <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
-                      {order.status}
-                    </span>
+                    <span
+  className={`px-2 py-1 rounded ${
+    order.status === "Cancelled"
+      ? "bg-red-100 text-red-700"
+      : "bg-yellow-100 text-yellow-700"
+  }`}
+>
+  {order.status}
+</span>
                   </td>
 
                   <td>

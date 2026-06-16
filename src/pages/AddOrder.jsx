@@ -7,7 +7,6 @@ export default function AddOrder() {
   date: new Date().toISOString().split("T")[0],
   orderId: "",
   sku: "",
-  product: "",
   quantity: "",
   costPrice: "",
   sellingPrice: "",
@@ -200,14 +199,6 @@ const employeeEmail =
             className="border p-3 rounded-lg"
           />
 
-          <input
-            type="text"
-            name="product"
-            placeholder="Product Name"
-            value={form.product}
-            onChange={handleChange}
-            className="border p-3 rounded-lg"
-          />
 
           <input
             type="number"
