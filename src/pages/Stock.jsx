@@ -5,6 +5,9 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 export default function Stock() {
 const [stock, setStock] = useState([]);
 const [editingId, setEditingId] = useState(null);
+const employeeName =
+  localStorage.getItem("employeeName") || "Unknown";
+
 
 const [form, setForm] = useState({
   sku: "",
@@ -44,7 +47,10 @@ const addStock = async (e) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(form),
+     body: JSON.stringify({
+  ...form,
+  updatedBy: employeeName,
+}),
     });
 
     const data = await response.json();
@@ -108,7 +114,7 @@ try {
 };
 
 const editStock = (item) => {
-  console.log(item);
+
 
   setEditingId(item._id);
 
@@ -206,7 +212,10 @@ return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
             <th className="text-left py-3">Product</th>
             <th className="text-left py-3">Quantity</th>
             <th className="text-left py-3">Status</th>
+            <th className="text-left py-3">Updated By</th>
+            <th className="text-left py-3">Last Updated</th>
             <th className="text-left py-3">Actions</th>
+
           </tr>
         </thead>
 
@@ -231,18 +240,45 @@ return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
                 {item.quantity}
               </td>
 
-              <td>
-                {item.quantity <= 5 ? (
-                  <span className="bg-red-100 text-red-600 px-2 py-1 rounded">
-                    Low Stock
-                  </span>
-                ) : (
-                  <span className="bg-green-100 text-green-600 px-2 py-1 rounded">
-                    In Stock
-                  </span>
-                )}
-              </td>
+             <td>
+  {item.quantity <= 5 ? (
+    <span className="bg-red-100 text-red-600 px-2 py-1 rounded">
+      Low Stock
+    </span>
+  ) : (
+    <span className="bg-green-100 text-green-600 px-2 py-1 rounded">
+      In Stock
+    </span>
+  )}
+</td>
 
+<td>{item.updatedBy || "-"}</td>
+
+<td>
+  {item.updatedAt
+    ? new Date(item.updatedAt).toLocaleString()
+    : "-"}
+</td>
+
+<td>
+  <div className="flex gap-3">
+    <button
+      type="button"
+      onClick={() => editStock(item)}
+      className="text-blue-600 hover:text-blue-800"
+    >
+      <FaEdit />
+    </button>
+
+    <button
+      type="button"
+      onClick={() => deleteStock(item._id)}
+      className="text-red-600 hover:text-red-800"
+    >
+      <FaTrash />
+    </button>
+  </div>
+</td>
               <td>
                 <div className="flex gap-3">
                  <button

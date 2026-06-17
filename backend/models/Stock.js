@@ -1,11 +1,8 @@
 const mongoose = require("mongoose");
-
 const stockSchema = new mongoose.Schema(
   {
     sku: String,
-
     product: String,
-
     quantity: Number,
 
     masterSku: {
@@ -21,6 +18,11 @@ const stockSchema = new mongoose.Schema(
     minimumStock: {
       type: Number,
       default: 5,
+    },
+
+    updatedBy: {
+      type: String,
+      default: "",
     },
   },
   { timestamps: true }
