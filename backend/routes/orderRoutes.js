@@ -22,6 +22,9 @@ if (item) {
   const masterStock = await Stock.findOne({
     sku: item.masterSku,
   });
+  console.log("REQ BODY =", req.body);
+console.log("SKU RECEIVED =", req.body.sku);
+console.log("ITEM FOUND =", item);
 
   if (masterStock) {
     const totalDeduct =
