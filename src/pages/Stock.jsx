@@ -108,16 +108,18 @@ try {
 };
 
 const editStock = (item) => {
+  console.log(item);
+
   setEditingId(item._id);
 
- setForm({
-  sku: item.sku,
-  product: item.product,
-  quantity: item.quantity,
-  masterSku: item.masterSku || "",
-  packQty: item.packQty || 1,
-  minimumStock: item.minimumStock || 5,
-});
+  setForm({
+    sku: item.sku,
+    product: item.product,
+    quantity: item.quantity,
+    masterSku: item.masterSku || "",
+    packQty: item.packQty || 1,
+    minimumStock: item.minimumStock || 5,
+  });
 };
 
 return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
