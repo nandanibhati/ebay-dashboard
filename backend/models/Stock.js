@@ -2,13 +2,22 @@ const mongoose = require("mongoose");
 
 const stockSchema = new mongoose.Schema(
   {
-    parentSku: {
+    sku: String,
+
+    product: String,
+
+    quantity: Number,
+
+    masterSku: {
       type: String,
       default: "",
     },
-    sku: String,
-    product: String,
-    quantity: Number,
+
+    packQty: {
+      type: Number,
+      default: 1,
+    },
+
     minimumStock: {
       type: Number,
       default: 5,

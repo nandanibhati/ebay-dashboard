@@ -7,11 +7,11 @@ const [stock, setStock] = useState([]);
 const [editingId, setEditingId] = useState(null);
 
 const [form, setForm] = useState({
-  parentSku: "",
-  isParent: false,
   sku: "",
   product: "",
   quantity: "",
+  masterSku: "",
+  packQty: 1,
   minimumStock: 5,
 });
 
@@ -48,8 +48,8 @@ const addStock = async (e) => {
     });
 
     const data = await response.json();
-    console.log("Response:", data);
-alert(JSON.stringify(data));
+    
+
 
     if (data.success) {
       if (editingId) {
@@ -66,12 +66,12 @@ alert(JSON.stringify(data));
         alert("Stock Added ✅");
       }
 
-      setForm({
-  parentSku: "",
-  isParent: false,
+   setForm({
   sku: "",
   product: "",
   quantity: "",
+  masterSku: "",
+  packQty: 1,
   minimumStock: 5,
 });
     }
@@ -110,14 +110,14 @@ try {
 const editStock = (item) => {
   setEditingId(item._id);
 
-  setForm({
-    parentSku: item.parentSku || "",
-    isParent: item.isParent || false,
-    sku: item.sku,
-    product: item.product,
-    quantity: item.quantity,
-    minimumStock: item.minimumStock || 5,
-  });
+ setForm({
+  sku: item.sku,
+  product: item.product,
+  quantity: item.quantity,
+  masterSku: item.masterSku || "",
+  packQty: item.packQty || 1,
+  minimumStock: item.minimumStock || 5,
+});
 };
 
 return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
@@ -134,25 +134,24 @@ return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
     >
         <input
   type="text"
-  name="parentSku"
-  placeholder="Parent SKU"
-  value={form.parentSku}
+  name="masterSku"
+  placeholder="Master SKU"
+  value={form.masterSku}
   onChange={handleChange}
   className="border p-3 rounded"
 />
-<label className="flex items-center gap-2">
-  <input
-    type="checkbox"
-    checked={form.isParent}
-    onChange={(e) =>
-      setForm({
-        ...form,
-        isParent: e.target.checked,
-      })
-    }
-  />
-  Parent Stock
-</label>
+
+<input
+  type="number"
+  name="packQty"
+  placeholder="Pack Qty"
+  value={form.packQty}
+  onChange={handleChange}
+  className="border p-3 rounded"
+/>
+       
+
+
       <input
         type="text"
         name="sku"
@@ -201,7 +200,6 @@ return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
       <table className="w-full">
         <thead>
           <tr className="border-b text-gray-600">
-            <th className="text-left py-3">Parent SKU</th>
             <th className="text-left py-3">SKU</th>
             <th className="text-left py-3">Product</th>
             <th className="text-left py-3">Quantity</th>
@@ -211,14 +209,12 @@ return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
         </thead>
 
         <tbody>
-          {stock
-  .filter((item) => !item.isParent)
-  .map((item) => (
+        {stock.map((item) => (
             <tr
               key={item._id}
               className="border-b"
             >
-             <td>{item.parentSku || "-"}</td>
+             
               <td>{item.sku}</td>
 
               <td>{item.product}</td>

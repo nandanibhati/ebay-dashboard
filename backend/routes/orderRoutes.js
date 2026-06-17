@@ -10,26 +10,45 @@ router.post("/", async (req, res) => {
     const order = new Order(req.body);
 
     await order.save();
-const stock = await Stock.findOne({
+const item = await Stock.findOne({
   sku: req.body.sku,
 });
 
 console.log("ORDER SKU:", req.body.sku);
 console.log("ORDER QTY:", req.body.quantity);
-console.log("FOUND STOCK:", stock);
+console.log("FOUND ITEM:", item);
 
+if (item) {
+  const masterStock = await Stock.findOne({
+    sku: item.masterSku,
+  });
 
-if (stock) {
-  stock.quantity =
-    Number(stock.quantity) -
-    Number(req.body.quantity);
+  if (masterStock) {
+    const totalDeduct =
+      Number(item.packQty) *
+      Number(req.body.quantity);
 
-  console.log(
-    "NEW STOCK QTY:",
-    stock.quantity
-  );
+    masterStock.quantity =
+      Number(masterStock.quantity) -
+      totalDeduct;
 
-  await stock.save();
+    console.log(
+      "MASTER SKU:",
+      item.masterSku
+    );
+
+    console.log(
+      "DEDUCTED:",
+      totalDeduct
+    );
+
+    console.log(
+      "NEW STOCK:",
+      masterStock.quantity
+    );
+
+    await masterStock.save();
+  }
 }
 
     res.status(201).json({
@@ -44,21 +63,32 @@ if (stock) {
     });
   }
 });
-router.post("/bulk", async (req, res) => {
+
+  router.post("/bulk", async (req, res) => {
   try {
     await Order.insertMany(req.body);
 
     for (const order of req.body) {
-      const stock = await Stock.findOne({
+      const item = await Stock.findOne({
         sku: order.sku,
       });
 
-      if (stock) {
-        stock.quantity =
-          Number(stock.quantity) -
-          Number(order.quantity);
+      if (item) {
+        const masterStock = await Stock.findOne({
+          sku: item.masterSku,
+        });
 
-        await stock.save();
+        if (masterStock) {
+          const totalDeduct =
+            Number(item.packQty) *
+            Number(order.quantity);
+
+          masterStock.quantity =
+            Number(masterStock.quantity) -
+            totalDeduct;
+
+          await masterStock.save();
+        }
       }
     }
 
@@ -73,7 +103,6 @@ router.post("/bulk", async (req, res) => {
     });
   }
 });
-
 router.get("/", async (req, res) => {
   try {
     const orders = await Order.find();

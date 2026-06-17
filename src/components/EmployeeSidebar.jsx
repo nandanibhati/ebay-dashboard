@@ -30,13 +30,13 @@ export default function EmployeeSidebar() {
           </Link>
         </li>
         <li>
-          <Link
-  to="/stock"
-  className="flex items-center gap-3 text-white hover:text-blue-300"
->
-  📦 Stock
-</Link>
-        </li>
+  <Link
+    to="/stock"
+    className="flex items-center gap-3 hover:text-blue-400"
+  >
+    📦 Stock
+  </Link>
+</li>
 
         <li>
           <Link
