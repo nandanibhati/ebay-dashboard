@@ -17,6 +17,16 @@ const item = await Stock.findOne({
 console.log("ORDER SKU:", req.body.sku);
 console.log("ORDER QTY:", req.body.quantity);
 console.log("FOUND ITEM:", item);
+if (item) {
+  console.log("ITEM MASTER SKU:", item.masterSku);
+  console.log("ITEM PACK QTY:", item.packQty);
+
+  const masterStock = await Stock.findOne({
+    sku: item.masterSku,
+  });
+
+  console.log("MASTER STOCK FOUND:", masterStock);
+}
 
 if (item) {
   const masterStock = await Stock.findOne({
