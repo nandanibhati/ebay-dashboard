@@ -205,41 +205,47 @@ return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
     </form>
 
     <div className="bg-white rounded-xl shadow p-6 overflow-x-auto">
-      <table className="w-full">
+      <table className="w-full table-fixed">
         <thead>
-          <tr className="border-b text-gray-600">
-            <th className="text-left py-3">SKU</th>
-            <th className="text-left py-3">Product</th>
-            <th className="text-left py-3">Quantity</th>
-            <th className="text-left py-3">Status</th>
-           <th className="text-left py-3">Added / Updated By</th>
-            <th className="text-left py-3">Actions</th>
-
-          </tr>
+        <tr className="border-b text-gray-600">
+  <th className="w-48 text-left py-3">SKU</th>
+  <th className="w-[650px] text-left py-3">Product</th>
+  <th className="w-24 text-center py-3">Qty</th>
+  <th className="w-32 text-center py-3">Status</th>
+  <th className="w-40 text-center py-3">Updated By</th>
+  <th className="w-24 text-center py-3">Actions</th>
+</tr>
         </thead>
 
         <tbody>
         {stock.map((item) => (
             <tr
-              key={item._id}
-              className="border-b"
-            >
+  key={item._id}
+  className="border-b hover:bg-slate-50"
+>
              
-              <td>{item.sku}</td>
+              <td className="py-3 font-medium">
+  {item.sku}
+</td>
 
-              <td>{item.product}</td>
+             <td
+  className="py-3 pr-4 break-words"
+  title={item.product}
+>
+  {item.product}
+</td>
 
-              <td
-                className={
-                  item.quantity <= 5
-                    ? "text-red-600 font-bold"
-                    : "text-green-600 font-bold"
-                }
-              >
+            <td
+  className={`text-center py-3 ${
+    item.quantity <= 5
+      ? "text-red-600 font-bold"
+      : "text-green-600 font-bold"
+  }`}
+>
                 {item.quantity}
               </td>
 
-             <td>
+             <td className="text-center py-3">
   {item.quantity <= 5 ? (
     <span className="bg-red-100 text-red-600 px-2 py-1 rounded">
       Low Stock
@@ -251,12 +257,14 @@ return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
   )}
 </td>
 
-<td>{item.updatedBy || "-"}</td>
+<td className="py-3 text-center">
+  {item.updatedBy || "-"}
+</td>
 
 
 
-<td>
-  <div className="flex gap-3">
+<td className="py-3">
+  <div className="flex justify-center gap-4">
     <button
       type="button"
       onClick={() => editStock(item)}
