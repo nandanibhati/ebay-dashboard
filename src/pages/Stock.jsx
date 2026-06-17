@@ -212,8 +212,7 @@ return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
             <th className="text-left py-3">Product</th>
             <th className="text-left py-3">Quantity</th>
             <th className="text-left py-3">Status</th>
-            <th className="text-left py-3">Updated By</th>
-            <th className="text-left py-3">Last Updated</th>
+           <th className="text-left py-3">Added / Updated By</th>
             <th className="text-left py-3">Actions</th>
 
           </tr>
@@ -254,11 +253,7 @@ return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
 
 <td>{item.updatedBy || "-"}</td>
 
-<td>
-  {item.updatedAt
-    ? new Date(item.updatedAt).toLocaleString()
-    : "-"}
-</td>
+
 
 <td>
   <div className="flex gap-3">
@@ -279,25 +274,7 @@ return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
     </button>
   </div>
 </td>
-              <td>
-                <div className="flex gap-3">
-                 <button
-  type="button"
-  onClick={() => editStock(item)}
-  className="text-blue-600 hover:text-blue-800"
->
-  <FaEdit />
-</button>
-
-<button
-  type="button"
-  onClick={() => deleteStock(item._id)}
-  className="text-red-600 hover:text-red-800"
->
-  <FaTrash />
-</button>
-                </div>
-              </td>
+              
             </tr>
           ))}
         </tbody>
