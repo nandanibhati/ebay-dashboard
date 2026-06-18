@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    basicSalary: {
+  type: Number,
+  default: 0,
+},
   },
   { timestamps: true }
 );

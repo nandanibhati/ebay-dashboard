@@ -5,13 +5,14 @@ export default function Employees() {
   const [employees, setEmployees] = useState([]);
 
   const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    employeeId: "",
-    joiningDate: "",
-    hourlyRate: "",
-  });
+  name: "",
+  email: "",
+  password: "",
+  employeeId: "",
+  joiningDate: "",
+  hourlyRate: "",
+  basicSalary: "",
+});
 
   const fetchEmployees = async () => {
     try {
@@ -63,6 +64,7 @@ export default function Employees() {
           employeeId: "",
           joiningDate: "",
           hourlyRate: "",
+           basicSalary: "",
         });
 
         fetchEmployees();
@@ -184,6 +186,18 @@ export default function Employees() {
               })
             }
           />
+          <input
+  type="number"
+  placeholder="Basic Salary"
+  className="border p-3 rounded"
+  value={form.basicSalary}
+  onChange={(e) =>
+    setForm({
+      ...form,
+      basicSalary: e.target.value,
+    })
+  }
+/>
 
           <button
             className="bg-blue-600 text-white p-3 rounded col-span-2"
@@ -202,6 +216,7 @@ export default function Employees() {
                 <th>Employee ID</th>
                 <th>Joining Date</th>
                 <th>Hourly Rate</th>
+                <th>Basic Salary</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -223,7 +238,7 @@ export default function Employees() {
                       : "-"}
                   </td>
                   <td>₹{emp.hourlyRate}</td>
-
+                  <td>₹{emp.basicSalary}</td>
                   <td>
                     <button
                       onClick={() =>

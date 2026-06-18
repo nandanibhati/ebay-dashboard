@@ -38,18 +38,36 @@ export default function Salary() {
             </p>
 
             <p className="mb-3">
-              <strong>Hourly Rate:</strong> ₹
-              {salaryData.hourlyRate}
-            </p>
+  <strong>Basic Salary:</strong> ₹
+  {salaryData.basicSalary}
+</p>
 
-            <p className="mb-3">
-              <strong>This Month Hours:</strong>{" "}
-              {salaryData.totalHours}
-            </p>
+<p className="mb-3">
+  <strong>Hourly Rate:</strong> ₹
+  {salaryData.hourlyRate}
+</p>
 
-            <h2 className="text-4xl font-bold text-green-600 mt-6">
-              ₹{salaryData.salary}
-            </h2>
+<p className="mb-3">
+  <strong>This Month Hours:</strong>
+  {" "}
+  {salaryData.totalHours}
+</p>
+
+<div className="border-t pt-4 mt-4">
+  <p className="text-gray-600">
+    Salary Formula:
+  </p>
+
+  <p className="font-semibold">
+    ₹{salaryData.basicSalary} +
+    ({salaryData.totalHours} × ₹
+    {salaryData.hourlyRate})
+  </p>
+
+  <h2 className="text-4xl font-bold text-green-600 mt-4">
+    ₹{salaryData.salary}
+  </h2>
+</div>
           </div>
         )}
       </div>
