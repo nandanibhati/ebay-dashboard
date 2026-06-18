@@ -208,8 +208,9 @@ const uploadOrders = async (orders) => {
 
   return (
     <div className="flex min-h-screen bg-slate-100">
-      <Sidebar />
-<div className="flex-1 ml-64 p-8">
+  <Sidebar />
+
+  <div className="ml-64 p-8 w-[calc(100%-16rem)]">
       
         <h1 className="text-3xl font-bold mb-6">
           Orders
@@ -489,8 +490,10 @@ const uploadOrders = async (orders) => {
         )}
 
         {/* Table */}
-        <div className="bg-white rounded-xl shadow p-6 overflow-x-auto">
-          <table className="min-w-[2200px]">
+        <div className="bg-white rounded-xl shadow p-6 overflow-x-auto w-full">
+
+        
+          <table className="w-full">
             <thead>
               <tr className="border-b text-gray-600">
                 <th className="text-left py-3">Site</th>

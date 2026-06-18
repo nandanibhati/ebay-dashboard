@@ -1,8 +1,11 @@
+import Sidebar from "../components/Sidebar";
 import EmployeeSidebar from "../components/EmployeeSidebar";
+
 import { useEffect, useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
 export default function Stock() {
+const role = localStorage.getItem("role");
 const [stock, setStock] = useState([]);
 const [editingId, setEditingId] = useState(null);
 const employeeName =
@@ -127,7 +130,13 @@ const editStock = (item) => {
   });
 };
 
-return ( <div className="flex min-h-screen bg-slate-100"> <EmployeeSidebar />
+return <div className="flex min-h-screen bg-slate-100">
+  {role === "admin" ? (
+    <Sidebar />
+  ) : (
+    <EmployeeSidebar />
+  )}
+
 
 
  <div className="flex-1 ml-64 p-8">
