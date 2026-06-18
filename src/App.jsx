@@ -9,6 +9,10 @@ import Analytics from "./pages/Analytics";
 import AdminOrders from "./pages/AdminOrders";
 import Signup from "./pages/Signup";
 import Stock from "./pages/Stock";
+import EmployeeDashboard from "./pages/EmployeeDashboard";
+import Attendance from "./pages/Attendance";
+import Leaves from "./pages/Leaves";
+import Salary from "./pages/Salary";
 
 function App() {
   return (
@@ -27,6 +31,26 @@ function App() {
         <Route path="/analytics" element={<Analytics />} />
 
         <Route path="/stock" element={<Stock />} />
+
+        <Route
+  path="/employee-dashboard"
+  element={<EmployeeDashboard />}
+/>
+
+<Route
+  path="/attendance"
+  element={<Attendance />}
+/>
+
+<Route
+  path="/leaves"
+  element={<Leaves />}
+/>
+
+<Route
+  path="/salary"
+  element={<Salary />}
+/>
 
         <Route path="/admin-orders" element={<AdminOrders />} />
 

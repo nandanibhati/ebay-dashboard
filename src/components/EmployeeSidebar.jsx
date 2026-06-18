@@ -37,6 +37,49 @@ export default function EmployeeSidebar() {
             📦 Stock
           </Link>
         </li>
+        <li>
+  <Link
+    to="/employees"
+    className="flex items-center gap-3 hover:text-blue-400"
+  >
+    👥 Employees
+  </Link>
+</li>
+<li>
+  <Link
+    to="/employee-dashboard"
+    className="flex items-center gap-3 hover:text-blue-400"
+  >
+    🏠 Dashboard
+  </Link>
+</li>
+
+<li>
+  <Link
+    to="/attendance"
+    className="flex items-center gap-3 hover:text-blue-400"
+  >
+    ⏰ Attendance
+  </Link>
+</li>
+
+<li>
+  <Link
+    to="/leaves"
+    className="flex items-center gap-3 hover:text-blue-400"
+  >
+    🌴 Leaves
+  </Link>
+</li>
+
+<li>
+  <Link
+    to="/salary"
+    className="flex items-center gap-3 hover:text-blue-400"
+  >
+    💰 Salary
+  </Link>
+</li>
 
         <li>
           <Link

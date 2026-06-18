@@ -37,7 +37,7 @@ export default function Login() {
   if (data.role === "admin") {
     navigate("/dashboard");
   } else {
-    navigate("/manual-entry");
+    navigate("/employee-dashboard");
   }
 } else {
         alert(data.message);
