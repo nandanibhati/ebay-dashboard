@@ -23,6 +23,32 @@ export default function EmployeeDashboard() {
           }),
         }
       );
+      const handlePunchOut = async () => {
+  try {
+    const response = await fetch(
+      "https://ebay-dashboard-z7h2.onrender.com/api/attendance/punch-out",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          employeeEmail:
+            localStorage.getItem("employeeEmail"),
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    alert(data.message);
+
+    console.log(data.attendance);
+  } catch (error) {
+    console.log(error);
+    alert("Punch Out Failed");
+  }
+};
 
       const data = await response.json();
 
@@ -63,10 +89,12 @@ export default function EmployeeDashboard() {
               >
                 Punch In
               </button>
-
-              <button className="bg-red-600 text-white px-4 py-2 rounded">
-                Punch Out
-              </button>
+<button
+  onClick={handlePunchOut}
+  className="bg-red-600 text-white px-4 py-2 rounded"
+>
+  Punch Out
+</button>
             </div>
           </div>
 
