@@ -9,29 +9,48 @@ const User = require("../models/User");
 // SIGNUP
 router.post("/signup", async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const {
+      name,
+      email,
+      password,
+      role,
+      joiningDate,
+      hourlyRate,
+      employeeId,
+    } = req.body;
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({
+      $or: [
+        { email },
+        { employeeId }
+      ],
+    });
 
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "Email already exists",
+        message: "Email or Employee ID already exists",
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(
+      password,
+      10
+    );
 
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
       role: role || "employee",
+      joiningDate,
+      hourlyRate,
+      employeeId,
     });
 
     res.status(201).json({
       success: true,
-      message: "Account Created",
+      message: "Account Created Successfully",
       user,
     });
   } catch (error) {
@@ -41,6 +60,42 @@ router.post("/signup", async (req, res) => {
     });
   }
 });
+// GET ALL EMPLOYEES
+router.get("/employees", async (req, res) => {
+  try {
+    const employees = await User.find({
+      role: "employee",
+    }).select("-password");
+
+    res.json({
+      success: true,
+      employees,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// DELETE EMPLOYEE
+router.delete("/employee/:id", async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: "Employee Deleted",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 
 // LOGIN
 router.post("/login", async (req, res) => {

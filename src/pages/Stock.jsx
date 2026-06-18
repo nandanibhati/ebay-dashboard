@@ -19,7 +19,7 @@ const [form, setForm] = useState({
 });
 
 useEffect(() => {
-fetch("https://ebay-dashboard-z7h2.onrender.com/api/stock")
+h("https://ebay-dashboard-z7h2.onfetcrender.com/api/stock")
 .then((res) => res.json())
 .then((data) => setStock(data))
 .catch((err) => console.log(err));
