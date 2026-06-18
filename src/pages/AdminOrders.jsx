@@ -1,4 +1,4 @@
-import EmployeeSidebar from "../components/EmployeeSidebar";
+import Sidebar from "../components/Sidebar";
 import { useEffect, useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import * as XLSX from "xlsx";

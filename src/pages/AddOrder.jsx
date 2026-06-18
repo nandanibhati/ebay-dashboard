@@ -1,7 +1,9 @@
+import Sidebar from "../components/Sidebar";
 import EmployeeSidebar from "../components/EmployeeSidebar";
 import { useState } from "react";
 
 export default function AddOrder() {
+  const role = localStorage.getItem("role");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
   site: "",
@@ -166,9 +168,13 @@ setLoading(false);
 
   return (
     <div className="flex min-h-screen bg-slate-100">
-      <EmployeeSidebar />
+  {role === "admin" ? (
+    <Sidebar />
+  ) : (
+    <EmployeeSidebar />
+  )}
 
-      <div className="flex-1 ml-64 p-8">
+  <div className="flex-1 ml-64 p-8">
         <h1 className="text-4xl font-bold">
           Manual Entry
         </h1>
