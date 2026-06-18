@@ -34,28 +34,25 @@ const userSchema = new mongoose.Schema(
       type: Date,
     },
 
-    monthlyHours: {
-  type: Number,
-  default: 0,
-},
-monthlyHours: {
-  type: Number,
-  default: 0,
-},
+    hourlyRate: {
+      type: Number,
+      default: 0,
+    },
 
-monthlyLeaveBalance: {
-  type: Number,
-  default: 2,
-},
-
-basicSalary: {
-  type: Number,
-  default: 0,
-},
     basicSalary: {
-  type: Number,
-  default: 0,
-},
+      type: Number,
+      default: 0,
+    },
+
+    monthlyHours: {
+      type: Number,
+      default: 0,
+    },
+
+    monthlyLeaveBalance: {
+      type: Number,
+      default: 2,
+    },
   },
   { timestamps: true }
 );

@@ -193,6 +193,11 @@ router.put("/employee/:id", async (req, res) => {
     const employee = await User.findByIdAndUpdate(
       req.params.id,
       {
+        name: req.body.name,
+        email: req.body.email,
+        employeeId: req.body.employeeId,
+        joiningDate: req.body.joiningDate,
+        hourlyRate: req.body.hourlyRate,
         basicSalary: req.body.basicSalary,
         monthlyHours: req.body.monthlyHours,
       },
