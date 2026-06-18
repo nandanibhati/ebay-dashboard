@@ -155,9 +155,38 @@ router.delete("/:id", async (req, res) => {
 });
 router.put("/:id", async (req, res) => {
   try {
+    const quantity = Number(req.body.quantity || 0);
+    const costPrice = Number(req.body.costPrice || 0);
+    const sellingPrice = Number(req.body.sellingPrice || 0);
+    const ebayFee = Number(req.body.ebayFee || 0);
+    const adFee = Number(req.body.adFee || 0);
+    const deliveryCost = Number(req.body.deliveryCost || 0);
+
+    const revenue = quantity * sellingPrice;
+
+    const totalCost =
+      quantity * costPrice +
+      ebayFee +
+      adFee +
+      deliveryCost;
+
+    const profit = revenue - totalCost;
+
+    const margin =
+      revenue > 0
+        ? Number(
+            ((profit / revenue) * 100).toFixed(2)
+          )
+        : 0;
+
     const order = await Order.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      {
+        ...req.body,
+        revenue,
+        profit,
+        margin,
+      },
       { new: true }
     );
 
@@ -172,5 +201,4 @@ router.put("/:id", async (req, res) => {
     });
   }
 });
-
 module.exports = router;

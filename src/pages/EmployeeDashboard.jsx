@@ -1,9 +1,9 @@
 import EmployeeSidebar from "../components/EmployeeSidebar";
-
+import { useNavigate } from "react-router-dom";
 export default function EmployeeDashboard() {
   const employeeName =
     localStorage.getItem("employeeName") || "Employee";
-
+const navigate = useNavigate();
   const handlePunchIn = async () => {
     try {
       const response = await fetch(
@@ -106,9 +106,12 @@ export default function EmployeeDashboard() {
             <p>Pending Leaves: 0</p>
             <p>Approved Leaves: 0</p>
 
-            <button className="mt-4 bg-blue-600 text-white px-4 py-2 rounded">
-              Apply Leave
-            </button>
+          <button
+  onClick={() => navigate("/leaves")}
+  className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
+>
+  Apply Leave
+</button>
           </div>
 
           <div className="bg-white rounded-xl shadow p-6">

@@ -21,35 +21,84 @@ export default function Orders() {
     setEditingOrder(order);
   };
 
-  const saveEdit = async () => {
-    try {
-      const response = await fetch(
-        `https://ebay-dashboard-z7h2.onrender.com/api/orders/${editingOrder._id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(editingOrder),
-        }
-      );
+ const saveEdit = async () => {
+  try {
+    const quantity = Number(
+      editingOrder.quantity || 0
+    );
 
-      const data = await response.json();
+    const costPrice = Number(
+      editingOrder.costPrice || 0
+    );
 
-      setOrders(
-        orders.map((order) =>
-          order._id === data.order._id
-            ? data.order
-            : order
-        )
-      );
+    const sellingPrice = Number(
+      editingOrder.sellingPrice || 0
+    );
 
-      setEditingOrder(null);
-    } catch (error) {
-      console.log(error);
-      alert("Failed to update order");
-    }
-  };
+    const ebayFee = Number(
+      editingOrder.ebayFee || 0
+    );
+
+    const adFee = Number(
+      editingOrder.adFee || 0
+    );
+
+    const deliveryCost = Number(
+      editingOrder.deliveryCost || 0
+    );
+
+    const revenue =
+      quantity * sellingPrice;
+
+    const totalCost =
+      quantity * costPrice +
+      ebayFee +
+      adFee +
+      deliveryCost;
+
+    const profit = revenue - totalCost;
+
+    const margin =
+      revenue > 0
+        ? ((profit / revenue) * 100).toFixed(2)
+        : 0;
+
+    const updatedOrder = {
+      ...editingOrder,
+      revenue,
+      profit,
+      margin,
+    };
+
+    const response = await fetch(
+      `https://ebay-dashboard-z7h2.onrender.com/api/orders/${editingOrder._id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedOrder),
+      }
+    );
+
+    const data = await response.json();
+
+    setOrders(
+      orders.map((order) =>
+        order._id === data.order._id
+          ? data.order
+          : order
+      )
+    );
+
+    setEditingOrder(null);
+
+    alert("Order Updated Successfully");
+  } catch (error) {
+    console.log(error);
+    alert("Failed to update order");
+  }
+};
 
   const deleteOrder = async (id) => {
     const confirmDelete = window.confirm(
@@ -309,6 +358,44 @@ const uploadOrders = async (orders) => {
     setEditingOrder({
       ...editingOrder,
       costPrice: e.target.value,
+    })
+  }
+  className="border p-3 rounded w-full mb-3"
+/>
+<input
+  type="number"
+  placeholder="eBay Fee"
+  value={editingOrder.ebayFee || ""}
+  onChange={(e) =>
+    setEditingOrder({
+      ...editingOrder,
+      ebayFee: e.target.value,
+    })
+  }
+  className="border p-3 rounded w-full mb-3"
+/>
+
+<input
+  type="number"
+  placeholder="Ad Fee"
+  value={editingOrder.adFee || ""}
+  onChange={(e) =>
+    setEditingOrder({
+      ...editingOrder,
+      adFee: e.target.value,
+    })
+  }
+  className="border p-3 rounded w-full mb-3"
+/>
+
+<input
+  type="number"
+  placeholder="Delivery Cost"
+  value={editingOrder.deliveryCost || ""}
+  onChange={(e) =>
+    setEditingOrder({
+      ...editingOrder,
+      deliveryCost: e.target.value,
     })
   }
   className="border p-3 rounded w-full mb-3"

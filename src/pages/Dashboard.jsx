@@ -1,4 +1,3 @@
-
 import Sidebar from "../components/Sidebar";
 import StatCard from "../components/StatCard";
 import { useEffect, useState } from "react";
@@ -7,19 +6,23 @@ export default function Dashboard() {
   const [orders, setOrders] = useState([]);
 
   useEffect(() => {
-    fetch("https://ebay-dashboard-z7h2.onrender.com/api/orders")
+    fetch(
+      "https://ebay-dashboard-z7h2.onrender.com/api/orders"
+    )
       .then((res) => res.json())
       .then((data) => setOrders(data))
       .catch((err) => console.log(err));
   }, []);
 
   const totalRevenue = orders.reduce(
-    (sum, order) => sum + (order.revenue || 0),
+    (sum, order) =>
+      sum + Number(order.revenue || 0),
     0
   );
 
   const totalProfit = orders.reduce(
-    (sum, order) => sum + (order.profit || 0),
+    (sum, order) =>
+      sum + Number(order.profit || 0),
     0
   );
 
@@ -27,11 +30,12 @@ export default function Dashboard() {
     orders.length > 0
       ? (
           orders.reduce(
-            (sum, order) => sum + (order.margin || 0),
+            (sum, order) =>
+              sum + Number(order.margin || 0),
             0
           ) / orders.length
         ).toFixed(2)
-      : 0;
+      : "0.00";
 
   return (
     <div className="flex min-h-screen bg-slate-100">
@@ -75,17 +79,21 @@ export default function Dashboard() {
 
           <table className="w-full">
             <thead>
-              <tr className="border-b">
+              <tr className="border-b bg-slate-100">
+                <th className="text-left py-3 px-4">
+                  Date
+                </th>
+
+                <th className="text-left py-3 px-4">
+                  Employee
+                </th>
+
                 <th className="text-left py-3 px-4">
                   Order ID
                 </th>
 
                 <th className="text-left py-3 px-4">
                   SKU
-                </th>
-
-                <th className="text-left py-3 px-4">
-                  Product
                 </th>
 
                 <th className="text-left py-3 px-4">
@@ -101,9 +109,18 @@ export default function Dashboard() {
                 .map((order) => (
                   <tr
                     key={order._id}
-                    className="border-b"
+                    className="border-b hover:bg-slate-50"
                   >
                     <td className="py-3 px-4">
+                      {order.date || "-"}
+                    </td>
+
+                    <td className="px-4">
+                      {order.employeeName ||
+                        "-"}
+                    </td>
+
+                    <td className="px-4">
                       {order.orderId}
                     </td>
 
@@ -111,12 +128,11 @@ export default function Dashboard() {
                       {order.sku}
                     </td>
 
-                    <td className="px-4">
-                      {order.product}
-                    </td>
-
-                    <td className="px-4 text-green-600 font-semibold">
-                      £{order.profit}
+                    <td className="px-4 font-semibold text-green-600">
+                      £
+                      {Number(
+                        order.profit || 0
+                      ).toFixed(2)}
                     </td>
                   </tr>
                 ))}
@@ -127,4 +143,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

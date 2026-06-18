@@ -1,6 +1,70 @@
 import Sidebar from "../components/Sidebar";
+import { useEffect, useState } from "react";
 
 export default function Analytics() {
+  const [orders, setOrders] = useState([]);
+
+  useEffect(() => {
+    fetch(
+      "https://ebay-dashboard-z7h2.onrender.com/api/orders"
+    )
+      .then((res) => res.json())
+      .then((data) => setOrders(data))
+      .catch((err) => console.log(err));
+  }, []);
+
+  const totalRevenue = orders.reduce(
+    (sum, order) =>
+      sum + Number(order.revenue || 0),
+    0
+  );
+
+  const totalProfit = orders.reduce(
+    (sum, order) =>
+      sum + Number(order.profit || 0),
+    0
+  );
+
+  const highestMargin =
+    orders.length > 0
+      ? Math.max(
+          ...orders.map((o) =>
+            Number(o.margin || 0)
+          )
+        ).toFixed(2)
+      : 0;
+
+  const topProduct =
+    orders.length > 0
+      ? orders.reduce((a, b) =>
+          Number(a.quantity || 0) >
+          Number(b.quantity || 0)
+            ? a
+            : b
+        ).sku
+      : "-";
+
+  const employeeCounts = {};
+
+  orders.forEach((order) => {
+    const name =
+      order.employeeName || "Unknown";
+
+    employeeCounts[name] =
+      (employeeCounts[name] || 0) + 1;
+  });
+
+  const topEmployee =
+    Object.keys(employeeCounts).length > 0
+      ? Object.keys(employeeCounts).reduce(
+          (a, b) =>
+            employeeCounts[a] >
+            employeeCounts[b]
+              ? a
+              : b
+        )
+      : "-";
+
   return (
     <div className="flex min-h-screen bg-slate-100">
       <Sidebar />
@@ -10,13 +74,14 @@ export default function Analytics() {
           Business Analytics
         </h1>
 
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid md:grid-cols-4 gap-5">
           <div className="bg-white p-6 rounded-xl shadow">
             <h3 className="text-gray-500">
-              Best Selling Day
+              Total Orders
             </h3>
+
             <p className="text-3xl font-bold mt-3">
-              Friday
+              {orders.length}
             </p>
           </div>
 
@@ -24,8 +89,9 @@ export default function Analytics() {
             <h3 className="text-gray-500">
               Top Product
             </h3>
-            <p className="text-3xl font-bold mt-3">
-              Wireless Charger
+
+            <p className="text-xl font-bold mt-3">
+              {topProduct}
             </p>
           </div>
 
@@ -33,26 +99,9 @@ export default function Analytics() {
             <h3 className="text-gray-500">
               Highest Margin
             </h3>
-            <p className="text-3xl font-bold mt-3 text-green-600">
-              34%
-            </p>
-          </div>
 
-          <div className="bg-white p-6 rounded-xl shadow">
-            <h3 className="text-gray-500">
-              Total Revenue
-            </h3>
             <p className="text-3xl font-bold mt-3 text-green-600">
-              £12,450
-            </p>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow">
-            <h3 className="text-gray-500">
-              Total Profit
-            </h3>
-            <p className="text-3xl font-bold mt-3 text-purple-600">
-              £4,820
+              {highestMargin}%
             </p>
           </div>
 
@@ -60,54 +109,47 @@ export default function Analytics() {
             <h3 className="text-gray-500">
               Top Employee
             </h3>
-            <p className="text-3xl font-bold mt-3">
-              EMP003
+
+            <p className="text-xl font-bold mt-3">
+              {topEmployee}
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow">
+            <h3 className="text-gray-500">
+              Total Revenue
+            </h3>
+
+            <p className="text-3xl font-bold mt-3 text-green-600">
+              £{totalRevenue.toFixed(2)}
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow">
+            <h3 className="text-gray-500">
+              Total Profit
+            </h3>
+
+            <p className="text-3xl font-bold mt-3 text-purple-600">
+              £{totalProfit.toFixed(2)}
             </p>
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow mt-8 p-6">
           <h2 className="text-xl font-bold mb-4">
-            AI Business Insights
-          </h2>
-
-          <ul className="space-y-4">
-            <li>
-              📈 Friday generates the highest sales volume.
-            </li>
-
-            <li>
-              📦 Wireless Chargers contribute 35% of total revenue.
-            </li>
-
-            <li>
-              💰 Accessories category delivers the highest profit margins.
-            </li>
-
-            <li>
-              👨‍💼 EMP003 entered the highest number of orders this month.
-            </li>
-
-            <li>
-              🚀 Increase stock availability before weekends.
-            </li>
-
-            <li>
-              ⚠️ Phone Mount category margin dropped by 12%.
-            </li>
-          </ul>
-        </div>
-
-        <div className="bg-white rounded-xl shadow mt-8 p-6">
-          <h2 className="text-xl font-bold mb-4">
-            Category Performance
+            Latest Orders Analysis
           </h2>
 
           <table className="w-full">
             <thead>
               <tr className="border-b">
                 <th className="text-left py-3">
-                  Category
+                  Order ID
+                </th>
+
+                <th className="text-left py-3">
+                  Employee
                 </th>
 
                 <th className="text-left py-3">
@@ -125,32 +167,44 @@ export default function Analytics() {
             </thead>
 
             <tbody>
-              <tr className="border-b">
-                <td className="py-3">
-                  Chargers
-                </td>
-                <td>£5,200</td>
-                <td>£2,100</td>
-                <td>40%</td>
-              </tr>
+              {orders
+                .slice(-10)
+                .reverse()
+                .map((order) => (
+                  <tr
+                    key={order._id}
+                    className="border-b"
+                  >
+                    <td className="py-3">
+                      {order.orderId}
+                    </td>
 
-              <tr className="border-b">
-                <td className="py-3">
-                  Accessories
-                </td>
-                <td>£4,000</td>
-                <td>£1,700</td>
-                <td>42%</td>
-              </tr>
+                    <td>
+                      {order.employeeName}
+                    </td>
 
-              <tr>
-                <td className="py-3">
-                  Phone Mounts
-                </td>
-                <td>£3,250</td>
-                <td>£1,020</td>
-                <td>31%</td>
-              </tr>
+                    <td>
+                      £
+                      {Number(
+                        order.revenue || 0
+                      ).toFixed(2)}
+                    </td>
+
+                    <td className="text-green-600">
+                      £
+                      {Number(
+                        order.profit || 0
+                      ).toFixed(2)}
+                    </td>
+
+                    <td>
+                      {Number(
+                        order.margin || 0
+                      ).toFixed(2)}
+                      %
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
