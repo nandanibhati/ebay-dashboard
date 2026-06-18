@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 
 export default function Employees() {
-  const [employees, setEmployees] = useState([]);
+  const [editingId, setEditingId] = useState(null);
 
   const [form, setForm] = useState({
   name: "",
@@ -198,13 +198,14 @@ export default function Employees() {
     })
   }
 />
-
-          <button
-            className="bg-blue-600 text-white p-3 rounded col-span-2"
-            type="submit"
-          >
-            Add Employee
-          </button>
+<button
+  className="bg-blue-600 text-white p-3 rounded col-span-2"
+  type="submit"
+>
+  {editingId
+    ? "Update Employee"
+    : "Add Employee"}
+</button>
         </form>
 
         <div className="bg-white rounded-xl shadow overflow-auto">
@@ -217,7 +218,8 @@ export default function Employees() {
                 <th>Joining Date</th>
                 <th>Hourly Rate</th>
                 <th>Basic Salary</th>
-                <th>Action</th>
+                <th>Edit</th>
+                <th>Delete</th>
               </tr>
             </thead>
 
@@ -237,18 +239,43 @@ export default function Employees() {
                         ).toLocaleDateString()
                       : "-"}
                   </td>
-                  <td>₹{emp.hourlyRate}</td>
-                  <td>₹{emp.basicSalary}</td>
-                  <td>
-                    <button
-                      onClick={() =>
-                        deleteEmployee(emp._id)
-                      }
-                      className="bg-red-500 text-white px-3 py-1 rounded"
-                    >
-                      Delete
-                    </button>
-                  </td>
+                  <td>₹{emp.hourlyRate || 0}</td>
+
+<td>₹{emp.basicSalary || 0}</td>
+
+<td>
+ <button
+  onClick={() => {
+    setEditingId(emp._id);
+
+    setForm({
+      name: emp.name || "",
+      email: emp.email || "",
+      password: "",
+      employeeId: emp.employeeId || "",
+      joiningDate: emp.joiningDate
+        ? emp.joiningDate.split("T")[0]
+        : "",
+      hourlyRate: emp.hourlyRate || "",
+      basicSalary: emp.basicSalary || "",
+    });
+  }}
+  className="bg-blue-500 text-white px-3 py-1 rounded"
+>
+  Edit
+</button>
+</td>
+
+<td>
+  <button
+    onClick={() =>
+      deleteEmployee(emp._id)
+    }
+    className="bg-red-500 text-white px-3 py-1 rounded"
+  >
+    Delete
+  </button>
+</td>
                 </tr>
               ))}
             </tbody>

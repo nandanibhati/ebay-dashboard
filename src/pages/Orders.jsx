@@ -317,11 +317,11 @@ const uploadOrders = async (orders) => {
 <input
   type="text"
   placeholder="Tracking"
-  value={editingOrder.tracking || ""}
+  value={editingOrder.trackingNo || ""}
   onChange={(e) =>
     setEditingOrder({
       ...editingOrder,
-      tracking: e.target.value,
+      trackingNo: e.target.value,
     })
   }
   className="border p-3 rounded w-full mb-3"
@@ -453,11 +453,11 @@ const uploadOrders = async (orders) => {
   £{Number(order.profit || 0).toFixed(2)}
 </td>
 
-                 <td
+                <td
   className="max-w-[180px] truncate"
-  title={order.tracking}
+  title={order.trackingNo}
 >
-  {order.tracking}
+  {order.trackingNo || "-"}
 </td>
 
                   <td>

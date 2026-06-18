@@ -114,9 +114,10 @@ const employeeEmail =
       if (data.success) {
         alert("Order Saved Successfully ✅");
 
-        setForm({
-  site: "",
-  date: new Date().toISOString().split("T")[0],
+       setForm({
+  site: form.site,
+  date: form.date,
+
   orderId: "",
   sku: "",
   product: "",
