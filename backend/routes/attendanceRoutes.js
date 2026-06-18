@@ -73,6 +73,12 @@ router.post("/punch-out", async (req, res) => {
         message: "No Punch In Found",
       });
     }
+    if (attendance.punchOut) {
+  return res.status(400).json({
+    success: false,
+    message: "Already Punched Out Today",
+  });
+}
 
     attendance.punchOut =
       new Date().toLocaleTimeString();
