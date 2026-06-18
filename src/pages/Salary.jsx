@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import EmployeeSidebar from "../components/EmployeeSidebar";
 
 export default function Salary() {
-  const [salaryData, setSalaryData] =
-    useState(null);
+  const [salaryData, setSalaryData] = useState(null);
 
   useEffect(() => {
     const email =
@@ -38,36 +37,29 @@ export default function Salary() {
             </p>
 
             <p className="mb-3">
-  <strong>Basic Salary:</strong> ₹
-  {salaryData.basicSalary}
-</p>
+              <strong>Basic Salary:</strong> ₹
+              {salaryData.basicSalary}
+            </p>
 
-<p className="mb-3">
-  <strong>Hourly Rate:</strong> ₹
-  {salaryData.hourlyRate}
-</p>
+            <p className="mb-3">
+              <strong>Hourly Rate:</strong> ₹
+              {salaryData.hourlyRate}
+            </p>
 
-<p className="mb-3">
-  <strong>This Month Hours:</strong>
-  {" "}
-  {salaryData.totalHours}
-</p>
+            <p className="mb-3">
+              <strong>This Month Hours:</strong>{" "}
+              {salaryData.totalHours}
+            </p>
 
-<div className="border-t pt-4 mt-4">
-  <p className="text-gray-600">
-    Salary Formula:
-  </p>
+            <div className="border-t pt-4 mt-4">
+              <h2 className="text-4xl font-bold text-green-600">
+                ₹{salaryData.salary}
+              </h2>
 
-  <p className="font-semibold">
-    ₹{salaryData.basicSalary} +
-    ({salaryData.totalHours} × ₹
-    {salaryData.hourlyRate})
-  </p>
-
-  <h2 className="text-4xl font-bold text-green-600 mt-4">
-    ₹{salaryData.salary}
-  </h2>
-</div>
+              <p className="text-gray-500 mt-2">
+                Total Salary This Month
+              </p>
+            </div>
           </div>
         )}
       </div>

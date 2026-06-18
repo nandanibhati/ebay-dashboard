@@ -5,22 +5,35 @@ export default function AdminSalary() {
   const [employees, setEmployees] = useState([]);
   const [attendance, setAttendance] = useState([]);
 
+  const [editingId, setEditingId] = useState(null);
+  const [basicSalary, setBasicSalary] = useState("");
+  const [hourlyRate, setHourlyRate] = useState("");
+
+  const fetchEmployees = async () => {
+    try {
+      const res = await fetch(
+        "https://ebay-dashboard-z7h2.onrender.com/api/auth/employees"
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        setEmployees(data.employees);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   useEffect(() => {
-    fetch(
-      "https://ebay-dashboard-z7h2.onrender.com/api/auth/employees"
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setEmployees(data.employees);
-        }
-      });
+    fetchEmployees();
 
     fetch(
       "https://ebay-dashboard-z7h2.onrender.com/api/attendance"
     )
       .then((res) => res.json())
-      .then((data) => setAttendance(data));
+      .then((data) => setAttendance(data))
+      .catch((err) => console.log(err));
   }, []);
 
   const getMonthlyHours = (email) => {
@@ -47,6 +60,39 @@ export default function AdminSalary() {
       );
   };
 
+  const updateSalary = async () => {
+    try {
+      const res = await fetch(
+        `https://ebay-dashboard-z7h2.onrender.com/api/auth/employee/${editingId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            basicSalary,
+            hourlyRate,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        alert("Salary Updated Successfully");
+
+        setEditingId(null);
+        setBasicSalary("");
+        setHourlyRate("");
+
+        fetchEmployees();
+      }
+    } catch (error) {
+      console.log(error);
+      alert("Failed to Update Salary");
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-100">
       <Sidebar />
@@ -56,28 +102,74 @@ export default function AdminSalary() {
           Salary Management
         </h1>
 
+        {editingId && (
+          <div className="bg-white p-4 rounded-xl shadow mb-6 flex gap-4">
+            <input
+              type="number"
+              placeholder="Basic Salary"
+              value={basicSalary}
+              onChange={(e) =>
+                setBasicSalary(e.target.value)
+              }
+              className="border p-3 rounded"
+            />
+
+            <input
+              type="number"
+              placeholder="Hourly Rate"
+              value={hourlyRate}
+              onChange={(e) =>
+                setHourlyRate(e.target.value)
+              }
+              className="border p-3 rounded"
+            />
+
+            <button
+              onClick={updateSalary}
+              className="bg-green-600 text-white px-5 rounded"
+            >
+              Update
+            </button>
+
+            <button
+              onClick={() => {
+                setEditingId(null);
+                setBasicSalary("");
+                setHourlyRate("");
+              }}
+              className="bg-red-500 text-white px-5 rounded"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
         <div className="bg-white rounded-xl shadow overflow-auto">
           <table className="w-full">
             <thead className="bg-slate-200">
               <tr>
-              <th>Employee</th>
-<th>Email</th>
-<th>Basic Salary</th>
-<th>Hourly Rate</th>
-<th>Monthly Hours</th>
-<th>Total Salary</th>
+                <th className="p-3">Employee</th>
+                <th>Email</th>
+                <th>Basic Salary</th>
+                <th>Hourly Rate</th>
+                <th>Monthly Hours</th>
+                <th>Total Salary</th>
+                <th>Edit</th>
               </tr>
             </thead>
 
             <tbody>
               {employees.map((emp) => {
-                const hours =
-                  getMonthlyHours(emp.email);
+                const hours = getMonthlyHours(
+                  emp.email
+                );
 
-               const salary =
-  Number(emp.basicSalary || 0) +
-  hours *
-  Number(emp.hourlyRate || 0);
+                const salary =
+                  Number(emp.basicSalary || 0) +
+                  hours *
+                    Number(
+                      emp.hourlyRate || 0
+                    );
 
                 return (
                   <tr
@@ -91,19 +183,45 @@ export default function AdminSalary() {
                     <td>{emp.email}</td>
 
                     <td>
-  ₹{emp.basicSalary || 0}
-</td>
+                      ₹
+                      {emp.basicSalary || 0}
+                    </td>
 
-<td>
-  ₹{emp.hourlyRate || 0}
-</td>
+                    <td>
+                      ₹
+                      {emp.hourlyRate || 0}
+                    </td>
 
-<td>
-  {hours.toFixed(2)}
-</td>
+                    <td>
+                      {hours.toFixed(2)}
+                    </td>
 
                     <td className="font-bold text-green-600">
-                      ₹{salary.toFixed(2)}
+                      ₹
+                      {salary.toFixed(2)}
+                    </td>
+
+                    <td>
+                      <button
+                        onClick={() => {
+                          setEditingId(
+                            emp._id
+                          );
+
+                          setBasicSalary(
+                            emp.basicSalary ||
+                              0
+                          );
+
+                          setHourlyRate(
+                            emp.hourlyRate ||
+                              0
+                          );
+                        }}
+                        className="bg-blue-500 text-white px-3 py-1 rounded"
+                      >
+                        Edit
+                      </button>
                     </td>
                   </tr>
                 );
