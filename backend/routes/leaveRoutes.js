@@ -2,11 +2,25 @@ const express = require("express");
 const router = express.Router();
 
 const Leave = require("../models/Leave");
+const User = require("../models/User");
 
 // Apply Leave
 router.post("/apply", async (req, res) => {
   try {
-    const leave = new Leave(req.body);
+    const leaveDays =
+      req.body.leaveType === "Half Day"
+        ? 0.5
+        : 1;
+
+    const leave = new Leave({
+      employeeName: req.body.employeeName,
+      employeeEmail: req.body.employeeEmail,
+      fromDate: req.body.fromDate,
+      toDate: req.body.toDate,
+      reason: req.body.reason,
+      leaveType: req.body.leaveType,
+      leaveDays,
+    });
 
     await leave.save();
 
@@ -45,13 +59,36 @@ router.get("/", async (req, res) => {
 // Approve Leave
 router.put("/approve/:id", async (req, res) => {
   try {
-    const leave = await Leave.findByIdAndUpdate(
-      req.params.id,
-      {
-        status: "Approved",
-      },
-      { new: true }
-    );
+    const leave = await Leave.findById(req.params.id);
+
+    if (!leave) {
+      return res.status(404).json({
+        success: false,
+        message: "Leave not found",
+      });
+    }
+
+    if (leave.status === "Approved") {
+      return res.json({
+        success: true,
+        message: "Already approved",
+      });
+    }
+
+    const user = await User.findOne({
+      email: leave.employeeEmail,
+    });
+
+    if (user) {
+      user.monthlyLeaveBalance =
+        Number(user.monthlyLeaveBalance || 0) -
+        Number(leave.leaveDays || 0);
+
+      await user.save();
+    }
+
+    leave.status = "Approved";
+    await leave.save();
 
     res.json({
       success: true,

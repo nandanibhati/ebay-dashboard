@@ -2,20 +2,51 @@ const mongoose = require("mongoose");
 
 const leaveSchema = new mongoose.Schema(
   {
-    employeeName: String,
-    employeeEmail: String,
+    employeeName: {
+      type: String,
+      required: true,
+    },
 
-    fromDate: String,
-    toDate: String,
+    employeeEmail: {
+      type: String,
+      required: true,
+    },
 
-    reason: String,
+    fromDate: {
+      type: String,
+      required: true,
+    },
+
+    toDate: {
+      type: String,
+      required: true,
+    },
+
+    reason: {
+      type: String,
+      required: true,
+    },
+
+    leaveType: {
+      type: String,
+      enum: ["Full Day", "Half Day"],
+      default: "Full Day",
+    },
+
+    leaveDays: {
+      type: Number,
+      default: 1,
+    },
 
     status: {
       type: String,
+      enum: ["Pending", "Approved", "Rejected"],
       default: "Pending",
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 module.exports = mongoose.model(

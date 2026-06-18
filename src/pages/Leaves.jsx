@@ -6,6 +6,7 @@ export default function Leaves() {
     fromDate: "",
     toDate: "",
     reason: "",
+    leaveType: "Full Day",
   });
 
   const handleSubmit = async (e) => {
@@ -27,6 +28,7 @@ export default function Leaves() {
             fromDate: form.fromDate,
             toDate: form.toDate,
             reason: form.reason,
+            leaveType: form.leaveType,
           }),
         }
       );
@@ -40,6 +42,7 @@ export default function Leaves() {
           fromDate: "",
           toDate: "",
           reason: "",
+          leaveType: "Full Day",
         });
       } else {
         alert(data.message);
@@ -103,6 +106,31 @@ export default function Leaves() {
 
           <div className="mb-4">
             <label className="block mb-2">
+              Leave Type
+            </label>
+
+            <select
+              value={form.leaveType}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  leaveType: e.target.value,
+                })
+              }
+              className="w-full border p-3 rounded"
+            >
+              <option value="Full Day">
+                Full Day
+              </option>
+
+              <option value="Half Day">
+                Half Day
+              </option>
+            </select>
+          </div>
+
+          <div className="mb-4">
+            <label className="block mb-2">
               Reason
             </label>
 
@@ -122,7 +150,7 @@ export default function Leaves() {
 
           <button
             type="submit"
-            className="bg-blue-600 text-white px-6 py-3 rounded"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded"
           >
             Apply Leave
           </button>

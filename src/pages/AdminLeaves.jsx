@@ -70,6 +70,8 @@ export default function AdminLeaves() {
                 <th className="p-3">Employee</th>
                 <th>From</th>
                 <th>To</th>
+                <th>Type</th>
+                <th>Days</th>
                 <th>Reason</th>
                 <th>Status</th>
                 <th>Action</th>
@@ -89,6 +91,13 @@ export default function AdminLeaves() {
                   <td>{leave.fromDate}</td>
 
                   <td>{leave.toDate}</td>
+                  <td>{leave.leaveType}</td>
+
+<td>
+  <span className="font-semibold">
+    {leave.leaveDays}
+  </span>
+</td>
 
                   <td>{leave.reason}</td>
 
@@ -106,25 +115,33 @@ export default function AdminLeaves() {
                     </span>
                   </td>
 
-                  <td className="space-x-2">
-                    <button
-                      onClick={() =>
-                        approveLeave(leave._id)
-                      }
-                      className="bg-green-600 text-white px-3 py-1 rounded"
-                    >
-                      Approve
-                    </button>
+                 <td className="space-x-2">
+  {leave.status === "Pending" ? (
+    <>
+      <button
+        onClick={() => approveLeave(leave._id)}
+        className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+      >
+        Approve
+      </button>
 
-                    <button
-                      onClick={() =>
-                        rejectLeave(leave._id)
-                      }
-                      className="bg-red-600 text-white px-3 py-1 rounded"
-                    >
-                      Reject
-                    </button>
-                  </td>
+      <button
+        onClick={() => rejectLeave(leave._id)}
+        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
+      >
+        Reject
+      </button>
+    </>
+  ) : leave.status === "Approved" ? (
+    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">
+      ✅ Approved
+    </span>
+  ) : (
+    <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold">
+      ❌ Rejected
+    </span>
+  )}
+</td>
                 </tr>
               ))}
             </tbody>

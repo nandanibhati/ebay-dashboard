@@ -38,6 +38,20 @@ const userSchema = new mongoose.Schema(
   type: Number,
   default: 0,
 },
+monthlyHours: {
+  type: Number,
+  default: 0,
+},
+
+monthlyLeaveBalance: {
+  type: Number,
+  default: 2,
+},
+
+basicSalary: {
+  type: Number,
+  default: 0,
+},
     basicSalary: {
   type: Number,
   default: 0,

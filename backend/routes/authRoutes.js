@@ -210,4 +210,21 @@ router.put("/employee/:id", async (req, res) => {
     });
   }
 });
+router.get("/employee/:email", async (req, res) => {
+  try {
+    const employee = await User.findOne({
+      email: req.params.email,
+    }).select("-password");
+
+    res.json({
+      success: true,
+      employee,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 module.exports = router;    

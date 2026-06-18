@@ -1,9 +1,55 @@
 import EmployeeSidebar from "../components/EmployeeSidebar";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+
 export default function EmployeeDashboard() {
+  const [leaves, setLeaves] = useState([]);
+  const [leaveBalance, setLeaveBalance] =
+    useState(2);
+
   const employeeName =
-    localStorage.getItem("employeeName") || "Employee";
-const navigate = useNavigate();
+    localStorage.getItem("employeeName") ||
+    "Employee";
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const email =
+      localStorage.getItem("employeeEmail");
+
+    // Leaves
+    fetch(
+      "https://ebay-dashboard-z7h2.onrender.com/api/leaves"
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setLeaves(
+            data.leaves.filter(
+              (leave) =>
+                leave.employeeEmail === email
+            )
+          );
+        }
+      })
+      .catch((err) => console.log(err));
+
+    // Leave Balance
+    fetch(
+      `https://ebay-dashboard-z7h2.onrender.com/api/auth/employee/${email}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setLeaveBalance(
+            data.employee
+              .monthlyLeaveBalance || 0
+          );
+        }
+      })
+      .catch((err) => console.log(err));
+  }, []);
+
   const handlePunchIn = async () => {
     try {
       const response = await fetch(
@@ -11,15 +57,22 @@ const navigate = useNavigate();
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
           body: JSON.stringify({
             employeeId:
-              localStorage.getItem("employeeEmail"),
+              localStorage.getItem(
+                "employeeEmail"
+              ),
             employeeName:
-              localStorage.getItem("employeeName"),
+              localStorage.getItem(
+                "employeeName"
+              ),
             employeeEmail:
-              localStorage.getItem("employeeEmail"),
+              localStorage.getItem(
+                "employeeEmail"
+              ),
           }),
         }
       );
@@ -39,11 +92,14 @@ const navigate = useNavigate();
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
           body: JSON.stringify({
             employeeEmail:
-              localStorage.getItem("employeeEmail"),
+              localStorage.getItem(
+                "employeeEmail"
+              ),
           }),
         }
       );
@@ -51,12 +107,30 @@ const navigate = useNavigate();
       const data = await response.json();
 
       alert(data.message);
-      console.log(data.attendance);
     } catch (error) {
       console.log(error);
       alert("Punch Out Failed");
     }
   };
+
+  const pendingLeaves = leaves.filter(
+    (leave) => leave.status === "Pending"
+  ).length;
+
+  const approvedLeaves = leaves.filter(
+    (leave) => leave.status === "Approved"
+  ).length;
+
+  const usedLeaves = leaves
+    .filter(
+      (leave) => leave.status === "Approved"
+    )
+    .reduce(
+      (sum, leave) =>
+        sum +
+        Number(leave.leaveDays || 0),
+      0
+    );
 
   return (
     <div className="flex min-h-screen bg-slate-100">
@@ -72,6 +146,7 @@ const navigate = useNavigate();
         </p>
 
         <div className="grid md:grid-cols-3 gap-6 mt-8">
+          {/* Attendance */}
           <div className="bg-white rounded-xl shadow p-6">
             <h2 className="text-xl font-bold mb-3">
               Attendance
@@ -98,22 +173,43 @@ const navigate = useNavigate();
             </div>
           </div>
 
+          {/* Leave Summary */}
           <div className="bg-white rounded-xl shadow p-6">
             <h2 className="text-xl font-bold mb-3">
               Leave Summary
             </h2>
 
-            <p>Pending Leaves: 0</p>
-            <p>Approved Leaves: 0</p>
+            <p>
+              Pending Leaves:{" "}
+              {pendingLeaves}
+            </p>
 
-          <button
-  onClick={() => navigate("/leaves")}
-  className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
->
-  Apply Leave
-</button>
+            <p>
+              Approved Leaves:{" "}
+              {approvedLeaves}
+            </p>
+
+            <p>
+              Used Leave Days:{" "}
+              {usedLeaves}
+            </p>
+
+            <p className="font-bold text-green-600 mt-2">
+              Available Paid Leaves:{" "}
+              {leaveBalance}
+            </p>
+
+            <button
+              onClick={() =>
+                navigate("/leaves")
+              }
+              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
+            >
+              Apply Leave
+            </button>
           </div>
 
+          {/* Salary */}
           <div className="bg-white rounded-xl shadow p-6">
             <h2 className="text-xl font-bold mb-3">
               Salary Summary
