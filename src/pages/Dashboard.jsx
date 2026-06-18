@@ -41,7 +41,7 @@ export default function Dashboard() {
     <div className="flex min-h-screen bg-slate-100">
       <Sidebar />
 
-      <div className="flex-1 p-8">
+      <div className="flex-1 ml-64 p-8">
         <h1 className="text-4xl font-bold">
           Dashboard
         </h1>
@@ -50,7 +50,7 @@ export default function Dashboard() {
           Sales & Profit Overview
         </p>
 
-        <div className="grid grid-cols-4 gap-5 mt-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-8">
           <StatCard
             title="Total Revenue"
             value={`£${totalRevenue.toFixed(2)}`}
