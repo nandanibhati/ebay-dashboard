@@ -42,16 +42,17 @@ router.get("/:email", async (req, res) => {
       0
     );
 
-    const salary =
-  Number(user.basicSalary || 0) +
-  totalHours *
-  Number(user.hourlyRate || 0);
+    const hourlyRate =
+  Number(user.basicSalary || 0) /
+  (8 * 6 * 4.33);
+
+const salary =
+  totalHours * hourlyRate;
 
     res.json({
   success: true,
   employee: user.name,
   basicSalary: user.basicSalary || 0,
-  hourlyRate: user.hourlyRate || 0,
   totalHours: totalHours.toFixed(2),
   salary: salary.toFixed(2),
 });

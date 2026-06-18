@@ -34,10 +34,7 @@ const userSchema = new mongoose.Schema(
       type: Date,
     },
 
-    hourlyRate: {
-      type: Number,
-      default: 0,
-    },
+    
     basicSalary: {
   type: Number,
   default: 0,

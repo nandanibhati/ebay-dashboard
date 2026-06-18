@@ -15,7 +15,6 @@ router.post("/signup", async (req, res) => {
       password,
       role,
       joiningDate,
-      hourlyRate,
       basicSalary,
       employeeId,
     } = req.body;
@@ -45,7 +44,6 @@ router.post("/signup", async (req, res) => {
   password: hashedPassword,
   role: role || "employee",
   joiningDate,
-  hourlyRate,
   basicSalary,
   employeeId,
 });
@@ -195,7 +193,6 @@ router.put("/employee/:id", async (req, res) => {
     const employee = await User.findByIdAndUpdate(
       req.params.id,
       {
-        hourlyRate: req.body.hourlyRate,
         basicSalary: req.body.basicSalary,
       },
       { new: true }
@@ -212,5 +209,4 @@ router.put("/employee/:id", async (req, res) => {
     });
   }
 });
-
 module.exports = router;    

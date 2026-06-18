@@ -37,15 +37,11 @@ export default function Salary() {
             </p>
 
             <p className="mb-3">
-              <strong>Basic Salary:</strong> ₹
+             <strong>Monthly Salary:</strong> ₹
               {salaryData.basicSalary}
             </p>
 
-            <p className="mb-3">
-              <strong>Hourly Rate:</strong> ₹
-              {salaryData.hourlyRate}
-            </p>
-
+           
             <p className="mb-3">
               <strong>This Month Hours:</strong>{" "}
               {salaryData.totalHours}

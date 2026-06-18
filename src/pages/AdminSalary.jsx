@@ -7,7 +7,7 @@ export default function AdminSalary() {
 
   const [editingId, setEditingId] = useState(null);
   const [basicSalary, setBasicSalary] = useState("");
-  const [hourlyRate, setHourlyRate] = useState("");
+  
 
   const fetchEmployees = async () => {
     try {
@@ -69,10 +69,9 @@ export default function AdminSalary() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            basicSalary,
-            hourlyRate,
-          }),
+         body: JSON.stringify({
+  basicSalary,
+}),
         }
       );
 
@@ -83,7 +82,7 @@ export default function AdminSalary() {
 
         setEditingId(null);
         setBasicSalary("");
-        setHourlyRate("");
+        
 
         fetchEmployees();
       }
@@ -97,7 +96,7 @@ export default function AdminSalary() {
     <div className="flex min-h-screen bg-slate-100">
       <Sidebar />
 
-      <div className="flex-1 p-8">
+      <div className="flex-1 ml-64 p-8">
         <h1 className="text-3xl font-bold mb-6">
           Salary Management
         </h1>
@@ -106,7 +105,7 @@ export default function AdminSalary() {
           <div className="bg-white p-4 rounded-xl shadow mb-6 flex gap-4">
             <input
               type="number"
-              placeholder="Basic Salary"
+              placeholder="Monthly Salary"
               value={basicSalary}
               onChange={(e) =>
                 setBasicSalary(e.target.value)
@@ -114,15 +113,7 @@ export default function AdminSalary() {
               className="border p-3 rounded"
             />
 
-            <input
-              type="number"
-              placeholder="Hourly Rate"
-              value={hourlyRate}
-              onChange={(e) =>
-                setHourlyRate(e.target.value)
-              }
-              className="border p-3 rounded"
-            />
+         
 
             <button
               onClick={updateSalary}
@@ -135,7 +126,7 @@ export default function AdminSalary() {
               onClick={() => {
                 setEditingId(null);
                 setBasicSalary("");
-                setHourlyRate("");
+                
               }}
               className="bg-red-500 text-white px-5 rounded"
             >
@@ -150,8 +141,7 @@ export default function AdminSalary() {
               <tr>
                 <th className="p-3">Employee</th>
                 <th>Email</th>
-                <th>Basic Salary</th>
-                <th>Hourly Rate</th>
+                <th>Monthly Salary</th>
                 <th>Monthly Hours</th>
                 <th>Total Salary</th>
                 <th>Edit</th>
@@ -164,12 +154,11 @@ export default function AdminSalary() {
                   emp.email
                 );
 
-                const salary =
-                  Number(emp.basicSalary || 0) +
-                  hours *
-                    Number(
-                      emp.hourlyRate || 0
-                    );
+               const hourlyRate =
+  Number(emp.basicSalary || 0) /
+  (8 * 6 * 4.33);
+
+const salary = hours * hourlyRate;
 
                 return (
                   <tr
@@ -183,18 +172,12 @@ export default function AdminSalary() {
                     <td>{emp.email}</td>
 
                     <td>
-                      ₹
-                      {emp.basicSalary || 0}
-                    </td>
+  ₹{emp.basicSalary || 0}
+</td>
 
-                    <td>
-                      ₹
-                      {emp.hourlyRate || 0}
-                    </td>
-
-                    <td>
-                      {hours.toFixed(2)}
-                    </td>
+<td>
+  {hours.toFixed(2)}
+</td>
 
                     <td className="font-bold text-green-600">
                       ₹
@@ -213,10 +196,7 @@ export default function AdminSalary() {
                               0
                           );
 
-                          setHourlyRate(
-                            emp.hourlyRate ||
-                              0
-                          );
+                          
                         }}
                         className="bg-blue-500 text-white px-3 py-1 rounded"
                       >
