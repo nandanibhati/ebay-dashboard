@@ -3,8 +3,8 @@ import Sidebar from "../components/Sidebar";
 
 export default function AdminSalary() {
   const [employees, setEmployees] = useState([]);
-  const [attendance, setAttendance] = useState([]);
-
+  
+const [monthlyHours, setMonthlyHours] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [basicSalary, setBasicSalary] = useState("");
   
@@ -28,38 +28,10 @@ export default function AdminSalary() {
   useEffect(() => {
     fetchEmployees();
 
-    fetch(
-      "https://ebay-dashboard-z7h2.onrender.com/api/attendance"
-    )
-      .then((res) => res.json())
-      .then((data) => setAttendance(data))
-      .catch((err) => console.log(err));
+    
   }, []);
 
-  const getMonthlyHours = (email) => {
-    const now = new Date();
-
-    const month = String(
-      now.getMonth() + 1
-    ).padStart(2, "0");
-
-    const year = String(now.getFullYear());
-
-    return attendance
-      .filter(
-        (item) =>
-          item.employeeEmail === email &&
-          item.date.startsWith(
-            `${year}-${month}`
-          )
-      )
-      .reduce(
-        (sum, item) =>
-          sum + Number(item.totalHours || 0),
-        0
-      );
-  };
-
+ 
   const updateSalary = async () => {
     try {
       const res = await fetch(
@@ -69,20 +41,31 @@ export default function AdminSalary() {
           headers: {
             "Content-Type": "application/json",
           },
-         body: JSON.stringify({
+     body: JSON.stringify({
   basicSalary,
+  monthlyHours,
 }),
         }
       );
 
       const data = await res.json();
-
+setEmployees((prev) =>
+  prev.map((emp) =>
+    emp._id === editingId
+      ? {
+          ...emp,
+          basicSalary,
+          monthlyHours,
+        }
+      : emp
+  )
+);
       if (data.success) {
         alert("Salary Updated Successfully");
 
         setEditingId(null);
         setBasicSalary("");
-        
+        setMonthlyHours("");
 
         fetchEmployees();
       }
@@ -112,7 +95,13 @@ export default function AdminSalary() {
               }
               className="border p-3 rounded"
             />
-
+<input
+  type="number"
+  placeholder="Monthly Hours"
+  value={monthlyHours}
+  onChange={(e) => setMonthlyHours(e.target.value)}
+  className="border p-3 rounded"
+/>
          
 
             <button
@@ -126,6 +115,7 @@ export default function AdminSalary() {
               onClick={() => {
                 setEditingId(null);
                 setBasicSalary("");
+                setMonthlyHours("");
                 
               }}
               className="bg-red-500 text-white px-5 rounded"
@@ -150,9 +140,10 @@ export default function AdminSalary() {
 
             <tbody>
               {employees.map((emp) => {
-                const hours = getMonthlyHours(
-                  emp.email
-                );
+                
+                const hours = Number(
+  emp.monthlyHours || 0
+);
 
                const hourlyRate =
   Number(emp.basicSalary || 0) /
@@ -195,6 +186,9 @@ const salary = hours * hourlyRate;
                             emp.basicSalary ||
                               0
                           );
+                          setMonthlyHours(
+  emp.monthlyHours || 0
+);
 
                           
                         }}

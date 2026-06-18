@@ -34,7 +34,10 @@ const userSchema = new mongoose.Schema(
       type: Date,
     },
 
-    
+    monthlyHours: {
+  type: Number,
+  default: 0,
+},
     basicSalary: {
   type: Number,
   default: 0,

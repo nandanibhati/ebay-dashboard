@@ -194,6 +194,7 @@ router.put("/employee/:id", async (req, res) => {
       req.params.id,
       {
         basicSalary: req.body.basicSalary,
+        monthlyHours: req.body.monthlyHours,
       },
       { new: true }
     );
