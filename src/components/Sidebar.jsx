@@ -47,6 +47,14 @@ export default function Sidebar() {
   Orders
 </Link>
         </li>
+        <li>
+  <Link
+    to="/stock"
+    className="flex items-center gap-3 hover:text-blue-400"
+  >
+    📦 Stock
+  </Link>
+</li>
 
         <li>
           <Link
