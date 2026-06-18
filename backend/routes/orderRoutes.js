@@ -7,6 +7,16 @@ const Stock = require("../models/Stock");
 router.post("/", async (req, res) => {
   console.log("POST ROUTE HIT");
   try {
+    const existingOrder = await Order.findOne({
+  orderId: req.body.orderId,
+});
+
+if (existingOrder) {
+  return res.status(400).json({
+    success: false,
+    message: "Order ID already exists",
+  });
+}
     const order = new Order(req.body);
 
     await order.save();

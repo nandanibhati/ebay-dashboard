@@ -5,7 +5,11 @@ const orderSchema = new mongoose.Schema(
     site: String,
     date: String,
 
-    orderId: String,
+   orderId: {
+  type: String,
+  unique: true,
+  required: true,
+},
     employeeId: String,
 
     employeeName: String,

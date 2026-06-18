@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 
 export default function Employees() {
+  const [employees, setEmployees] = useState([]);
   const [editingId, setEditingId] = useState(null);
 
   const [form, setForm] = useState({
@@ -38,24 +39,32 @@ export default function Employees() {
     e.preventDefault();
 
     try {
-      const res = await fetch(
-        "https://ebay-dashboard-z7h2.onrender.com/api/auth/signup",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...form,
-            role: "employee",
-          }),
-        }
-      );
+     const url = editingId
+  ? `https://ebay-dashboard-z7h2.onrender.com/api/auth/employee/${editingId}`
+  : "https://ebay-dashboard-z7h2.onrender.com/api/auth/signup";
+
+const method = editingId ? "PUT" : "POST";
+
+const res = await fetch(url, {
+  method,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    ...form,
+    role: "employee",
+  }),
+});
+        
 
       const data = await res.json();
 
       if (data.success) {
-        alert("Employee Added");
+        alert(
+  editingId
+    ? "Employee Updated"
+    : "Employee Added"
+);
 
         setForm({
           name: "",
@@ -68,6 +77,7 @@ export default function Employees() {
         });
 
         fetchEmployees();
+        setEditingId(null);
       } else {
         alert(data.message);
       }

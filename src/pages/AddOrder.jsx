@@ -2,9 +2,12 @@ import EmployeeSidebar from "../components/EmployeeSidebar";
 import { useState } from "react";
 
 export default function AddOrder() {
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
   site: "",
-  date: new Date().toISOString().split("T")[0],
+  date:
+    localStorage.getItem("selectedDate") ||
+    new Date().toISOString().split("T")[0],
   orderId: "",
   sku: "",
   quantity: "",
@@ -19,12 +22,21 @@ export default function AddOrder() {
   notes: "",
 });
 
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
+ const handleChange = (e) => {
+  const { name, value } = e.target;
+
+  setForm({
+    ...form,
+    [name]: value,
+  });
+
+  if (name === "date") {
+    localStorage.setItem(
+      "selectedDate",
+      value
+    );
+  }
+};
   const employeeName =
   localStorage.getItem("employeeName") || "Employee";
 
@@ -32,8 +44,12 @@ const employeeEmail =
   localStorage.getItem("employeeEmail") || "";                       
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (
+  e.preventDefault();
+
+  if (loading) return;
+
+  setLoading(true);
+   if (
   !form.site ||
   !form.date ||
   !form.orderId ||
@@ -43,6 +59,8 @@ const employeeEmail =
   alert(
     "Please fill Site, Date, Order ID, SKU and Quantity"
   );
+
+  setLoading(false);
   return;
 }
 
@@ -132,10 +150,17 @@ const employeeEmail =
   courierScanned: "",
   notes: "",
 });
+setLoading(false);
+
       }
+      else {
+  alert(data.message);
+  setLoading(false);
+}
     } catch (error) {
       console.log(error);
       alert("Failed to Save Order ❌");
+      setLoading(false);
     }
   };
 
@@ -303,11 +328,18 @@ const employeeEmail =
           />
 
           <button
-            type="submit"
-            className="col-span-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold"
-          >
-            Save Order
-          </button>
+  type="submit"
+  disabled={loading}
+  className={`col-span-2 text-white py-3 rounded-lg font-semibold ${
+    loading
+      ? "bg-gray-400 cursor-not-allowed"
+      : "bg-blue-600 hover:bg-blue-700"
+  }`}
+>
+  {loading
+    ? "Saving..."
+    : "Save Order"}
+</button>
         </form>
       </div>
     </div>

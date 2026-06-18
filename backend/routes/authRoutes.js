@@ -16,6 +16,7 @@ router.post("/signup", async (req, res) => {
       role,
       joiningDate,
       hourlyRate,
+      basicSalary,
       employeeId,
     } = req.body;
 
@@ -38,15 +39,16 @@ router.post("/signup", async (req, res) => {
       10
     );
 
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      role: role || "employee",
-      joiningDate,
-      hourlyRate,
-      employeeId,
-    });
+ const user = await User.create({
+  name,
+  email,
+  password: hashedPassword,
+  role: role || "employee",
+  joiningDate,
+  hourlyRate,
+  basicSalary,
+  employeeId,
+});
 
     res.status(201).json({
       success: true,
@@ -180,6 +182,28 @@ router.get("/create-admin", async (req, res) => {
       success: true,
       message: "Admin Created Successfully",
       admin,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+router.put("/employee/:id", async (req, res) => {
+  try {
+    const employee = await User.findByIdAndUpdate(
+      req.params.id,
+      {
+        hourlyRate: req.body.hourlyRate,
+        basicSalary: req.body.basicSalary,
+      },
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      employee,
     });
   } catch (error) {
     res.status(500).json({

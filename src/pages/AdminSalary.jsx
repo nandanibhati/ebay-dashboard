@@ -60,11 +60,12 @@ export default function AdminSalary() {
           <table className="w-full">
             <thead className="bg-slate-200">
               <tr>
-                <th className="p-3">Employee</th>
-                <th>Email</th>
-                <th>Hourly Rate</th>
-                <th>Monthly Hours</th>
-                <th>Salary</th>
+              <th>Employee</th>
+<th>Email</th>
+<th>Basic Salary</th>
+<th>Hourly Rate</th>
+<th>Monthly Hours</th>
+<th>Total Salary</th>
               </tr>
             </thead>
 
@@ -73,9 +74,10 @@ export default function AdminSalary() {
                 const hours =
                   getMonthlyHours(emp.email);
 
-                const salary =
-                  hours *
-                  Number(emp.hourlyRate || 0);
+               const salary =
+  Number(emp.basicSalary || 0) +
+  hours *
+  Number(emp.hourlyRate || 0);
 
                 return (
                   <tr
@@ -89,12 +91,16 @@ export default function AdminSalary() {
                     <td>{emp.email}</td>
 
                     <td>
-                      ₹{emp.hourlyRate}
-                    </td>
+  ₹{emp.basicSalary || 0}
+</td>
 
-                    <td>
-                      {hours.toFixed(2)}
-                    </td>
+<td>
+  ₹{emp.hourlyRate || 0}
+</td>
+
+<td>
+  {hours.toFixed(2)}
+</td>
 
                     <td className="font-bold text-green-600">
                       ₹{salary.toFixed(2)}
