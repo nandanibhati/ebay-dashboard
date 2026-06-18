@@ -4,8 +4,9 @@ import {
   Users,
   BarChart3,
   PlusCircle,
+  Clock,
+  DollarSign,
 } from "lucide-react";
-
 import { Link } from "react-router-dom";
 
 export default function Sidebar() {
@@ -66,6 +67,31 @@ export default function Sidebar() {
             Analytics
           </Link>
         </li>
+        <li>
+  <Link
+    to="/admin-attendance"
+    className="flex items-center gap-3 hover:text-blue-400"
+  >
+    <Clock size={20} />
+    Attendance
+  </Link>
+</li>
+
+<li>
+  <Link
+    to="/admin-salary"
+    className="flex items-center gap-3 hover:text-blue-400"
+  >
+    <DollarSign size={20} />
+    Salary
+  </Link>
+</li>
+<Link
+  to="/admin-leaves"
+  className="flex items-center gap-3 hover:text-blue-400"
+>
+  Leave Requests
+</Link>
 
         <li>
           <Link

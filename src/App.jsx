@@ -13,6 +13,9 @@ import EmployeeDashboard from "./pages/EmployeeDashboard";
 import Attendance from "./pages/Attendance";
 import Leaves from "./pages/Leaves";
 import Salary from "./pages/Salary";
+import AdminAttendance from "./pages/AdminAttendance";
+import AdminSalary from "./pages/AdminSalary";
+import AdminLeaves from "./pages/AdminLeaves";
 
 function App() {
   return (
@@ -31,10 +34,23 @@ function App() {
         <Route path="/analytics" element={<Analytics />} />
 
         <Route path="/stock" element={<Stock />} />
+        <Route
+  path="/admin-leaves"
+  element={<AdminLeaves />}
+/>
 
         <Route
   path="/employee-dashboard"
   element={<EmployeeDashboard />}
+/>
+<Route
+  path="/admin-attendance"
+  element={<AdminAttendance />}
+/>
+
+<Route
+  path="/admin-salary"
+  element={<AdminSalary />}
 />
 
 <Route

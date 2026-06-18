@@ -15,7 +15,8 @@ const authRoutes = require("./routes/authRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const stockRoutes = require("./routes/stockRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
-
+const salaryRoutes = require("./routes/salaryRoutes");
+const leaveRoutes = require("./routes/leaveRoutes");
 // MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI)
@@ -26,6 +27,8 @@ mongoose
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/stock", stockRoutes);
+app.use("/api/salary", salaryRoutes);
+app.use("/api/leaves", leaveRoutes);
 app.use(
   "/api/attendance",
   attendanceRoutes
