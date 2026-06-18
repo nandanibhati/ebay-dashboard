@@ -128,7 +128,10 @@ console.log("ITEM FOUND =", item);
 });
 router.get("/", async (req, res) => {
   try {
-    const orders = await Order.find();
+    const orders = await Order.find().sort({
+  date: -1,
+   createdAt: -1,
+});
 
     res.json(orders);
   } catch (error) {
