@@ -9,6 +9,8 @@ const User = require("../models/User");
 // SIGNUP
 router.post("/signup", async (req, res) => {
   try {
+    console.log("Signup Data:", req.body);
+
     const {
       name,
       email,
@@ -20,11 +22,10 @@ router.post("/signup", async (req, res) => {
     } = req.body;
 
     const existingUser = await User.findOne({
-      $or: [
-        { email },
-        { employeeId }
-      ],
+      $or: [{ email }, { employeeId }],
     });
+
+    console.log("Existing User:", existingUser);
 
     if (existingUser) {
       return res.status(400).json({
