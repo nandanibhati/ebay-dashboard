@@ -141,6 +141,48 @@ export default function Tasks() {
       console.log(error);
     }
   };
+  const updateTaskStatus = async (id, status) => {
+  try {
+    const currentTask = tasks.find(
+      (task) => task._id === id
+    );
+
+    let progress = currentTask.progress || 0;
+
+if (status === "In Progress" && progress === 0) {
+  progress = 25;
+}
+
+if (status === "Done" || status === "Closed") {
+  progress = 100;
+}
+
+    const res = await fetch(
+      `https://ebay-dashboard-z7h2.onrender.com/api/tasks/${id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...currentTask,
+          status,
+          progress,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      toast.success("Task Status Updated");
+      fetchTasks();
+    }
+  } catch (error) {
+    console.log(error);
+    toast.error("Failed to update task");
+  }
+};
 
   // Micro-Derivative Analytical Matrix Computations
   const totalTasksCount = tasks.length;
@@ -399,6 +441,7 @@ export default function Tasks() {
                 <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   <th className="px-6 py-4 w-[40%]">Task Schema Parameters</th>
                   <th className="px-4 py-4">Resource Target</th>
+                  <th className="px-4 py-4">Assigned By</th>
                   <th className="px-4 py-4">Impact Priority</th>
                   <th className="px-4 py-4">State Module</th>
                   <th className="px-4 py-4">Due Epoch</th>
@@ -444,36 +487,67 @@ export default function Tasks() {
                       </div>
                     </td>
 
-                    {/* High contrast priority flags */}
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-sm ${
-                          task.priority === "High"
-                            ? "bg-rose-50 border-rose-100 text-rose-700"
-                            : task.priority === "Medium"
-                            ? "bg-amber-50 border-amber-100 text-amber-700"
-                            : "bg-emerald-50 border-emerald-100 text-emerald-700"
-                        }`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${
-                          task.priority === "High" ? "bg-rose-500" : task.priority === "Medium" ? "bg-amber-500" : "bg-emerald-500"
-                        }`} />
-                        {task.priority}
-                      </span>
-                    </td>
+ {/* Assigned By */}
+<td className="px-4 py-4 whitespace-nowrap">
+  <div className="flex items-center gap-2">
+    <div className="w-6 h-6 rounded-md bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600">
+      <UserCheck size={12} />
+    </div>
 
+    <span className="text-xs font-semibold">
+      {task.assignedBy || "-"}
+    </span>
+  </div>
+</td>
+
+{/* Priority */}
+<td className="px-4 py-4 whitespace-nowrap">
+  <span
+    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-sm ${
+      task.priority === "High"
+        ? "bg-rose-50 border-rose-100 text-rose-700"
+        : task.priority === "Medium"
+        ? "bg-amber-50 border-amber-100 text-amber-700"
+        : "bg-emerald-50 border-emerald-100 text-emerald-700"
+    }`}
+  >
+    <span
+      className={`w-1.5 h-1.5 rounded-full ${
+        task.priority === "High"
+          ? "bg-rose-500"
+          : task.priority === "Medium"
+          ? "bg-amber-500"
+          : "bg-emerald-500"
+      }`}
+    />
+    {task.priority}
+  </span>
+</td>
                     {/* Execution status parameters */}
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-mono font-bold border ${
-                        task.status === "Done" || task.status === "Closed"
-                          ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                          : task.status === "In Progress"
-                          ? "bg-blue-50 border-blue-200 text-blue-700"
-                          : "bg-slate-100 border-slate-200 text-slate-500"
-                      }`}>
-                        {task.status}
-                      </span>
-                    </td>
+  <select
+    value={task.status}
+    onChange={(e) =>
+      updateTaskStatus(task._id, e.target.value)
+    }
+    className={`px-3 py-2 rounded-lg text-xs font-bold border outline-none cursor-pointer ${
+      task.status === "Done" ||
+      task.status === "Closed"
+        ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+        : task.status === "In Progress"
+        ? "bg-blue-50 border-blue-200 text-blue-700"
+        : "bg-slate-100 border-slate-200 text-slate-600"
+    }`}
+  >
+    <option value="Todo">Todo</option>
+    <option value="In Progress">
+      In Progress
+    </option>
+    <option value="Done">Done</option>
+    <option value="Closed">Closed</option>
+    
+  </select>
+</td>
 
                     {/* Processed timeline deadlines */}
                     <td className="px-4 py-4 whitespace-nowrap font-medium text-xs text-slate-500">
@@ -538,13 +612,12 @@ export default function Tasks() {
                           <Pencil size={14} className="stroke-[2.5]" />
                         </button>
                         
-                        <button
-                          onClick={() => deleteTask(task._id)}
-                          className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all active:scale-95 shadow-sm"
-                          title="Purge Task Document Instance"
-                        >
-                          <Trash2 size={14} className="stroke-[2.5]" />
-                        </button>
+                       
+                        {task.assignedBy === localStorage.getItem("employeeName") && (
+  <button onClick={() => deleteTask(task._id)}>
+    <Trash2 size={14} />
+  </button>
+)}
                       </div>
                     </td>
 

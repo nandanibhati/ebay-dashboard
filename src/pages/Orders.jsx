@@ -1,24 +1,7 @@
-import EmployeeSidebar from "../components/EmployeeSidebar";
+import Sidebar from "../components/Sidebar";
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { FaEdit, FaTrash } from "react-icons/fa";
 import * as XLSX from "xlsx";
-import {
-  ShoppingBag,
-  Search,
-  Filter,
-  UploadCloud,
-  Pencil,
-  Trash2,
-  Calendar,
-  Layers,
-  Activity,
-  DollarSign,
-  TrendingUp,
-  Percent,
-  Truck,
-  User,
-  X
-} from "lucide-react";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -46,38 +29,23 @@ export default function Orders() {
       const ebayFee = Number(editingOrder.ebayFee || 0);
       const adFee = Number(editingOrder.adFee || 0);
       const deliveryCost = Number(editingOrder.deliveryCost || 0);
-
       const revenue = quantity * sellingPrice;
       const totalCost = quantity * costPrice + ebayFee + adFee + deliveryCost;
       const profit = revenue - totalCost;
       const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(2) : 0;
-
-      const updatedOrder = {
-        ...editingOrder,
-        revenue,
-        profit,
-        margin,
-      };
+      const updatedOrder = { ...editingOrder, revenue, profit, margin };
 
       const response = await fetch(
         `https://ebay-dashboard-z7h2.onrender.com/api/orders/${editingOrder._id}`,
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updatedOrder),
         }
       );
 
       const data = await response.json();
-
-      setOrders(
-        orders.map((order) =>
-          order._id === data.order._id ? data.order : order
-        )
-      );
-
+      setOrders(orders.map((order) => (order._id === data.order._id ? data.order : order)));
       setEditingOrder(null);
       alert("Order Updated Successfully");
     } catch (error) {
@@ -87,20 +55,10 @@ export default function Orders() {
   };
 
   const deleteOrder = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this order?"
-    );
-
+    const confirmDelete = window.confirm("Are you sure you want to delete this order?");
     if (!confirmDelete) return;
-
     try {
-      await fetch(
-        `https://ebay-dashboard-z7h2.onrender.com/api/orders/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
-
+      await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/orders/${id}`, { method: "DELETE" });
       setOrders(orders.filter((order) => order._id !== id));
     } catch (error) {
       console.log(error);
@@ -110,8 +68,6 @@ export default function Orders() {
 
   const handleExcelUpload = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-
     const reader = new FileReader();
     reader.onload = async (evt) => {
       const data = evt.target.result;
@@ -119,33 +75,23 @@ export default function Orders() {
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
       console.log(jsonData);
       await uploadOrders(jsonData);
     };
     reader.readAsBinaryString(file);
   };
 
-  const uploadOrders = async (ordersData) => {
+  const uploadOrders = async (orders) => {
     try {
-      const response = await fetch(
-        "https://ebay-dashboard-z7h2.onrender.com/api/orders/bulk",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(ordersData),
-        }
-      );
-
+      const response = await fetch("https://ebay-dashboard-z7h2.onrender.com/api/orders/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orders),
+      });
       const data = await response.json();
-
       if (data.success) {
         alert("Orders Imported Successfully");
-        const res = await fetch(
-          "https://ebay-dashboard-z7h2.onrender.com/api/orders"
-        );
+        const res = await fetch("https://ebay-dashboard-z7h2.onrender.com/api/orders");
         const updatedOrders = await res.json();
         setOrders(updatedOrders);
       }
@@ -159,255 +105,321 @@ export default function Orders() {
       order.orderId?.toLowerCase().includes(search.toLowerCase()) ||
       order.sku?.toLowerCase().includes(search.toLowerCase()) ||
       order.product?.toLowerCase().includes(search.toLowerCase());
-
     const matchesSite = !siteFilter || order.site === siteFilter;
     const matchesStatus = !statusFilter || order.status === statusFilter;
-
     return matchesSearch && matchesSite && matchesStatus;
   });
 
-  // Micro-Derivative Analytical Computations for High-Density Visibility
-  const totalCount = filteredOrders.length;
-  const metrics = filteredOrders.reduce(
-    (acc, cur) => {
-      acc.revenue += Number(cur.revenue || 0);
-      acc.profit += Number(cur.profit || 0);
-      return acc;
-    },
-    { revenue: 0, profit: 0 }
-  );
-  const aggregateMargin = metrics.revenue > 0 ? ((metrics.profit / metrics.revenue) * 100).toFixed(1) : 0;
+  const pendingCount = orders.filter((o) => o.status === "Pending").length;
+  const packedCount = orders.filter((o) => o.status === "Packed").length;
+  const shippedCount = orders.filter((o) => o.status === "Shipped").length;
+  const deliveredCount = orders.filter((o) => o.status === "Delivered").length;
+  const cancelledCount = orders.filter((o) => o.status === "Cancelled").length;
+  const returnedCount = orders.filter((o) => o.status === "Returned").length;
+  const courierScannedCount = orders.filter((o) => o.courierScanned === "Yes").length;
 
-  // Global Style Configuration Reference Variables
-  const inputCls = "w-full px-3 py-2 text-xs bg-slate-50/60 border border-slate-200 rounded-xl outline-none focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-500/10 transition-all text-slate-800 placeholder:text-slate-400 font-medium";
-  const selectCls = "px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all text-slate-700 font-semibold cursor-pointer shadow-sm shadow-slate-100/50";
-  const labelCls = "text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1";
+  const totalRevenue = filteredOrders.reduce((acc, cur) => acc + Number(cur.revenue || 0), 0);
+  const totalProfit = filteredOrders.reduce((acc, cur) => acc + Number(cur.profit || 0), 0);
+  const aggregateMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : 0;
 
-  // Status Badge Component Router Matrix
-  const renderStatusBadge = (status) => {
-    const map = {
-      Pending: "bg-amber-50 border-amber-200 text-amber-700",
-      Packed: "bg-blue-50 border-blue-200 text-blue-700",
-      Shipped: "bg-indigo-50 border-indigo-200 text-indigo-700",
-      Delivered: "bg-emerald-50 border-emerald-200 text-emerald-700",
-      Returned: "bg-purple-50 border-purple-200 text-purple-700",
-      Cancelled: "bg-rose-50 border-rose-200 text-rose-700",
-    };
-    return (
-      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-bold border ${map[status] || "bg-slate-50 border-slate-200 text-slate-600"}`}>
-        {status || "Staged"}
-      </span>
-    );
+  const statusConfig = {
+    Pending:   { dot: "bg-amber-400",   badge: "bg-amber-50 text-amber-700 ring-amber-200" },
+    Packed:    { dot: "bg-blue-400",    badge: "bg-blue-50 text-blue-700 ring-blue-200" },
+    Shipped:   { dot: "bg-indigo-400",  badge: "bg-indigo-50 text-indigo-700 ring-indigo-200" },
+    Delivered: { dot: "bg-emerald-400", badge: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
+    Returned:  { dot: "bg-purple-400",  badge: "bg-purple-50 text-purple-700 ring-purple-200" },
+    Cancelled: { dot: "bg-rose-400",    badge: "bg-rose-50 text-rose-700 ring-rose-200" },
   };
 
+  const inputCls =
+    "w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-slate-800 placeholder:text-slate-400";
+
+  const labelCls = "block text-xs font-semibold text-slate-500 mb-1.5";
+
   return (
-    <div className="flex min-h-screen bg-[#f8fafc]">
-      <EmployeeSidebar />
+    <div className="flex min-h-screen bg-slate-50">
+      <Sidebar />
 
-      <div className="flex-1 ml-64 p-8 max-w-[1800px] mx-auto flex flex-col gap-6 w-full overflow-hidden">
-        
-        {/* Module Hero Header Banner */}
-        <div className="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl p-6 text-white shadow-xl shadow-indigo-600/10 relative overflow-hidden">
-          <div className="absolute right-0 bottom-0 opacity-10 translate-x-14 translate-y-14 pointer-events-none">
-            <ShoppingBag size={260} />
+      <div className="ml-64 flex-1 p-4 lg:p-6 space-y-6 overflow-hidden">
+        {/* ── Page Header ── */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Orders</h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              {orders.length} total orders across all channels
+            </p>
           </div>
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-black tracking-tight flex items-center gap-2.5">
-                Multi-Channel Order Grid
-              </h1>
-              <p className="mt-1 text-violet-100/90 text-xs max-w-xl font-medium">
-                Consolidate multi-site logic tracking arrays, ingest logistical data dumps, evaluate bottom-line margins, and parse structural item variables.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Real-time Data Streaming Analytics Widgets */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Active Workspace Array</p>
-              <h2 className="text-xl font-black mt-1 text-slate-900 tracking-tight">{totalCount} Units</h2>
-            </div>
-            <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-slate-600">
-              <Layers size={16} />
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Gross Volume Pipeline</p>
-              <h2 className="text-xl font-black mt-1 text-slate-900 tracking-tight">£{metrics.revenue.toFixed(2)}</h2>
-            </div>
-            <div className="bg-violet-50 border border-violet-100 p-2.5 rounded-xl text-violet-600">
-              <DollarSign size={16} />
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Net Retained Yield</p>
-              <h2 className={`text-xl font-black mt-1 tracking-tight ${metrics.profit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                £{metrics.profit.toFixed(2)}
-              </h2>
-            </div>
-            <div className={`p-2.5 rounded-xl border ${metrics.profit >= 0 ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-rose-50 border-rose-100 text-rose-600"}`}>
-              <TrendingUp size={16} />
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Aggregated Margin Metric</p>
-              <h2 className="text-xl font-black mt-1 text-indigo-600 tracking-tight">{aggregateMargin}%</h2>
-            </div>
-            <div className="bg-indigo-50 border border-indigo-100 p-2.5 rounded-xl text-indigo-600">
-              <Percent size={16} />
-            </div>
-          </div>
-        </div>
-
-        {/* Global Filter Toolbar & Data Pipeline Ingestion Controllers */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm shadow-slate-100/50 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-3 flex-1">
-            
-            {/* Context Search Engine Component */}
-            <div className="relative min-w-[280px] flex-1 max-w-sm">
-              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Query Order ID, SKU, or Product ID..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className={`${inputCls} pl-9 py-2.5`}
-              />
-            </div>
-
-            {/* Filter: Source Node Platform */}
-            <div className="flex items-center gap-2">
-              <Filter size={12} className="text-slate-400 stroke-[2.5]" />
-              <select value={siteFilter} onChange={(e) => setSiteFilter(e.target.value)} className={selectCls}>
-                <option value="">All Channels</option>
-                <option value="TPS">TPS</option>
-                <option value="Smartzone">Smartzone</option>
-                <option value="Veluntra">Veluntra</option>
-                <option value="Amazon">Amazon</option>
-                <option value="TikTok">TikTok</option>
-              </select>
-            </div>
-
-            {/* Filter: Operations Progress State */}
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={selectCls}>
-              <option value="">All Progress States</option>
-              <option value="Pending">Pending</option>
-              <option value="Packed">Packed</option>
-              <option value="Shipped">Shipped</option>
-              <option value="Delivered">Delivered</option>
-              <option value="Returned">Returned</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-          </div>
-
-          {/* Integrated Bulk Spreadsheet Upload Form Action Trigger */}
-          <label className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 border-dashed hover:border-violet-400 hover:bg-violet-50/30 rounded-xl cursor-pointer text-xs font-bold text-slate-600 hover:text-violet-700 transition-all active:scale-[0.99] whitespace-nowrap">
-            <UploadCloud size={14} className="stroke-[2.5]" />
-            <span>Parse Excel Matrix Stream</span>
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleExcelUpload}
-              className="hidden"
-            />
+          <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-sm font-semibold rounded-xl cursor-pointer transition-colors shadow-sm shadow-violet-600/25">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Import Excel
+            <input type="file" accept=".xlsx,.xls" onChange={handleExcelUpload} className="hidden" />
           </label>
         </div>
 
-        {/* Master Transaction Ledger Display Component */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xl shadow-slate-200/20 overflow-hidden flex flex-col">
-          <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs font-bold text-slate-700">Fulfillment Arrays Vector Real-time Sync</span>
+        {/* ── Summary Metrics ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            {
+              label: "Filtered Orders",
+              value: `${filteredOrders.length}`,
+              sub: "currently shown",
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              ),
+              color: "text-slate-700",
+              bg: "bg-slate-100",
+            },
+            {
+              label: "Revenue",
+              value: `£${totalRevenue.toFixed(2)}`,
+              sub: "gross sales",
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              ),
+              color: "text-violet-700",
+              bg: "bg-violet-100",
+            },
+            {
+              label: "Net Profit",
+              value: `£${totalProfit.toFixed(2)}`,
+              sub: "after all costs",
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              ),
+              color: totalProfit >= 0 ? "text-emerald-700" : "text-rose-600",
+              bg: totalProfit >= 0 ? "bg-emerald-100" : "bg-rose-100",
+            },
+            {
+              label: "Avg. Margin",
+              value: `${aggregateMargin}%`,
+              sub: "profit margin",
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+              ),
+              color: "text-indigo-700",
+              bg: "bg-indigo-100",
+            },
+          ].map((m) => (
+            <div key={m.label} className="bg-white rounded-2xl border border-slate-200/70 p-5 flex items-center gap-4 shadow-sm">
+              <div className={`${m.bg} ${m.color} p-3 rounded-xl flex-shrink-0`}>{m.icon}</div>
+              <div>
+                <p className="text-xs font-medium text-slate-500">{m.label}</p>
+                <p className={`text-xl font-bold mt-0.5 ${m.color}`}>{m.value}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">{m.sub}</p>
+              </div>
             </div>
-            <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-100 border px-2 py-0.5 rounded-md">
-              BUFFER SIZE: {orders.length} ITEMS
+          ))}
+        </div>
+
+        {/* ── Status Pipeline ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+          {[
+            { label: "Pending",   count: pendingCount,        dot: "bg-amber-400",   ring: "ring-amber-100",   num: "text-amber-700"   },
+            { label: "Packed",    count: packedCount,         dot: "bg-orange-400",  ring: "ring-orange-100",  num: "text-orange-700"  },
+            { label: "Shipped",   count: shippedCount,        dot: "bg-blue-400",    ring: "ring-blue-100",    num: "text-blue-700"    },
+            { label: "Delivered", count: deliveredCount,      dot: "bg-emerald-400", ring: "ring-emerald-100", num: "text-emerald-700" },
+            { label: "Cancelled", count: cancelledCount,      dot: "bg-rose-400",    ring: "ring-rose-100",    num: "text-rose-700"    },
+            { label: "Returned",  count: returnedCount,       dot: "bg-purple-400",  ring: "ring-purple-100",  num: "text-purple-700"  },
+            { label: "Scanned",   count: courierScannedCount, dot: "bg-slate-400",   ring: "ring-slate-100",   num: "text-slate-700"   },
+          ].map((s) => (
+            <div key={s.label} className={`bg-white border border-slate-200/70 rounded-2xl p-4 shadow-sm ring-4 ${s.ring}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
+                <p className="text-xs font-semibold text-slate-500 truncate">{s.label}</p>
+              </div>
+              <p className={`text-2xl font-black ${s.num}`}>{s.count}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Filters Bar ── */}
+        <div className="bg-white border border-slate-200/70 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+          <div className="relative w-full max-w-lg">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input
+              type="text"
+              placeholder="Search by Order ID, SKU or Product…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-slate-800 placeholder:text-slate-400"
+            />
+          </div>
+
+          <select
+            value={siteFilter}
+            onChange={(e) => setSiteFilter(e.target.value)}
+            className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-slate-700 font-medium cursor-pointer"
+          >
+            <option value="">All Sites</option>
+            <option value="TPS">TPS</option>
+            <option value="Smartzone">Smartzone</option>
+            <option value="Veluntra">Veluntra</option>
+            <option value="Amazon">Amazon</option>
+            <option value="TikTok">TikTok</option>
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-slate-700 font-medium cursor-pointer"
+          >
+            <option value="">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Packed">Packed</option>
+            <option value="Shipped">Shipped</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Returned">Returned</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+
+          {(search || siteFilter || statusFilter) && (
+            <button
+              onClick={() => { setSearch(""); setSiteFilter(""); setStatusFilter(""); }}
+              className="px-3 py-2.5 text-sm text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl font-medium transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* ── Orders Table ── */}
+        <div className="bg-white border border-slate-200/70 rounded-2xl shadow-sm overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs font-semibold text-slate-600">Live Orders</span>
+            </div>
+            <span className="text-xs font-mono text-slate-400 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md">
+              {filteredOrders.length} / {orders.length} shown
             </span>
           </div>
 
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-left border-collapse min-w-[2200px]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left table-auto">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="px-4 py-3.5">Platform Channel</th>
-                  <th className="px-4 py-3.5">Epoch Date</th>
-                  <th className="px-4 py-3.5">Transaction Order ID</th>
-                  <th className="px-4 py-3.5">System SKU Code</th>
-                  <th className="px-3 py-3.5 text-center">Qty</th>
-                  <th className="px-4 py-3.5">Unit Price</th>
-                  <th className="px-4 py-3.5">Material Cost</th>
-                  <th className="px-4 py-3.5">Gross Revenue</th>
-                  <th className="px-4 py-3.5">Net Profit Node</th>
-                  <th className="px-4 py-3.5">Logistics Waybill Tracking</th>
-                  <th className="px-4 py-3.5">Fulfillment Status</th>
-                  <th className="px-4 py-3.5">Courier Hub Code</th>
-                  <th className="px-4 py-3.5">Accountable Operator</th>
-                  <th className="px-4 py-3.5 text-center sticky right-0 bg-slate-50/90 backdrop-blur-sm shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.03)]">System Actions</th>
+                <tr className="border-b border-slate-100 bg-slate-50/60">
+                  {["Site", "Date", "Order ID", "SKU", "Qty", "Unit Price", "Cost", "Revenue", "Profit", "Tracking", "Status", "Courier", "Employee", "Actions"].map((h) => (
+                    <th key={h} className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100 text-xs text-slate-600 font-medium">
+              <tbody className="divide-y divide-slate-50">
                 {filteredOrders.length === 0 && (
                   <tr>
-                    <td colSpan="14" className="text-center py-16 text-slate-400 font-bold bg-white font-sans">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <Activity size={24} className="text-slate-300 stroke-[2]" />
-                        <span>Zero matched vector traces matching current logic filter state arrays.</span>
+                    <td colSpan="14" className="py-20 text-center">
+                      <div className="flex flex-col items-center gap-3 text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <p className="text-sm font-medium">No orders match your filters</p>
+                        <p className="text-xs">Try adjusting your search or filter criteria</p>
                       </div>
                     </td>
                   </tr>
                 )}
 
-                {filteredOrders.map((order) => (
-                  <tr key={order._id} className="hover:bg-slate-50/80 transition-all group">
-                    <td className="px-4 py-3.5 text-slate-900 font-black tracking-tight">{order.site}</td>
-                    <td className="px-4 py-3.5 text-slate-400 whitespace-nowrap font-mono">{order.date || "-"}</td>
-                    <td className="px-4 py-3.5 font-mono text-slate-700 font-bold">{order.orderId}</td>
-                    <td className="px-4 py-3.5"><span className="bg-slate-100 border text-slate-600 px-1.5 py-0.5 rounded font-mono text-[11px] font-bold">{order.sku}</span></td>
-                    <td className="px-3 py-3.5 text-center font-mono font-bold text-slate-900">{order.quantity}</td>
-                    <td className="px-4 py-3.5 font-mono text-slate-700">£{Number(order.sellingPrice || 0).toFixed(2)}</td>
-                    <td className="px-4 py-3.5 font-mono text-slate-400">£{Number(order.costPrice || 0).toFixed(2)}</td>
-                    <td className="px-4 py-3.5 font-mono text-slate-800 font-bold">£{Number(order.revenue || 0).toFixed(2)}</td>
-                    <td className={`px-4 py-3.5 font-mono font-bold ${Number(order.profit || 0) >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                      £{Number(order.profit || 0).toFixed(2)}
-                    </td>
-                    <td className="px-4 py-3.5 max-w-[180px] truncate font-mono text-slate-400" title={order.trackingNo}>
-                      {order.trackingNo || <span className="opacity-30">—</span>}
-                    </td>
-                    <td className="px-4 py-3.5">{renderStatusBadge(order.status)}</td>
-                    <td className="px-4 py-3.5 text-xs text-slate-500 font-mono">{order.courierScanned || <span className="opacity-30">—</span>}</td>
-                    <td className="px-4 py-3.5 whitespace-nowrap">
-                      <span className="bg-violet-50 text-violet-700 border border-violet-100 px-2 py-0.5 rounded-md font-semibold text-[11px] inline-flex items-center gap-1">
-                        <User size={10} className="stroke-[2.5]" />
-                        {order.employeeName || order.employeeId || "Automated Platform Node"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3.5 text-center sticky right-0 bg-white group-hover:bg-slate-50/90 transition-all backdrop-blur-sm shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.03)]">
-                      <div className="flex justify-center items-center gap-1.5">
-                        <button
-                          onClick={() => editOrder(order)}
-                          className="p-1.5 text-slate-500 bg-slate-50 border rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-all"
-                          title="Modify Record Configurations"
+                {filteredOrders.map((order) => {
+                  const sc = statusConfig[order.status] || { dot: "bg-slate-400", badge: "bg-slate-50 text-slate-600 ring-slate-200" };
+                  const profit = Number(order.profit || 0);
+                  return (
+                    <tr key={order._id} className="hover:bg-slate-50/70 transition-colors group">
+                      <td className="px-4 py-3 font-bold text-slate-900 text-sm whitespace-nowrap">{order.site}</td>
+                      <td className="px-4 py-3 text-sm text-slate-500 whitespace-nowrap">
+                        {order.date ? new Date(order.date).toLocaleDateString("en-GB") : "—"}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-sm text-slate-700 whitespace-nowrap">{order.orderId}</td>
+                      <td className="px-4 py-3">
+                        <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono text-xs font-semibold">
+                          {order.sku}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-center font-mono font-bold text-slate-800">{order.quantity}</td>
+                      <td className="px-4 py-3 text-sm font-mono text-slate-600">£{Number(order.sellingPrice || 0).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-sm font-mono text-slate-400">£{Number(order.costPrice || 0).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-sm font-mono font-bold text-slate-800">£{Number(order.revenue || 0).toFixed(2)}</td>
+                      <td className={`px-4 py-3 text-sm font-mono font-bold ${profit >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                        £{profit.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 max-w-[160px] truncate font-mono text-xs text-slate-400" title={order.trackingNo}>
+                        {order.trackingNo || <span className="opacity-30">—</span>}
+                      </td>
+
+                      {/* Status inline select */}
+                      <td className="px-4 py-3">
+                        <select
+                          value={order.status || "Pending"}
+                          onChange={async (e) => {
+                            const updatedStatus = e.target.value;
+                            await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/orders/${order._id}`, {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ ...order, status: updatedStatus }),
+                            });
+                            setOrders(orders.map((o) => (o._id === order._id ? { ...o, status: updatedStatus } : o)));
+                          }}
+                          className={`text-xs font-semibold px-2 py-1.5 rounded-lg border outline-none cursor-pointer ring-1 transition-all ${sc.badge} ${sc.dot.replace("bg-", "border-")}`}
                         >
-                          <Pencil size={12} className="stroke-[2.5]" />
-                        </button>
-                        <button
-                          onClick={() => deleteOrder(order._id)}
-                          className="p-1.5 text-slate-500 bg-slate-50 border rounded-lg hover:bg-rose-50 hover:text-rose-600 transition-all"
-                          title="Purge Document Instance"
+                          <option value="Pending">Pending</option>
+                          <option value="Packed">Packed</option>
+                          <option value="Shipped">Shipped</option>
+                          <option value="Delivered">Delivered</option>
+                          <option value="Returned">Returned</option>
+                          <option value="Cancelled">Cancelled</option>
+                        </select>
+                      </td>
+
+                      {/* Courier inline select */}
+                      <td className="px-4 py-3">
+                        <select
+                          value={order.courierScanned || "No"}
+                          onChange={async (e) => {
+                            const courierValue = e.target.value;
+                            await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/orders/${order._id}`, {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ ...order, courierScanned: courierValue }),
+                            });
+                            setOrders(orders.map((o) => (o._id === order._id ? { ...o, courierScanned: courierValue } : o)));
+                          }}
+                          className={`text-xs font-semibold px-2 py-1.5 rounded-lg border outline-none cursor-pointer transition-all ${
+                            (order.courierScanned || "No") === "Yes"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : "bg-slate-50 text-slate-500 border-slate-200"
+                          }`}
                         >
-                          <Trash2 size={12} className="stroke-[2.5]" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          <option value="No">No</option>
+                          <option value="Yes">Yes</option>
+                        </select>
+                      </td>
+
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-1 bg-violet-50 text-violet-700 border border-violet-100 px-2 py-0.5 rounded-lg text-xs font-semibold">
+                          {order.employeeName || order.employeeId || "—"}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => editOrder(order)}
+                            className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <FaEdit size={13} />
+                          </button>
+                          <button
+                            onClick={() => deleteOrder(order._id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="Delete"
+                          >
+                            <FaTrash size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -415,230 +427,129 @@ export default function Orders() {
 
       </div>
 
-      {/* Structural Micro-Form Multi-field Overlay Editor Modal */}
-      <AnimatePresence>
-        {editingOrder && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
-            >
-              
-              {/* Modal Core Header */}
-              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-violet-50 text-violet-600 rounded-lg">
-                    <ShoppingBag size={16} className="stroke-[2.5]" />
+      {/* ── Edit Modal ── */}
+      {editingOrder && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div
+            className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
+            style={{ animation: "modalIn 0.2s ease-out" }}
+          >
+            <style>{`@keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }`}</style>
+
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Edit Order</h2>
+                <p className="text-xs text-slate-400 mt-0.5 font-mono">{editingOrder._id}</p>
+              </div>
+              <button
+                onClick={() => setEditingOrder(null)}
+                className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-6">
+
+              {/* Section 1: Channel Info */}
+              <div>
+                <p className="text-[10px] font-bold text-violet-600 uppercase tracking-widest mb-3">Channel & Identity</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className={labelCls}>Site</label>
+                    <input type="text" value={editingOrder.site || ""} onChange={(e) => setEditingOrder({ ...editingOrder, site: e.target.value })} className={inputCls} placeholder="e.g. eBay" />
                   </div>
                   <div>
-                    <h2 className="text-base font-bold text-slate-800">Edit Operational Metrics Record</h2>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Vector Registry ID: <span className="font-mono font-bold text-slate-500">{editingOrder._id}</span></p>
+                    <label className={labelCls}>Order ID</label>
+                    <input type="text" value={editingOrder.orderId || ""} onChange={(e) => setEditingOrder({ ...editingOrder, orderId: e.target.value })} className={inputCls} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>SKU</label>
+                    <input type="text" value={editingOrder.sku || ""} onChange={(e) => setEditingOrder({ ...editingOrder, sku: e.target.value })} className={inputCls} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Date</label>
+                    <input type="date" value={editingOrder.date ? editingOrder.date.split("T")[0] : ""} onChange={(e) => setEditingOrder({ ...editingOrder, date: e.target.value })} className={inputCls} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Employee</label>
+                    <input type="text" value={editingOrder.employeeName || ""} onChange={(e) => setEditingOrder({ ...editingOrder, employeeName: e.target.value })} className={inputCls} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Status</label>
+                    <select value={editingOrder.status} onChange={(e) => setEditingOrder({ ...editingOrder, status: e.target.value })} className={inputCls + " cursor-pointer"}>
+                      <option value="Pending">Pending</option>
+                      <option value="Packed">Packed</option>
+                      <option value="Shipped">Shipped</option>
+                      <option value="Delivered">Delivered</option>
+                      <option value="Returned">Returned</option>
+                    </select>
                   </div>
                 </div>
-                <button
-                  onClick={() => setEditingOrder(null)}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-all"
-                >
-                  <X size={16} className="stroke-[2.5]" />
-                </button>
               </div>
 
-              {/* Form Complex Fields Container Framework */}
-              <div className="p-6 overflow-y-auto flex flex-col gap-5">
-                
-                {/* Partition Block I: Source Node Parameter Specifications */}
-                <div>
-                  <h3 className="text-[11px] font-black text-violet-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                    <Layers size={11} /> 1. Channel Metadata Parameters
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className={labelCls}>Source Site Node</label>
+              {/* Section 2: Financials */}
+              <div className="pt-4 border-t border-slate-100">
+                <p className="text-[10px] font-bold text-violet-600 uppercase tracking-widest mb-3">Costs & Pricing</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {[
+                    { label: "Quantity", key: "quantity", ph: "" },
+                    { label: "Selling Price (£)", key: "sellingPrice", ph: "0.00" },
+                    { label: "Cost Price (£)", key: "costPrice", ph: "0.00" },
+                    { label: "Platform Fee (£)", key: "ebayFee", ph: "0.00" },
+                    { label: "Ad Fee (£)", key: "adFee", ph: "0.00" },
+                    { label: "Delivery Cost (£)", key: "deliveryCost", ph: "0.00" },
+                  ].map((f) => (
+                    <div key={f.key}>
+                      <label className={labelCls}>{f.label}</label>
                       <input
-                        type="text"
-                        value={editingOrder.site || ""}
-                        onChange={(e) => setEditingOrder({ ...editingOrder, site: e.target.value })}
-                        className={inputCls}
-                        placeholder="e.g. eBay Platform"
+                        type="number"
+                        value={editingOrder[f.key] || ""}
+                        onChange={(e) => setEditingOrder({ ...editingOrder, [f.key]: e.target.value })}
+                        className={inputCls + " font-mono"}
+                        placeholder={f.ph}
                       />
                     </div>
-                    <div>
-                      <label className={labelCls}>Unique Order ID</label>
-                      <input
-                        type="text"
-                        value={editingOrder.orderId || ""}
-                        onChange={(e) => setEditingOrder({ ...editingOrder, orderId: e.target.value })}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Platform Core SKU</label>
-                      <input
-                        type="text"
-                        value={editingOrder.sku || ""}
-                        onChange={(e) => setEditingOrder({ ...editingOrder, sku: e.target.value })}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Registry Ingestion Date</label>
-                      <div className="relative">
-                        <Calendar size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                          type="date"
-                          value={editingOrder.date ? editingOrder.date.split("T")[0] : ""}
-                          onChange={(e) => setEditingOrder({ ...editingOrder, date: e.target.value })}
-                          className={inputCls}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Accountable Staff Operator</label>
-                      <input
-                        type="text"
-                        value={editingOrder.employeeName || ""}
-                        onChange={(e) => setEditingOrder({ ...editingOrder, employeeName: e.target.value })}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Lifecycle Progress Module State</label>
-                      <select
-                        value={editingOrder.status}
-                        onChange={(e) => setEditingOrder({ ...editingOrder, status: e.target.value })}
-                        className={`${inputCls} cursor-pointer font-semibold`}
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Packed">Packed</option>
-                        <option value="Shipped">Shipped</option>
-                        <option value="Delivered">Delivered</option>
-                        <option value="Returned">Returned</option>
-                      </select>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-
-                {/* Partition Block II: Ledger Accounting Variables */}
-                <div className="pt-4 border-t border-slate-100">
-                  <h3 className="text-[11px] font-black text-violet-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                    <DollarSign size={11} /> 2. Granular Cost Calculation Vectors
-                  </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
-                    <div>
-                      <label className={labelCls}>Quantity Matrix Count</label>
-                      <input
-                        type="number"
-                        value={editingOrder.quantity}
-                        onChange={(e) => setEditingOrder({ ...editingOrder, quantity: e.target.value })}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Sales Price (£)</label>
-                      <input
-                        type="number"
-                        value={editingOrder.sellingPrice || ""}
-                        onChange={(e) => setEditingOrder({ ...editingOrder, sellingPrice: e.target.value })}
-                        className={inputCls}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Unit Cost Price (£)</label>
-                      <input
-                        type="number"
-                        value={editingOrder.costPrice || ""}
-                        onChange={(e) => setEditingOrder({ ...editingOrder, costPrice: e.target.value })}
-                        className={inputCls}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Channel Broker Fee (£)</label>
-                      <input
-                        type="number"
-                        value={editingOrder.ebayFee || ""}
-                        onChange={(e) => setEditingOrder({ ...editingOrder, ebayFee: e.target.value })}
-                        className={inputCls}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Marketing Ad Premium (£)</label>
-                      <input
-                        type="number"
-                        value={editingOrder.adFee || ""}
-                        onChange={(e) => setEditingOrder({ ...editingOrder, adFee: e.target.value })}
-                        className={inputCls}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Fulfillment Handling Cost (£)</label>
-                      <input
-                        type="number"
-                        value={editingOrder.deliveryCost || ""}
-                        onChange={(e) => setEditingOrder({ ...editingOrder, deliveryCost: e.target.value })}
-                        className={inputCls}
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Partition Block III: Logistical Parameters */}
-                <div className="pt-4 border-t border-slate-100">
-                  <h3 className="text-[11px] font-black text-violet-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                    <Truck size={11} /> 3. Logistical Distribution Tokens
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className={labelCls}>Waybill Tracking Identification Sequence</label>
-                      <input
-                        type="text"
-                        value={editingOrder.trackingNo || ""}
-                        onChange={(e) => setEditingOrder({ ...editingOrder, trackingNo: e.target.value })}
-                        className={`${inputCls} font-mono`}
-                        placeholder="Tracking Token Index Strings"
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Hub Scanning Identifier</label>
-                      <input
-                        type="text"
-                        value={editingOrder.courierScanned || ""}
-                        onChange={(e) => setEditingOrder({ ...editingOrder, courierScanned: e.target.value })}
-                        className={`${inputCls} font-mono`}
-                        placeholder="Courier Metadata Label"
-                      />
-                    </div>
-                  </div>
-                </div>
-
               </div>
 
-              {/* Modal Execution Trigger Controls Panel */}
-              <div className="px-6 py-3.5 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
-                <button
-                  onClick={() => setEditingOrder(null)}
-                  className="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all active:scale-[0.98]"
-                >
-                  Abort Update
-                </button>
-                <button
-                  onClick={saveEdit}
-                  className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-5 py-2 rounded-xl text-xs font-bold hover:from-violet-500 hover:to-indigo-500 transition-all shadow-md shadow-violet-600/10 active:scale-[0.98]"
-                >
-                  Commit Vector Ingestion
-                </button>
+              {/* Section 3: Logistics */}
+              <div className="pt-4 border-t border-slate-100">
+                <p className="text-[10px] font-bold text-violet-600 uppercase tracking-widest mb-3">Logistics</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Tracking Number</label>
+                    <input type="text" value={editingOrder.trackingNo || ""} onChange={(e) => setEditingOrder({ ...editingOrder, trackingNo: e.target.value })} className={inputCls + " font-mono"} placeholder="Enter tracking…" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Courier Scanned</label>
+                    <input type="text" value={editingOrder.courierScanned || ""} onChange={(e) => setEditingOrder({ ...editingOrder, courierScanned: e.target.value })} className={inputCls + " font-mono"} placeholder="Yes / No" />
+                  </div>
+                </div>
               </div>
+            </div>
 
-            </motion.div>
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
+              <button
+                onClick={() => setEditingOrder(null)}
+                className="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveEdit}
+                className="px-5 py-2 text-sm font-bold text-white bg-violet-600 hover:bg-violet-700 rounded-xl transition-colors shadow-sm shadow-violet-600/20"
+              >
+                Save Changes
+              </button>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }
