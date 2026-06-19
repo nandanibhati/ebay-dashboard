@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
-import { FaPlus, FaTrash, FaEdit } from "react-icons/fa";
+import { FaTrash, FaEdit } from "react-icons/fa";
 import { motion } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -142,17 +142,75 @@ export default function Tasks() {
       <Sidebar />
 
       <div className="flex-1 ml-64 p-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold">
-              Task Management
-            </h1>
+     <div className="space-y-6 mb-8">
 
-            <p className="text-gray-500 mt-2">
-              Manage Team Tasks
-            </p>
-          </div>
-        </div>
+  <div className="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-3xl p-8 text-white shadow-xl">
+    <h1 className="text-3xl font-bold">
+      Team Task Management 📋
+    </h1>
+
+    <p className="mt-2 text-violet-100">
+      Create, assign and track team tasks efficiently.
+    </p>
+  </div>
+
+  <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+
+    <div className="bg-white p-6 rounded-3xl shadow-lg border border-gray-100">
+      <p className="text-gray-500 text-sm">
+        Total Tasks
+      </p>
+
+      <h2 className="text-3xl font-bold mt-2">
+        {tasks.length}
+      </h2>
+    </div>
+
+    <div className="bg-white p-6 rounded-3xl shadow-lg border border-gray-100">
+      <p className="text-gray-500 text-sm">
+        Pending
+      </p>
+
+      <h2 className="text-3xl font-bold text-yellow-500 mt-2">
+        {
+          tasks.filter(
+            (t) => t.status === "Todo"
+          ).length
+        }
+      </h2>
+    </div>
+
+    <div className="bg-white p-6 rounded-3xl shadow-lg border border-gray-100">
+      <p className="text-gray-500 text-sm">
+        In Progress
+      </p>
+
+      <h2 className="text-3xl font-bold text-blue-500 mt-2">
+        {
+          tasks.filter(
+            (t) =>
+              t.status === "In Progress"
+          ).length
+        }
+      </h2>
+    </div>
+
+    <div className="bg-white p-6 rounded-3xl shadow-lg border border-gray-100">
+      <p className="text-gray-500 text-sm">
+        Completed
+      </p>
+
+      <h2 className="text-3xl font-bold text-green-500 mt-2">
+        {
+          tasks.filter(
+            (t) => t.status === "Done"
+          ).length
+        }
+      </h2>
+    </div>
+
+  </div>
+</div>
 
         {/* Form */}
 
@@ -160,12 +218,40 @@ export default function Tasks() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           onSubmit={handleSubmit}
-          className="bg-white rounded-3xl shadow-lg p-6 grid md:grid-cols-2 gap-4 mb-8"
+          className="
+bg-white
+rounded-3xl
+shadow-xl
+border border-gray-100
+p-8
+grid md:grid-cols-2 gap-5 mb-8
+"
         >
+            <div className="md:col-span-2 mb-2">
+  <h2 className="text-2xl font-bold text-gray-800">
+    {editingId
+      ? "Update Task ✏️"
+      : "Create New Task 🚀"}
+  </h2>
+
+  <p className="text-gray-500 mt-1">
+    Assign work and track team productivity.
+  </p>
+</div>
           <input
             type="text"
             placeholder="Task Title"
-            className="border p-3 rounded-xl"
+            className="
+border border-gray-200
+bg-gray-50
+p-4
+rounded-2xl
+outline-none
+focus:ring-2
+focus:ring-violet-200
+focus:border-violet-500
+transition-all
+"
             value={form.title}
             onChange={(e) =>
               setForm({
@@ -177,7 +263,17 @@ export default function Tasks() {
           />
 
           <select
-            className="border p-3 rounded-xl"
+          className="
+border border-gray-200
+bg-gray-50
+p-4
+rounded-2xl
+outline-none
+focus:ring-2
+focus:ring-violet-200
+focus:border-violet-500
+transition-all
+"
             value={form.assignedTo}
             onChange={(e) =>
               setForm({
@@ -203,7 +299,18 @@ export default function Tasks() {
 
           <textarea
             placeholder="Description"
-            className="border p-3 rounded-xl md:col-span-2"
+            className="
+border border-gray-200
+bg-gray-50
+p-4
+rounded-2xl
+outline-none
+focus:ring-2
+focus:ring-violet-200
+focus:border-violet-500
+transition-all
+md:col-span-2
+"
             rows="3"
             value={form.description}
             onChange={(e) =>
@@ -215,7 +322,17 @@ export default function Tasks() {
           />
 
           <select
-            className="border p-3 rounded-xl"
+            className="
+border border-gray-200
+bg-gray-50
+p-4
+rounded-2xl
+outline-none
+focus:ring-2
+focus:ring-violet-200
+focus:border-violet-500
+transition-all
+"
             value={form.priority}
             onChange={(e) =>
               setForm({
@@ -230,7 +347,17 @@ export default function Tasks() {
           </select>
 
           <select
-            className="border p-3 rounded-xl"
+            className="
+border border-gray-200
+bg-gray-50
+p-4
+rounded-2xl
+outline-none
+focus:ring-2
+focus:ring-violet-200
+focus:border-violet-500
+transition-all
+"
             value={form.status}
             onChange={(e) =>
               setForm({
@@ -247,7 +374,17 @@ export default function Tasks() {
 
           <input
             type="date"
-            className="border p-3 rounded-xl"
+           className="
+border border-gray-200
+bg-gray-50
+p-4
+rounded-2xl
+outline-none
+focus:ring-2
+focus:ring-violet-200
+focus:border-violet-500
+transition-all
+"
             value={form.startDate}
             onChange={(e) =>
               setForm({
@@ -259,7 +396,17 @@ export default function Tasks() {
 
           <input
             type="date"
-            className="border p-3 rounded-xl"
+            className="
+border border-gray-200
+bg-gray-50
+p-4
+rounded-2xl
+outline-none
+focus:ring-2
+focus:ring-violet-200
+focus:border-violet-500
+transition-all
+"
             value={form.dueDate}
             onChange={(e) =>
               setForm({
@@ -280,10 +427,10 @@ export default function Tasks() {
 
         {/* Tasks Table */}
 
-        <div className="bg-white rounded-3xl shadow-lg overflow-auto">
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-slate-100">
-              <tr>
+            <thead className="bg-slate-50 border-b">
+              <tr className="text-gray-600">
                 <th className="p-4 text-left">
                   Task
                 </th>
@@ -298,10 +445,25 @@ export default function Tasks() {
             </thead>
 
             <tbody>
+                {tasks.length === 0 && (
+  <tr>
+    <td
+      colSpan="8"
+      className="text-center py-16 text-gray-400"
+    >
+      No tasks found 📋
+    </td>
+  </tr>
+)}
               {tasks.map((task) => (
                 <tr
                   key={task._id}
-                  className="border-b hover:bg-slate-50"
+                  className="
+border-b
+hover:bg-violet-50
+transition-all
+duration-200
+"
                 >
                   <td className="p-4">
                     <p className="font-semibold">
@@ -313,31 +475,77 @@ export default function Tasks() {
                     </p>
                   </td>
 
-                  <td>{task.assignedTo}</td>
+                  <td>
+  <div className="flex items-center gap-3">
+    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 text-white flex items-center justify-center font-bold">
+      {task.assignedTo?.charAt(0)}
+    </div>
+
+    <div>
+      <p className="font-medium">
+        {task.assignedTo}
+      </p>
+
+      <p className="text-xs text-emerald-500">
+        ● Active
+      </p>
+    </div>
+  </div>
+</td>
 
                   <td>
                     <span
-                      className={`px-3 py-1 rounded-full text-white ${
-                        task.priority === "High"
-                          ? "bg-red-500"
-                          : task.priority ===
-                            "Medium"
-                          ? "bg-yellow-500"
-                          : "bg-green-500"
-                      }`}
+                     className={`px-3 py-1 rounded-full text-xs font-semibold
+${
+  task.priority === "High"
+    ? "bg-red-100 text-red-700"
+    : task.priority === "Medium"
+    ? "bg-yellow-100 text-yellow-700"
+    : "bg-green-100 text-green-700"
+}`}
                     >
                       {task.priority}
                     </span>
                   </td>
 
-                  <td>{task.status}</td>
-
-                  <td>{task.dueDate}</td>
+                  <td>
+  <span
+    className={`px-3 py-1 rounded-full text-xs font-semibold
+      ${
+        task.status === "Done"
+          ? "bg-green-100 text-green-700"
+          : task.status === "In Progress"
+          ? "bg-blue-100 text-blue-700"
+          : task.status === "Closed"
+          ? "bg-gray-100 text-gray-700"
+          : "bg-yellow-100 text-yellow-700"
+      }
+    `}
+  >
+    {task.status}
+  </span>
+</td>
 
                   <td>
-                    <div className="w-28 bg-gray-200 rounded-full">
+  <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-sm">
+    {task.dueDate}
+  </span>
+</td>
+
+                  <td>
+                    <div className="w-32 bg-gray-200 rounded-full overflow-hidden h-3">
                       <div
-                        className="bg-blue-600 text-xs text-white text-center rounded-full"
+                        className="
+bg-gradient-to-r
+from-violet-600
+to-indigo-600
+h-3
+text-[10px]
+text-white
+flex
+items-center
+justify-center
+"
                         style={{
                           width: `${task.progress}%`,
                         }}
@@ -368,7 +576,14 @@ export default function Tasks() {
                             task.progress,
                         });
                       }}
-                      className="bg-blue-500 text-white p-2 rounded"
+                      className="
+bg-violet-100
+text-violet-700
+p-3
+rounded-xl
+hover:bg-violet-200
+transition-all
+"
                     >
                       <FaEdit />
                     </button>
@@ -379,7 +594,14 @@ export default function Tasks() {
                       onClick={() =>
                         deleteTask(task._id)
                       }
-                      className="bg-red-500 text-white p-2 rounded"
+                     className="
+bg-red-100
+text-red-600
+p-3
+rounded-xl
+hover:bg-red-200
+transition-all
+"
                     >
                       <FaTrash />
                     </button>
