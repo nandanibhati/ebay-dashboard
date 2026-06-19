@@ -27,6 +27,7 @@ export default function Sidebar() {
             Dashboard
           </Link>
         </li>
+       
 
         <li>
           <Link
@@ -47,6 +48,14 @@ export default function Sidebar() {
   Orders
 </Link>
         </li>
+        <li>
+       <Link
+  to="/tasks"
+  className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-700"
+>
+  📋 Tasks
+</Link>
+</li>
         <li>
   <Link
     to="/stock"

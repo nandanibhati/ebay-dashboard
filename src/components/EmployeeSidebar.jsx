@@ -17,6 +17,7 @@ export default function EmployeeSidebar() {
     🏠 Dashboard
   </Link>
 </li>
+
         <li>
           <Link
             to="/manual-entry"
@@ -35,6 +36,14 @@ export default function EmployeeSidebar() {
             <ShoppingCart size={20} />
             Orders
           </Link>
+        </li>
+        <li>
+          <Link
+  to="/employee-tasks"
+  className="flex items-center gap-3 hover:text-blue-400"
+>
+  📋 Tasks
+</Link>
         </li>
 
         <li>
