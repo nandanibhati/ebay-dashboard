@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Sidebar from "../components/Sidebar";
 import EmployeeSidebar from "../components/EmployeeSidebar";
 
@@ -9,6 +9,7 @@ const STATUS_CONFIG = {
     border: "border-amber-200",
     dot: "bg-amber-400",
     badge: "bg-amber-100 text-amber-700 ring-amber-200",
+    menu: "hover:bg-amber-50 hover:text-amber-700",
   },
   "In Progress": {
     color: "text-blue-600",
@@ -16,6 +17,7 @@ const STATUS_CONFIG = {
     border: "border-blue-200",
     dot: "bg-blue-400",
     badge: "bg-blue-100 text-blue-700 ring-blue-200",
+    menu: "hover:bg-blue-50 hover:text-blue-700",
   },
   Completed: {
     color: "text-emerald-600",
@@ -23,8 +25,11 @@ const STATUS_CONFIG = {
     border: "border-emerald-200",
     dot: "bg-emerald-400",
     badge: "bg-emerald-100 text-emerald-700 ring-emerald-200",
+    menu: "hover:bg-emerald-50 hover:text-emerald-700",
   },
 };
+
+const STATUSES = ["Todo", "In Progress", "Completed"];
 
 function StatCard({ label, value, color, icon, gradient }) {
   return (
@@ -41,7 +46,60 @@ function StatCard({ label, value, color, icon, gradient }) {
   );
 }
 
-function NoteCard({ note, index, deleteNote, editNote }) {
+/* Styled status dropdown — replaces the bare <select> */
+function StatusDropdown({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const cfg = STATUS_CONFIG[value] || STATUS_CONFIG["Todo"];
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div className="relative flex-shrink-0" ref={ref}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full ring-1 transition-all duration-150 hover:opacity-80 ${cfg.badge}`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+        {value}
+        {/* chevron */}
+        <svg xmlns="http://www.w3.org/2000/svg" className={`w-3 h-3 transition-transform duration-150 ${open ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 z-50 bg-white border border-slate-100 rounded-xl shadow-lg py-1 min-w-[130px]">
+          {STATUSES.map((s) => {
+            const c = STATUS_CONFIG[s];
+            const active = s === value;
+            return (
+              <button
+                key={s}
+                onClick={() => { onChange(s); setOpen(false); }}
+                className={`w-full text-left flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-colors duration-100 ${active ? `${c.bg} ${c.color}` : `text-slate-600 ${c.menu}`}`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${c.dot}`} />
+                {s}
+                {active && (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NoteCard({ note, index, deleteNote, editNote, updateStatus }) {
   const cfg = STATUS_CONFIG[note.status] || STATUS_CONFIG["Todo"];
   const initials = (note.createdBy || "?")
     .split(" ")
@@ -55,15 +113,15 @@ function NoteCard({ note, index, deleteNote, editNote }) {
       className="group bg-white border border-slate-100 rounded-2xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
       style={{ animationDelay: `${index * 60}ms` }}
     >
-      {/* Title + badge */}
+      {/* Title + status dropdown */}
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-semibold text-slate-800 text-base leading-snug truncate group-hover:text-violet-700 transition-colors duration-200 flex-1 min-w-0">
           {note.title}
         </h3>
-        <span className={`flex-shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full ring-1 ${cfg.badge}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-          {note.status}
-        </span>
+        <StatusDropdown
+          value={note.status}
+          onChange={(newStatus) => updateStatus(note._id, newStatus)}
+        />
       </div>
 
       {/* Content */}
@@ -73,7 +131,6 @@ function NoteCard({ note, index, deleteNote, editNote }) {
 
       {/* Footer */}
       <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-
         {/* Author */}
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
@@ -127,20 +184,14 @@ export default function Notes() {
   const [filterStatus, setFilterStatus] = useState("All");
   const role = localStorage.getItem("role");
 
-  const [form, setForm] = useState({
-    title: "",
-    content: "",
-    status: "Todo",
-  });
+  const [form, setForm] = useState({ title: "", content: "", status: "Todo" });
 
   const fetchNotes = async () => {
     try {
       const res = await fetch("https://ebay-dashboard-z7h2.onrender.com/api/notes");
       const data = await res.json();
       if (data.success) setNotes(data.notes);
-    } catch (error) {
-      console.log(error);
-    }
+    } catch (error) { console.log(error); }
   };
 
   useEffect(() => { fetchNotes(); }, []);
@@ -150,6 +201,17 @@ export default function Notes() {
     if (!ok) return;
     try {
       await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/notes/${id}`, { method: "DELETE" });
+      fetchNotes();
+    } catch (error) { console.log(error); }
+  };
+
+  const updateStatus = async (id, status) => {
+    try {
+      await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/notes/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
       fetchNotes();
     } catch (error) { console.log(error); }
   };
@@ -241,7 +303,6 @@ export default function Notes() {
           {/* Form Panel */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sticky top-8">
-
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2.5">
                   <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm transition-colors duration-200 ${editingId ? "bg-blue-500" : "bg-violet-600"}`}>
@@ -353,6 +414,7 @@ export default function Notes() {
                       index={i}
                       deleteNote={deleteNote}
                       editNote={editNote}
+                      updateStatus={updateStatus}
                     />
                   ))}
                 </div>
