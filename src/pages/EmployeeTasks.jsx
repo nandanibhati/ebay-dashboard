@@ -271,14 +271,10 @@ export default function Tasks() {
                 <ListTodo size={22} className="stroke-[2.5]" />
               </div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-                Task Management Matrix
+                Task Management 
               </h1>
             </div>
-            <p className="mt-3 text-violet-100/90 text-sm max-w-xl font-medium leading-relaxed">
-              Organize core operations, provision sprint targets, assign tasks
-              across system operators, and track completion progress loops in
-              real-time.
-            </p>
+           
           </div>
         </motion.div>
 
@@ -356,10 +352,8 @@ export default function Tasks() {
                   ? "Modify Operational Task Parameters"
                   : "Provision New Task Vector"}
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Define development sprints, map accountability scopes, and
-                balance operational delivery priority.
-              </p>
+              
+              
             </div>
             {editingId && (
               <span className="ml-auto hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-bold">
