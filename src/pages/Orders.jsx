@@ -1,4 +1,4 @@
-import Sidebar from "../components/Sidebar";
+import EmployeeSidebar from "../components/EmployeeSidebar";
 import { useEffect, useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import * as XLSX from "xlsx";
@@ -137,7 +137,7 @@ export default function Orders() {
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
+      <EmployeeSidebar />
 
       <div className="ml-64 flex-1 p-4 lg:p-6 space-y-6 overflow-hidden">
         {/* ── Page Header ── */}
