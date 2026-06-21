@@ -111,7 +111,7 @@ export default function Orders() {
   });
 
   const pendingCount = orders.filter((o) => o.status === "Pending").length;
-  const packedCount = orders.filter((o) => o.status === "Packed").length;
+  const ExpectingCount = orders.filter((o) => o.status === "Expecting").length;
   const shippedCount = orders.filter((o) => o.status === "Shipped").length;
   const deliveredCount = orders.filter((o) => o.status === "Delivered").length;
   const cancelledCount = orders.filter((o) => o.status === "Cancelled").length;
@@ -124,7 +124,7 @@ export default function Orders() {
 
   const statusConfig = {
     Pending:   { dot: "bg-amber-400",   badge: "bg-amber-50 text-amber-700 ring-amber-200" },
-    Packed:    { dot: "bg-blue-400",    badge: "bg-blue-50 text-blue-700 ring-blue-200" },
+    Expecting: { dot: "bg-green-400",   badge: "bg-green-50 text-green-700 ring-green-200" },
     Shipped:   { dot: "bg-indigo-400",  badge: "bg-indigo-50 text-indigo-700 ring-indigo-200" },
     Delivered: { dot: "bg-emerald-400", badge: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
     Returned:  { dot: "bg-purple-400",  badge: "bg-purple-50 text-purple-700 ring-purple-200" },
@@ -132,8 +132,7 @@ export default function Orders() {
   };
 
   const inputCls =
-    "w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-slate-800 placeholder:text-slate-400";
-
+    "w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-slate-800 placeholder:text-slate-4₀";
   const labelCls = "block text-xs font-semibold text-slate-500 mb-1.5";
 
   return (
@@ -215,7 +214,7 @@ export default function Orders() {
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           {[
             { label: "Pending",   count: pendingCount,        dot: "bg-amber-400",   ring: "ring-amber-100",   num: "text-amber-700"   },
-            { label: "Packed",    count: packedCount,         dot: "bg-orange-400",  ring: "ring-orange-100",  num: "text-orange-700"  },
+            { label: "Expecting",    count: ExpectingCount,         dot: "bg-green-400",  ring: "ring-green-100",  num: "text-green-700"  },
             { label: "Shipped",   count: shippedCount,        dot: "bg-blue-400",    ring: "ring-blue-100",    num: "text-blue-700"    },
             { label: "Delivered", count: deliveredCount,      dot: "bg-emerald-400", ring: "ring-emerald-100", num: "text-emerald-700" },
             { label: "Cancelled", count: cancelledCount,      dot: "bg-rose-400",    ring: "ring-rose-100",    num: "text-rose-700"    },
@@ -265,7 +264,7 @@ export default function Orders() {
           >
             <option value="">All Status</option>
             <option value="Pending">Pending</option>
-            <option value="Packed">Packed</option>
+            <option value="Expecting">Expecting</option>
             <option value="Shipped">Shipped</option>
             <option value="Delivered">Delivered</option>
             <option value="Returned">Returned</option>
@@ -361,7 +360,7 @@ export default function Orders() {
                           className={`text-xs font-semibold px-2 py-1.5 rounded-lg border outline-none cursor-pointer ring-1 transition-all ${sc.badge} ${sc.dot.replace("bg-", "border-")}`}
                         >
                           <option value="Pending">Pending</option>
-                          <option value="Packed">Packed</option>
+                          <option value="Expecting">Expecting</option>
                           <option value="Shipped">Shipped</option>
                           <option value="Delivered">Delivered</option>
                           <option value="Returned">Returned</option>
@@ -481,7 +480,7 @@ export default function Orders() {
                     <label className={labelCls}>Status</label>
                     <select value={editingOrder.status} onChange={(e) => setEditingOrder({ ...editingOrder, status: e.target.value })} className={inputCls + " cursor-pointer"}>
                       <option value="Pending">Pending</option>
-                      <option value="Packed">Packed</option>
+                      <option value="Expecting">Expecting</option>
                       <option value="Shipped">Shipped</option>
                       <option value="Delivered">Delivered</option>
                       <option value="Returned">Returned</option>
