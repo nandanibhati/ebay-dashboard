@@ -529,10 +529,7 @@ export default function Tasks() {
               <h2 className="text-lg font-bold text-slate-800">
                 Operational Backlog Index
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Chronological index tracking priority bounds, current
-                iteration cycles, and verification tasks.
-              </p>
+              
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-500 text-xs font-bold shadow-sm self-start sm:self-auto">
               <Activity size={13} className="text-emerald-500 animate-pulse" />
