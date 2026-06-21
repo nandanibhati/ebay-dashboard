@@ -18,6 +18,7 @@ import AdminSalary from "./pages/AdminSalary";
 import AdminLeaves from "./pages/AdminLeaves";
 import AdminTasks from "./pages/AdminTasks";
 import EmployeeTasks from "./pages/EmployeeTasks";
+import Notes from "./pages/Notes";
 
 function App() {
   return (
@@ -78,6 +79,10 @@ function App() {
 <Route
   path="/salary"
   element={<Salary />}
+/>
+<Route
+  path="/notes"
+  element={<Notes />}
 />
 
         <Route path="/admin-orders" element={<AdminOrders />} />

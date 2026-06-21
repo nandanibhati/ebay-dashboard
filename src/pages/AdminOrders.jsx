@@ -111,7 +111,7 @@ export default function Orders() {
   });
 
   const pendingCount = orders.filter((o) => o.status === "Pending").length;
-  const ExpectingCount = orders.filter((o) => o.status === "Expecting").length;
+   const expectingCount = orders.filter((o) => o.status === "Expecting").length;
   const shippedCount = orders.filter((o) => o.status === "Shipped").length;
   const deliveredCount = orders.filter((o) => o.status === "Delivered").length;
   const cancelledCount = orders.filter((o) => o.status === "Cancelled").length;
@@ -140,14 +140,40 @@ export default function Orders() {
     <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-violet-50/40">
       <Sidebar />
 
-      <div className="ml-64 flex-1 p-6 lg:p-8 max-w-[1800px] space-y-6 animate-[fadeIn_0.4s_ease-out]">
-        <style>{`
-          @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-          @keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-          @keyframes rowIn { from { opacity: 0; } to { opacity: 1; } }
-          .row-anim { animation: rowIn 0.3s ease-out; }
-        `}</style>
+<div className="ml-64 flex-1 p-6 lg:p-8 space-y-6 overflow-x-hidden animate-[fadeIn_0.4s_ease-out]">
 
+  <style>{`
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes modalIn {
+      from {
+        opacity: 0;
+        transform: scale(0.96) translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    @keyframes rowIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .row-anim {
+      animation: rowIn 0.3s ease-out;
+    }
+  `}</style>
         {/* ── Page Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -316,9 +342,9 @@ export default function Orders() {
             </span>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-auto h-[70vh]">
             <table className="w-full text-left min-w-[1400px]">
-              <thead>
+              <thead className="sticky top-0 z-20">
                 <tr className="border-b border-slate-100 bg-slate-50/60">
                   {["Site", "Date", "Order ID", "SKU", "Qty", "Unit Price", "Cost", "Revenue", "Profit", "Tracking", "Status", "Courier", "Employee", "Actions"].map((h) => (
                     <th key={h} className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
@@ -408,7 +434,7 @@ export default function Orders() {
                           className={`text-xs font-semibold px-2 py-1.5 rounded-lg border outline-none cursor-pointer transition-all duration-200 hover:shadow-sm ${
                             (order.courierScanned || "No") === "Yes"
                               ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : "bg-slate-50 text-slate-500 border-slate-200"
+                              : "bg-rose-50 text-rose-700 border-rose-200"
                           }`}
                         >
                           <option value="No">No</option>

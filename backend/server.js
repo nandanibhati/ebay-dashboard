@@ -18,6 +18,8 @@ const attendanceRoutes = require("./routes/attendanceRoutes");
 const salaryRoutes = require("./routes/salaryRoutes");
 const leaveRoutes = require("./routes/leaveRoutes");
 const taskRoutes = require("./routes/taskRoutes");
+const noteRoutes = require("./routes/noteRoutes");
+
 // MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI)
@@ -25,6 +27,7 @@ mongoose
   .catch((err) => console.log(err));
 
 // API Routes
+app.use("/api/notes", noteRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/stock", stockRoutes);

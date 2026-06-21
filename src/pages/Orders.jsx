@@ -139,7 +139,7 @@ export default function Orders() {
     <div className="flex min-h-screen bg-slate-50">
       <EmployeeSidebar />
 
-      <div className="ml-64 flex-1 p-4 lg:p-6 space-y-6 overflow-hidden">
+    <div className="ml-64 flex-1 p-4 lg:p-6 space-y-6">
         {/* ── Page Header ── */}
         <div className="flex items-center justify-between">
           <div>
@@ -293,8 +293,8 @@ export default function Orders() {
             </span>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left table-auto">
+          <div className="overflow-x-auto overflow-y-visible">
+            <table className="min-w-[1400px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/60">
                   {["Site", "Date", "Order ID", "SKU", "Qty", "Unit Price", "Cost", "Revenue", "Profit", "Tracking", "Status", "Courier", "Employee", "Actions"].map((h) => (
@@ -381,11 +381,11 @@ export default function Orders() {
                             });
                             setOrders(orders.map((o) => (o._id === order._id ? { ...o, courierScanned: courierValue } : o)));
                           }}
-                          className={`text-xs font-semibold px-2 py-1.5 rounded-lg border outline-none cursor-pointer transition-all ${
-                            (order.courierScanned || "No") === "Yes"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : "bg-slate-50 text-slate-500 border-slate-200"
-                          }`}
+                         className={`text-xs font-semibold px-2 py-1.5 rounded-lg border outline-none cursor-pointer transition-all ${
+  (order.courierScanned || "No") === "Yes"
+    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+    : "bg-rose-50 text-rose-700 border-rose-200"
+}`}
                         >
                           <option value="No">No</option>
                           <option value="Yes">Yes</option>

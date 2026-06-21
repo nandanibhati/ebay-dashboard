@@ -57,6 +57,11 @@ export default function EmployeeSidebar() {
       icon: Wallet,
       path: "/salary",
     },
+    {
+  name: "Notes",
+  icon: ClipboardList,
+  path: "/notes",
+},
   ];
 
   return (

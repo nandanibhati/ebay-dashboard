@@ -69,6 +69,11 @@ export default function Sidebar() {
       icon: CalendarDays,
       path: "/admin-leaves",
     },
+    {
+  name: "Notes",
+  icon: ClipboardList,
+  path: "/notes",
+},
   ];
 
   return (

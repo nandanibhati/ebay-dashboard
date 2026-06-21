@@ -140,7 +140,7 @@ export default function Stock() {
     <div className="flex min-h-screen bg-[#f8fafc]">
       {role === "admin" ? <Sidebar /> : <EmployeeSidebar />}
 
-      <div className="flex-1 ml-0 md:ml-64 p-4 md:p-8 max-w-[1800px] mx-auto flex flex-col gap-6 w-full overflow-hidden">
+      <div className="flex-1 ml-0 md:ml-64 p-4 md:p-8 flex flex-col gap-6 w-full overflow-x-hidden">
         {/* Module Hero Header Banner */}
         <motion.div
           initial={{ opacity: 0, y: -12 }}
@@ -372,9 +372,9 @@ export default function Stock() {
             </span>
           </div>
 
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-left border-collapse min-w-[1100px] table-fixed">
-              <thead>
+         <div className="overflow-auto h-[70vh] w-full">
+            <table className="text-left border-collapse min-w-[1200px] table-fixed">
+              <thead className="sticky top-0 z-20 bg-slate-50">
                 <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   <th className="w-48 px-6 py-3.5">Listing SKU Target</th>
                   <th className="px-6 py-3.5">Structural Item Label</th>
