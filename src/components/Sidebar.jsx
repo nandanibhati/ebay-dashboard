@@ -32,7 +32,7 @@ export default function Sidebar() {
     {
       name: "Orders",
       icon: ShoppingCart,
-      path: "/admin-orders",
+      path: "/orders",
     },
     {
       name: "Tasks",

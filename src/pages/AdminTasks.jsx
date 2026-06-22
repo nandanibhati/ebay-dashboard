@@ -459,6 +459,7 @@ export default function Tasks() {
                   <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                     <th className="px-6 py-4 w-[40%]">Task Schema Parameters</th>
                     <th className="px-4 py-4">Resource Target</th>
+                    <th className="px-4 py-4">Assigned By</th>
                     <th className="px-4 py-4">Impact Priority</th>
                     <th className="px-4 py-4">State Module</th>
                     <th className="px-4 py-4">Due Epoch</th>
@@ -492,15 +493,32 @@ export default function Tasks() {
                         </td>
 
                         {/* Assigned operator column */}
-                        <td className="px-4 py-4 whitespace-nowrap font-medium text-slate-700">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500">
-                              <User size={12} className="stroke-[2.5]" />
-                            </div>
-                            <span className="text-xs font-semibold">{task.assignedTo || "Unassigned"}</span>
-                          </div>
-                        </td>
+                  {/* Assigned To */}
+<td className="px-4 py-4 whitespace-nowrap font-medium text-slate-700">
+  <div className="flex items-center gap-2">
+    <div className="w-6 h-6 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500">
+      <User size={12} />
+    </div>
 
+    <span className="text-xs font-semibold">
+      {task.assignedTo || "Unassigned"}
+    </span>
+  </div>
+</td>
+
+{/* Assigned By */}
+<td className="px-4 py-4 whitespace-nowrap">
+  <div className="flex items-center gap-2">
+    <div className="w-6 h-6 rounded-md bg-violet-100 border border-violet-200 flex items-center justify-center text-violet-600">
+      <UserCheck size={12} />
+    </div>
+
+    <span className="text-xs font-semibold">
+      {task.assignedBy || "Admin"}
+    </span>
+  </div>
+</td>
+                 
                         {/* High contrast priority flags */}
                         <td className="px-4 py-4 whitespace-nowrap">
                           <span
@@ -655,6 +673,10 @@ export default function Tasks() {
                         <User size={11} />
                         {task.assignedTo || "Unassigned"}
                       </span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-violet-600">
+  <UserCheck size={11} />
+  Assigned By: {task.assignedBy || "Admin"}
+</span>
                       <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500">
                         <Calendar size={11} />
                         {task.dueDate
