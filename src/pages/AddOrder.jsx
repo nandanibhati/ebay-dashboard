@@ -123,14 +123,21 @@ export default function AddOrder() {
   }
 };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-    if (name === "date") {
-      localStorage.setItem("selectedDate", value);
-    }
-  };
+const handleChange = (e) => {
+  const { name, value } = e.target;
 
+  setForm((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+
+  if (name === "date") {
+    localStorage.setItem("selectedDate", value);
+  }
+};
+const totalRevenue =
+  Number(form.quantity || 0) *
+  Number(form.sellingPrice || 0);
   const employeeName  = localStorage.getItem("employeeName")  || "Employee";
   const employeeEmail = localStorage.getItem("employeeEmail") || "";
 
@@ -335,6 +342,14 @@ export default function AddOrder() {
               <Field label="Sales Amount (£)" icon={DollarSign}>
                 <input type="number" step="0.01" name="sellingPrice" placeholder="0.00" value={form.sellingPrice} onChange={handleChange} className={inputCls} />
               </Field>
+              <Field label="Total Revenue (£)" icon={DollarSign}>
+  <input
+    type="number"
+    value={totalRevenue.toFixed(2)}
+    readOnly
+    className={`${inputCls} bg-slate-100 font-bold`}
+  />
+</Field>
 
               <Field label="eBay Transaction Fee (£)" icon={BarChart2}>
                 <input type="number" step="0.01" name="ebayFee" placeholder="0.00" value={form.ebayFee} onChange={handleChange} className={inputCls} />
