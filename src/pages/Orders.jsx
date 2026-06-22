@@ -1,9 +1,11 @@
 import EmployeeSidebar from "../components/EmployeeSidebar";
+import Sidebar from "../components/Sidebar";
 import { useEffect, useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import * as XLSX from "xlsx";
 
 export default function Orders() {
+  const role = localStorage.getItem("role");
   const [orders, setOrders] = useState([]);
   const [search, setSearch] = useState("");
   const [siteFilter, setSiteFilter] = useState("");
@@ -34,6 +36,7 @@ export default function Orders() {
       const profit = revenue - totalCost;
       const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(2) : 0;
       const updatedOrder = { ...editingOrder, revenue, profit, margin };
+      
 
       const response = await fetch(
         `https://ebay-dashboard-z7h2.onrender.com/api/orders/${editingOrder._id}`,
@@ -111,6 +114,7 @@ export default function Orders() {
   });
 
   const pendingCount = orders.filter((o) => o.status === "Pending").length;
+  const holdCount = orders.filter((o) => o.status === "Hold").length;
   const ExpectingCount = orders.filter((o) => o.status === "Expecting").length;
   const shippedCount = orders.filter((o) => o.status === "Shipped").length;
   const deliveredCount = orders.filter((o) => o.status === "Delivered").length;
@@ -118,12 +122,24 @@ export default function Orders() {
   const returnedCount = orders.filter((o) => o.status === "Returned").length;
   const courierScannedCount = orders.filter((o) => o.courierScanned === "Yes").length;
 
-  const totalRevenue = filteredOrders.reduce((acc, cur) => acc + Number(cur.revenue || 0), 0);
-  const totalProfit = filteredOrders.reduce((acc, cur) => acc + Number(cur.profit || 0), 0);
+const totalRevenue = filteredOrders
+  .filter((o) => o.status !== "Hold")
+  .reduce(
+    (acc, cur) => acc + Number(cur.revenue || 0),
+    0
+  );
+
+const totalProfit = filteredOrders
+  .filter((o) => o.status !== "Hold")
+  .reduce(
+    (acc, cur) => acc + Number(cur.profit || 0),
+    0
+  );
   const aggregateMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : 0;
 
   const statusConfig = {
     Pending:   { dot: "bg-amber-400",   badge: "bg-amber-50 text-amber-700 ring-amber-200" },
+    Hold:      { dot: "bg-orange-400",   badge: "bg-orange-50 text-orange-700 ring-orange-200" },
     Expecting: { dot: "bg-green-400",   badge: "bg-green-50 text-green-700 ring-green-200" },
     Shipped:   { dot: "bg-indigo-400",  badge: "bg-indigo-50 text-indigo-700 ring-indigo-200" },
     Delivered: { dot: "bg-emerald-400", badge: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
@@ -132,14 +148,14 @@ export default function Orders() {
   };
 
   const inputCls =
-    "w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-slate-800 placeholder:text-slate-4₀";
+    "w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-slate-800 placeholder:text-slate-400";
   const labelCls = "block text-xs font-semibold text-slate-500 mb-1.5";
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <EmployeeSidebar />
+      {role === "admin" ? <Sidebar /> : <EmployeeSidebar />}
 
-    <div className="ml-64 flex-1 p-4 lg:p-6 space-y-6">
+    <div className="flex-1 ml-0 md:ml-64 p-4 lg:p-6 space-y-6" >
         {/* ── Page Header ── */}
         <div className="flex items-center justify-between">
           <div>
@@ -211,9 +227,16 @@ export default function Orders() {
         </div>
 
         {/* ── Status Pipeline ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           {[
             { label: "Pending",   count: pendingCount,        dot: "bg-amber-400",   ring: "ring-amber-100",   num: "text-amber-700"   },
+            {
+  label: "Hold",
+  count: holdCount,
+  dot: "bg-orange-400",
+  ring: "ring-orange-100",
+  num: "text-orange-700",
+},
             { label: "Expecting",    count: ExpectingCount,         dot: "bg-green-400",  ring: "ring-green-100",  num: "text-green-700"  },
             { label: "Shipped",   count: shippedCount,        dot: "bg-blue-400",    ring: "ring-blue-100",    num: "text-blue-700"    },
             { label: "Delivered", count: deliveredCount,      dot: "bg-emerald-400", ring: "ring-emerald-100", num: "text-emerald-700" },
@@ -264,6 +287,7 @@ export default function Orders() {
           >
             <option value="">All Status</option>
             <option value="Pending">Pending</option>
+            <option value="Hold">Hold</option>
             <option value="Expecting">Expecting</option>
             <option value="Shipped">Shipped</option>
             <option value="Delivered">Delivered</option>
@@ -338,7 +362,7 @@ export default function Orders() {
                       <td className="px-4 py-3 text-sm font-mono text-slate-400">£{Number(order.costPrice || 0).toFixed(2)}</td>
                       <td className="px-4 py-3 text-sm font-mono font-bold text-slate-800">£{Number(order.revenue || 0).toFixed(2)}</td>
                       <td className={`px-4 py-3 text-sm font-mono font-bold ${profit >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
-                        £{profit.toFixed(2)}
+                        £{order.status === "Hold" ? "0.00" : profit.toFixed(2)}
                       </td>
                       <td className="px-4 py-3 max-w-[160px] truncate font-mono text-xs text-slate-400" title={order.trackingNo}>
                         {order.trackingNo || <span className="opacity-30">—</span>}
@@ -371,6 +395,7 @@ export default function Orders() {
                           className={`text-xs font-semibold px-2 py-1.5 rounded-lg border outline-none cursor-pointer ring-1 transition-all ${sc.badge} ${sc.dot.replace("bg-", "border-")}`}
                         >
                           <option value="Pending">Pending</option>
+                          <option value="Hold">Hold</option>
                           <option value="Expecting">Expecting</option>
                           <option value="Shipped">Shipped</option>
                           <option value="Delivered">Delivered</option>
@@ -491,10 +516,12 @@ export default function Orders() {
                     <label className={labelCls}>Status</label>
                     <select value={editingOrder.status} onChange={(e) => setEditingOrder({ ...editingOrder, status: e.target.value })} className={inputCls + " cursor-pointer"}>
                       <option value="Pending">Pending</option>
+                      <option value="Hold">Hold</option>
                       <option value="Expecting">Expecting</option>
                       <option value="Shipped">Shipped</option>
                       <option value="Delivered">Delivered</option>
                       <option value="Returned">Returned</option>
+                      <option value="Cancelled">Cancelled</option>
                     </select>
                   </div>
                 </div>

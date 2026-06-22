@@ -358,6 +358,7 @@ export default function AddOrder() {
               <Field label="Order Status" icon={CheckCircle2}>
                 <SelectField name="status" value={form.status} onChange={handleChange}>
                   <option value="Pending">Pending</option>
+                  <option value="Hold">Hold</option>
                   <option value="Packed">Packed</option>
                   <option value="Shipped">Shipped</option>
                   <option value="Delivered">Delivered</option>

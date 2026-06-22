@@ -6,7 +6,6 @@ import AddOrder from "./pages/AddOrder";
 import Orders from "./pages/Orders";
 import Employees from "./pages/Employees";
 import Analytics from "./pages/Analytics";
-import AdminOrders from "./pages/AdminOrders";
 import Signup from "./pages/Signup";
 import Stock from "./pages/Stock";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
@@ -85,7 +84,7 @@ function App() {
   element={<Notes />}
 />
 
-        <Route path="/admin-orders" element={<AdminOrders />} />
+       
 
         <Route path="/signup" element={<Signup />} />
       </Routes>
