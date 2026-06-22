@@ -113,11 +113,12 @@ export default function AddOrder() {
     const stock = await res.json();
 
     setForm((prev) => ({
-      ...prev,
-      sku,
-      product: stock.product || "",
-      costPrice: stock.price || "",
-    }));
+  ...prev,
+  sku,
+  product: stock.product || "",
+  costPrice: stock.price || "",
+  sellingPrice: stock.price || "",
+}));
   } catch (err) {
     console.log(err);
   }
