@@ -64,6 +64,7 @@ export default function AddOrder() {
     date: localStorage.getItem("selectedDate") || new Date().toISOString().split("T")[0],
     orderId: "",
     sku: "",
+    product: "",
     quantity: "",
     costPrice: "",
     sellingPrice: "",
@@ -75,6 +76,52 @@ export default function AddOrder() {
     courierScanned: "",
     notes: "",
   });
+  const handleSkuChange = async (e) => {
+  const sku = e.target.value;
+    if (!sku.trim()) {
+    setForm((prev) => ({
+      ...prev,
+      sku: "",
+      product: "",
+      costPrice: "",
+    }));
+    return;
+  }
+
+  setForm((prev) => ({
+    ...prev,
+    sku,
+  }));
+
+ 
+
+  try {
+    const res = await fetch(
+      `https://ebay-dashboard-z7h2.onrender.com/api/stock/sku/${sku}`
+    );
+
+    if (!res.ok) {
+  setForm((prev) => ({
+    ...prev,
+    sku,
+    product: "",
+    costPrice: "",
+  }));
+  return;
+}
+
+    const stock = await res.json();
+
+    setForm((prev) => ({
+      ...prev,
+      sku,
+      product: stock.product || "",
+      costPrice: stock.price || "",
+    }));
+  } catch (err) {
+    console.log(err);
+  }
+};
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -255,8 +302,24 @@ export default function AddOrder() {
               <SectionHeading label="Product Info" />
 
               <Field label="SKU *" icon={Tag}>
-                <input type="text" name="sku" placeholder="e.g. SKU-4821" value={form.sku} onChange={handleChange} className={inputCls} />
-              </Field>
+             
+  <input
+    type="text"
+    name="sku"
+    placeholder="e.g. SKU-4821"
+    value={form.sku}
+    onChange={handleSkuChange}
+    className={inputCls}
+  />
+</Field>
+              <Field label="Product" icon={Package}>
+  <input
+    type="text"
+    value={form.product || ""}
+    readOnly
+    className={`${inputCls} bg-slate-100`}
+  />
+</Field>
 
               <Field label="Quantity *" icon={Package}>
                 <input type="number" name="quantity" placeholder="0" value={form.quantity} onChange={handleChange} className={inputCls} />

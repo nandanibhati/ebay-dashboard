@@ -38,6 +38,25 @@ router.post("/", async (req, res) => {
     });
   }
 });
+router.get("/sku/:sku", async (req, res) => {
+  try {
+    const stock = await Stock.findOne({
+      sku: req.params.sku,
+    });
+
+    if (!stock) {
+      return res.status(404).json({
+        success: false,
+      });
+    }
+
+    res.json(stock);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+    });
+  }
+});
 //delete stock
 router.delete("/:id", async (req, res) => {
   try {
@@ -74,5 +93,6 @@ router.put("/:id", async (req, res) => {
     });
   }
 });
+
 
 module.exports = router;

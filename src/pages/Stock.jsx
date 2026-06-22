@@ -20,12 +20,14 @@ export default function Stock() {
   const role = localStorage.getItem("role");
   const [stock, setStock] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [search, setSearch] = useState("");
   const employeeName = localStorage.getItem("employeeName") || "Unknown";
 
   const [form, setForm] = useState({
     sku: "",
     product: "",
     quantity: "",
+    price: "",
     masterSku: "",
     packQty: 1,
     minimumStock: 5,
@@ -86,6 +88,7 @@ export default function Stock() {
           sku: "",
           product: "",
           quantity: "",
+          price: "",
           masterSku: "",
           packQty: 1,
           minimumStock: 5,
@@ -117,6 +120,7 @@ export default function Stock() {
       sku: item.sku,
       product: item.product,
       quantity: item.quantity,
+      price: item.price || "",
       masterSku: item.masterSku || "",
       packQty: item.packQty || 1,
       minimumStock: item.minimumStock || 5,
@@ -130,7 +134,12 @@ export default function Stock() {
     const healthyStockCount = totalSkus - lowStockCount;
     return { totalSkus, lowStockCount, healthyStockCount };
   }, [stock]);
-
+  const filteredStock = stock.filter(
+  (item) =>
+    item.sku?.toLowerCase().includes(search.toLowerCase()) ||
+    item.product?.toLowerCase().includes(search.toLowerCase()) ||
+    item.masterSku?.toLowerCase().includes(search.toLowerCase())
+);
   // Unified Workspace Styling Architecture Specs
   const inputCls =
     "w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all duration-200 text-slate-800 placeholder:text-slate-400 font-medium hover:border-slate-300";
@@ -170,7 +179,7 @@ export default function Stock() {
                   type="button"
                   onClick={() => {
                     setEditingId(null);
-                    setForm({ sku: "", product: "", quantity: "", masterSku: "", packQty: 1, minimumStock: 5 });
+                    setForm({ sku: "", product: "", quantity: "", price: "", masterSku: "", packQty: 1, minimumStock: 5 });
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-xs font-bold transition-all text-white backdrop-blur-sm self-start sm:self-center"
                 >
@@ -316,17 +325,32 @@ export default function Stock() {
             </div>
 
             <div>
-              <label className={labelCls}>Current Volume Qty</label>
-              <input
-                type="number"
-                name="quantity"
-                placeholder="0"
-                value={form.quantity}
-                onChange={handleChange}
-                className={inputCls}
-                required
-              />
-            </div>
+  <label className={labelCls}>Current Volume Qty</label>
+  <input
+    type="number"
+    name="quantity"
+    placeholder="0"
+    value={form.quantity}
+    onChange={handleChange}
+    className={inputCls}
+    required
+  />
+</div>
+
+<div>
+  <label className={labelCls}>Price (£)</label>
+
+  <input
+    type="number"
+    step="0.01"
+    name="price"
+    placeholder="0.00"
+    value={form.price}
+    onChange={handleChange}
+    className={inputCls}
+  />
+</div>
+          
 
             <div>
               <label className={labelCls}>Minimum Floor Limit</label>
@@ -362,16 +386,41 @@ export default function Stock() {
           transition={{ duration: 0.4, delay: 0.24 }}
           className="bg-white rounded-2xl border border-slate-200/80 shadow-xl shadow-slate-200/10 overflow-hidden flex flex-col"
         >
-          <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-xs font-bold text-slate-700">Storage Arrays Vector Logs</span>
-            </div>
-            <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
-              CATALOG POOL SIZE: {stock.length} NODES
-            </span>
-          </div>
+          <div className="p-4 border-b border-slate-100 bg-slate-50/50">
 
+  <div className="flex justify-between items-center mb-3">
+    <div className="flex items-center gap-2">
+      <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+      <span className="text-xs font-bold text-slate-700">
+        Storage Arrays Vector Logs
+      </span>
+    </div>
+
+    <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+      CATALOG POOL SIZE: {filteredStock.length} NODES
+    </span>
+  </div>
+
+  <div className="relative w-full md:w-96">
+  <input
+    type="text"
+    placeholder="🔍 Search SKU or Product..."
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+    className="w-full px-4 py-2 border border-slate-200 rounded-xl outline-none focus:border-blue-500"
+  />
+
+  {search && (
+    <button
+      type="button"
+      onClick={() => setSearch("")}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500"
+    >
+      ✕
+    </button>
+  )}
+</div>
+</div>
          <div className="overflow-auto h-[70vh] w-full">
             <table className="text-left border-collapse min-w-[1200px] table-fixed">
               <thead className="sticky top-0 z-20 bg-slate-50">
@@ -379,6 +428,9 @@ export default function Stock() {
                   <th className="w-48 px-6 py-3.5">Listing SKU Target</th>
                   <th className="px-6 py-3.5">Structural Item Label</th>
                   <th className="w-32 px-4 py-3.5 text-center">Quantities</th>
+                  <th className="w-32 px-4 py-3.5 text-center">
+  Price
+</th>
                   <th className="w-36 px-4 py-3.5 text-center">Threat Status</th>
                   <th className="w-48 px-4 py-3.5 text-center">Mutated Operator</th>
                   <th className="w-28 px-6 py-3.5 text-center sticky right-0 bg-slate-50/90 backdrop-blur-sm shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.03)]">
@@ -388,9 +440,9 @@ export default function Stock() {
               </thead>
 
               <tbody className="divide-y divide-slate-100 text-xs text-slate-600 font-medium">
-                {stock.length === 0 && (
+                {filteredStock.length === 0 && (
                   <tr>
-                    <td colSpan="6" className="text-center py-16 text-slate-400 font-bold bg-white">
+                    <td colSpan="7" className="text-center py-16 text-slate-400 font-bold bg-white">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl">
                           <Boxes size={22} className="text-slate-300" />
@@ -404,7 +456,7 @@ export default function Stock() {
                   </tr>
                 )}
 
-                {stock.map((item, idx) => (
+                {filteredStock.map((item, idx) => (
                   <motion.tr
                     key={item._id}
                     initial={{ opacity: 0, y: 6 }}
@@ -421,14 +473,17 @@ export default function Stock() {
                     <td className="px-6 py-3.5 text-slate-800 font-bold truncate pr-4" title={item.product}>
                       {item.product}
                     </td>
+                <td
+  className={`px-4 py-3.5 text-center font-mono font-black text-sm ${
+    item.quantity <= 5 ? "text-rose-600" : "text-emerald-600"
+  }`}
+>
+  {item.quantity}
+</td>
 
-                    <td
-                      className={`px-4 py-3.5 text-center font-mono font-black text-sm ${
-                        item.quantity <= 5 ? "text-rose-600" : "text-emerald-600"
-                      }`}
-                    >
-                      {item.quantity}
-                    </td>
+<td className="px-4 py-3.5 text-center font-semibold text-slate-700">
+  £{Number(item.price || 0).toFixed(2)}
+</td>
 
                     <td className="px-4 py-3.5 text-center">
                       {item.quantity <= 5 ? (

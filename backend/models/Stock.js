@@ -1,9 +1,17 @@
 const mongoose = require("mongoose");
+
 const stockSchema = new mongoose.Schema(
   {
     sku: String,
+
     product: String,
+
     quantity: Number,
+
+    price: {
+      type: Number,
+      default: 0,
+    },
 
     masterSku: {
       type: String,
@@ -28,4 +36,7 @@ const stockSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Stock", stockSchema);
+module.exports = mongoose.model(
+  "Stock",
+  stockSchema
+);
