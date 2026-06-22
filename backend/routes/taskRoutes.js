@@ -100,6 +100,7 @@ router.put("/:id", async (req, res) => {
         title: req.body.title,
         description: req.body.description,
         assignedTo: req.body.assignedTo,
+        assignedBy: req.body.assignedBy,
         priority: req.body.priority,
         status: req.body.status,
         startDate: req.body.startDate,

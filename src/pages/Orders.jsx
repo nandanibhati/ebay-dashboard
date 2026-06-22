@@ -369,9 +369,9 @@ const totalProfit = filteredOrders
                       </td>
                       <td className="px-4 py-3">
   <details>
-    <summary className="cursor-pointer text-violet-600 font-semibold text-xs">
-      View Note
-    </summary>
+   <summary className="cursor-pointer text-violet-600 font-semibold text-xs">
+  📝 {order.notes ? "View Note" : "Add Note"}
+</summary>
 
     <div className="mt-2 bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-600 max-w-[250px] whitespace-pre-wrap">
       {order.notes || "No Notes"}
@@ -567,6 +567,28 @@ const totalProfit = filteredOrders
                   </div>
                 </div>
               </div>
+              <div className="pt-4 border-t border-slate-100">
+  <p className="text-[10px] font-bold text-violet-600 uppercase tracking-widest mb-3">
+    Notes
+  </p>
+
+  <div>
+    <label className={labelCls}>Order Notes</label>
+
+    <textarea
+      rows="4"
+      value={editingOrder.notes || ""}
+      onChange={(e) =>
+        setEditingOrder({
+          ...editingOrder,
+          notes: e.target.value,
+        })
+      }
+      className={inputCls}
+      placeholder="Enter order notes..."
+    />
+  </div>
+</div>
             </div>
 
             {/* Modal Footer */}
