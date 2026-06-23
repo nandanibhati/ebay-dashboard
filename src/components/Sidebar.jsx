@@ -45,6 +45,16 @@ export default function Sidebar() {
       path: "/stock",
     },
     {
+  name: "Purchases",
+  icon: Package,
+  path: "/purchases",
+},
+{
+  name: "Subscriptions",
+  icon: DollarSign,
+  path: "/subscriptions",
+},
+    {
       name: "Employees",
       icon: Users,
       path: "/employees",

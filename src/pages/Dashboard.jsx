@@ -81,13 +81,33 @@ function Avatar({ name = "?" }) {
 // ─── Main export — ALL logic below is UNTOUCHED ───────────────────────────────
 export default function Dashboard() {
   const [orders, setOrders] = useState([]);
+  const [purchases, setPurchases] = useState([]);
+const [subscriptions, setSubscriptions] = useState([]);
 
-  useEffect(() => {
-    fetch("https://ebay-dashboard-z7h2.onrender.com/api/orders")
-      .then((res) => res.json())
-      .then((data) => setOrders(data))
-      .catch((err) => console.log(err));
-  }, []);
+ useEffect(() => {
+  fetch("https://ebay-dashboard-z7h2.onrender.com/api/orders")
+    .then((res) => res.json())
+    .then((data) => setOrders(data))
+    .catch((err) => console.log(err));
+
+  fetch("https://ebay-dashboard-z7h2.onrender.com/api/purchases")
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.success) {
+        setPurchases(data.purchases);
+      }
+    })
+    .catch((err) => console.log(err));
+
+  fetch("https://ebay-dashboard-z7h2.onrender.com/api/subscriptions")
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.success) {
+        setSubscriptions(data.subscriptions);
+      }
+    })
+    .catch((err) => console.log(err));
+}, []);
 
   const totalRevenue = orders.reduce(
     (sum, order) => sum + Number(order.revenue || 0),
@@ -108,6 +128,23 @@ export default function Dashboard() {
           ) / orders.length
         ).toFixed(2)
       : "0.00";
+      const totalPurchases = purchases.reduce(
+  (sum, item) =>
+    sum + Number(item.cost || 0),
+  0
+);
+
+const totalSubscriptions =
+  subscriptions.reduce(
+    (sum, item) =>
+      sum + Number(item.amount || 0),
+    0
+  );
+
+const netProfit =
+  totalProfit -
+  totalPurchases -
+  totalSubscriptions;
 
   // ─── UI only from here ─────────────────────────────────────────────────────
   const stats = [
@@ -163,6 +200,47 @@ export default function Dashboard() {
         bar: "bg-gradient-to-r from-amber-400 to-orange-400",
       },
     },
+    {
+  title: "Purchases",
+  value: `£${totalPurchases.toFixed(2)}`,
+  icon: ShoppingBag,
+  trend: 0,
+  trendLabel: "inventory expenses",
+  accent: {
+    iconBg: "bg-red-100",
+    iconColor: "text-red-600",
+    glow: "rgba(239,68,68,0.15)",
+    bar: "bg-gradient-to-r from-red-400 to-rose-400",
+  },
+},
+
+{
+  title: "Subscriptions",
+  value: `£${totalSubscriptions.toFixed(2)}`,
+  icon: DollarSign,
+  trend: 0,
+  trendLabel: "monthly tools cost",
+  accent: {
+    iconBg: "bg-purple-100",
+    iconColor: "text-purple-600",
+    glow: "rgba(168,85,247,0.15)",
+    bar: "bg-gradient-to-r from-purple-400 to-fuchsia-400",
+  },
+},
+
+{
+  title: "Net Profit",
+  value: `£${netProfit.toFixed(2)}`,
+  icon: TrendingUp,
+  trend: 0,
+  trendLabel: "after expenses",
+  accent: {
+    iconBg: "bg-emerald-100",
+    iconColor: "text-emerald-600",
+    glow: "rgba(16,185,129,0.15)",
+    bar: "bg-gradient-to-r from-emerald-400 to-green-400",
+  },
+},
   ];
 
   return (
@@ -216,7 +294,7 @@ export default function Dashboard() {
           </div>
 
           {/* ── Stat cards ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-5">
             {stats.map((s) => (
               <StatCard key={s.title} {...s} />
             ))}

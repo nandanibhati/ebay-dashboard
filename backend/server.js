@@ -19,7 +19,8 @@ const salaryRoutes = require("./routes/salaryRoutes");
 const leaveRoutes = require("./routes/leaveRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 const noteRoutes = require("./routes/noteRoutes");
-
+const purchaseRoutes = require("./routes/purchaseRoutes");
+const subscriptionRoutes = require("./routes/subscriptionRoutes");
 // MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI)
@@ -35,9 +36,14 @@ app.use("/api/salary", salaryRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use(
+  "/api/subscriptions",
+  subscriptionRoutes
+);
+app.use(
   "/api/attendance",
   attendanceRoutes
 );
+app.use("/api/purchases", purchaseRoutes);
 app.get("/", (req, res) => {
   res.send("Backend Running 🚀");
 });

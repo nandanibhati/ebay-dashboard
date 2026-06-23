@@ -1,5 +1,9 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import AddOrder from "./pages/AddOrder";
@@ -18,6 +22,8 @@ import AdminLeaves from "./pages/AdminLeaves";
 import AdminTasks from "./pages/AdminTasks";
 import EmployeeTasks from "./pages/EmployeeTasks";
 import Notes from "./pages/Notes";
+import Purchases from "./pages/Purchases";
+import Subscriptions from "./pages/Subscriptions";
 
 function App() {
   return (
@@ -36,12 +42,28 @@ function App() {
         <Route path="/analytics" element={<Analytics />} />
 
         <Route path="/stock" element={<Stock />} />
-
+        
+<Route
+  path="/subscriptions"
+  element={
+    localStorage.getItem("role") === "admin"
+      ? <Subscriptions />
+      : <Navigate to="/dashboard" />
+  }
+/>
         <Route
   path="/tasks"
   element={<AdminTasks />}
 />
 
+<Route
+  path="/purchases"
+  element={
+    localStorage.getItem("role") === "admin"
+      ? <Purchases />
+      : <Navigate to="/dashboard" />
+  }
+/>
 <Route
   path="/employee-tasks"
   element={<EmployeeTasks />}
