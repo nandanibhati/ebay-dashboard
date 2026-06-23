@@ -37,6 +37,14 @@ const purchaseSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    status: {
+  type: String,
+  default: "Pending",
+},
+purchaseCost: {
+  type: Number,
+  default: 0,
+},
   },
   { timestamps: true }
 );
