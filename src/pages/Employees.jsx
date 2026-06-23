@@ -26,7 +26,7 @@ export default function Employees() {
     password: "",
     employeeId: "",
     joiningDate: "",
-    hourlyRate: "",
+    
     basicSalary: "",
   });
 
@@ -80,7 +80,7 @@ export default function Employees() {
           password: "",
           employeeId: "",
           joiningDate: "",
-          hourlyRate: "",
+          
           basicSalary: "",
         });
 
@@ -121,7 +121,28 @@ export default function Employees() {
   const averageHourlyRate = totalStaff > 0 
     ? (employees.reduce((s, e) => s + Number(e.hourlyRate || 0), 0) / totalStaff).toFixed(2)
     : "0.00";
+const today = new Date();
 
+const salaryDueToday = employees.filter((emp) => {
+  if (!emp.salaryDate) return false;
+
+  return (
+    new Date(emp.salaryDate).toDateString() ===
+    today.toDateString()
+  );
+});
+
+
+const upcomingSalary = employees.filter((emp) => {
+  if (!emp.salaryDate) return false;
+
+  const diffDays = Math.ceil(
+    (new Date(emp.salaryDate) - today) /
+      (1000 * 60 * 60 * 24)
+  );
+
+  return diffDays > 0 && diffDays <= 7;
+});
   // Reusable Tailwind Utility Framework Styles
   const inputCls = "w-full px-4 py-3 text-sm bg-slate-50/60 border border-slate-200 rounded-xl outline-none focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-500/10 transition-all text-slate-800 placeholder:text-slate-400 shadow-sm shadow-slate-100/50";
   const labelCls = "text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1";
@@ -146,9 +167,39 @@ export default function Employees() {
             </p>
           </div>
         </div>
+{salaryDueToday.length > 0 && (
+  <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl">
+    <p className="font-bold">
+      🚨 Salary Due Today
+    </p>
 
+    <ul className="mt-2 text-sm">
+      {salaryDueToday.map((emp) => (
+        <li key={emp._id}>
+          • {emp.name}
+        </li>
+      ))}
+    </ul>
+  </div>
+)}
+
+{upcomingSalary.length > 0 && (
+  <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 p-4 rounded-xl">
+    <p className="font-bold">
+      ⏰ Salary Due Within 7 Days
+    </p>
+
+    <ul className="mt-2 text-sm">
+      {upcomingSalary.map((emp) => (
+        <li key={emp._id}>
+          • {emp.name}
+        </li>
+      ))}
+    </ul>
+  </div>
+)}
         {/* Aggregate Financial Metrics Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"> 
           
           <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm shadow-slate-100/50 flex justify-between items-center transition-all hover:shadow-md">
             <div>
@@ -179,9 +230,24 @@ export default function Employees() {
               <IndianRupee size={22} className="stroke-[2.5]" />
             </div>
           </div>
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm shadow-slate-100/50 flex justify-between items-center transition-all hover:shadow-md">
+  <div>
+    <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">
+      Salary Due Today
+    </p>
 
-        </div>
+    <h2 className="text-3xl font-black mt-2 text-red-600">
+      {salaryDueToday.length}
+    </h2>
+  </div>
 
+  <div className="bg-red-50 border border-red-100 p-3.5 rounded-xl text-red-600">
+    💰
+  </div>
+</div>
+          
+</div>
+          
         {/* Identity Provisioning & Enrollment Form Container */}
         <motion.form
           initial={{ opacity: 0, y: -10 }}
@@ -262,17 +328,6 @@ export default function Employees() {
               />
             </div>
 
-            <div>
-              <label className={labelCls}>Hourly Allocation Rate (₹)</label>
-              <input
-                type="number"
-                placeholder="e.g. 450"
-                className={inputCls}
-                value={form.hourlyRate}
-                required
-                onChange={(e) => setForm({ ...form, hourlyRate: e.target.value })}
-              />
-            </div>
 
             <div className="md:col-span-2 lg:col-span-1 xl:col-span-2">
               <label className={labelCls}>Basic Monthly Operational Salary (₹)</label>
@@ -300,7 +355,7 @@ export default function Employees() {
                     password: "",
                     employeeId: "",
                     joiningDate: "",
-                    hourlyRate: "",
+                    
                     basicSalary: "",
                   });
                 }}
@@ -336,6 +391,10 @@ export default function Employees() {
                   <th className="px-4 py-4">Secure Identifier Link</th>
                   <th className="px-4 py-4 text-center">Corporate ID</th>
                   <th className="px-4 py-4">Initialization Epoch</th>
+                  <th className="px-4 py-4">Salary Date</th>
+                  <th className="px-4 py-4 text-center">
+  Status
+</th>
                   <th className="px-4 py-4 text-right">Variable Rate</th>
                   <th className="px-4 py-4 text-right">Fixed Monthly Matrix</th>
                   <th className="px-6 py-4 text-center">Control Panel Actions</th>
@@ -345,7 +404,7 @@ export default function Employees() {
               <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                 {employees.length === 0 && (
                   <tr>
-                    <td colSpan="7" className="text-center py-16 text-slate-400 font-medium">
+                    <td colSpan="9" className="text-center py-16 text-slate-400 font-medium">
                       <div className="flex flex-col items-center gap-2 justify-center">
                         <FileText size={32} className="text-slate-300 stroke-[1.5]" />
                         <span>No core personnel nodes verified within directory clusters.</span>
@@ -404,6 +463,50 @@ export default function Employees() {
                         </span>
                       </div>
                     </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-emerald-600">
+  {emp.salaryDate
+    ? new Date(emp.salaryDate).toLocaleDateString("en-IN", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : "—"}
+</td>
+<td className="px-4 py-4 text-center">
+  {emp.salaryDate ? (() => {
+    const salaryDate = new Date(emp.salaryDate);
+    const today = new Date();
+
+    salaryDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    if (salaryDate.getTime() === today.getTime()) {
+      return (
+        <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-bold">
+          Due Today
+        </span>
+      );
+    }
+
+    if (salaryDate < today) {
+      return (
+        <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-xs font-bold">
+          Overdue
+        </span>
+      );
+    }
+
+    return (
+      <span className="bg-green-100 text-green-600 px-3 py-1 rounded-full text-xs font-bold">
+        Upcoming
+      </span>
+    );
+  })() : (
+    <span className="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs font-bold">
+      N/A
+    </span>
+  )}
+</td>
 
                     {/* Hourly Allocation Matrix Cell */}
                     <td className="px-4 py-4 text-right whitespace-nowrap font-semibold text-slate-700">
@@ -427,7 +530,7 @@ export default function Employees() {
                               password: "",
                               employeeId: emp.employeeId || "",
                               joiningDate: emp.joiningDate ? emp.joiningDate.split("T")[0] : "",
-                              hourlyRate: emp.hourlyRate || "",
+                              
                               basicSalary: emp.basicSalary || "",
                             });
                           }}

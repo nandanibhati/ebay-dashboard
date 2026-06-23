@@ -3,14 +3,11 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const router = express.Router();
-
 const User = require("../models/User");
 
 // SIGNUP
 router.post("/signup", async (req, res) => {
   try {
-    console.log("Signup Data:", req.body);
-
     const {
       name,
       email,
@@ -25,8 +22,6 @@ router.post("/signup", async (req, res) => {
       $or: [{ email }, { employeeId }],
     });
 
-    console.log("Existing User:", existingUser);
-
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -39,15 +34,26 @@ router.post("/signup", async (req, res) => {
       10
     );
 
- const user = await User.create({
-  name,
-  email,
-  password: hashedPassword,
-  role: role || "employee",
-  joiningDate,
-  basicSalary,
-  employeeId,
-});
+    const hourlyRate =
+      basicSalary > 0
+        ? Number(
+            (
+              basicSalary /
+              (8 * 6 * 4.33)
+            ).toFixed(2)
+          )
+        : 0;
+
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: role || "employee",
+      joiningDate,
+      basicSalary,
+      hourlyRate,
+      employeeId,
+    });
 
     res.status(201).json({
       success: true,
@@ -61,42 +67,6 @@ router.post("/signup", async (req, res) => {
     });
   }
 });
-// GET ALL EMPLOYEES
-router.get("/employees", async (req, res) => {
-  try {
-    const employees = await User.find({
-      role: "employee",
-    }).select("-password");
-
-    res.json({
-      success: true,
-      employees,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
-
-// DELETE EMPLOYEE
-router.delete("/employee/:id", async (req, res) => {
-  try {
-    await User.findByIdAndDelete(req.params.id);
-
-    res.json({
-      success: true,
-      message: "Employee Deleted",
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
-
 
 // LOGIN
 router.post("/login", async (req, res) => {
@@ -150,13 +120,139 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// CREATE ADMIN
+// GET ALL EMPLOYEES
+router.get("/employees", async (req, res) => {
+  try {
+    const employees = await User.find({
+      role: "employee",
+    }).select("-password");
+
+    const updatedEmployees = employees.map((emp) => {
+      const salaryDate = new Date(emp.joiningDate);
+      salaryDate.setDate(
+        salaryDate.getDate() + 15
+      );
+
+      return {
+        ...emp.toObject(),
+        salaryDate,
+      };
+    });
+
+    res.json({
+      success: true,
+      employees: updatedEmployees,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// GET SINGLE EMPLOYEE
+router.get("/employee/:email", async (req, res) => {
+  try {
+    const employee = await User.findOne({
+      email: req.params.email,
+    }).select("-password");
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+
+    const salaryDate = new Date(
+      employee.joiningDate
+    );
+
+    salaryDate.setDate(
+      salaryDate.getDate() + 15
+    );
+
+    res.json({
+      success: true,
+      employee: {
+        ...employee.toObject(),
+        salaryDate,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// UPDATE EMPLOYEE
+router.put("/employee/:id", async (req, res) => {
+  try {
+    const hourlyRate =
+      req.body.basicSalary > 0
+        ? Number(
+            (
+              req.body.basicSalary /
+              (8 * 6 * 4.33)
+            ).toFixed(2)
+          )
+        : 0;
+
+    const employee =
+      await User.findByIdAndUpdate(
+        req.params.id,
+        {
+          name: req.body.name,
+          email: req.body.email,
+          employeeId: req.body.employeeId,
+          joiningDate: req.body.joiningDate,
+          basicSalary: req.body.basicSalary,
+          hourlyRate,
+        },
+        { new: true }
+      );
+
+    res.json({
+      success: true,
+      employee,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// DELETE EMPLOYEE
+router.delete("/employee/:id", async (req, res) => {
+  try {
+    await User.findByIdAndDelete(
+      req.params.id
+    );
+
+    res.json({
+      success: true,
+      message: "Employee Deleted",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 // CREATE ADMIN
 router.get("/create-admin", async (req, res) => {
   try {
-    const existingAdmin = await User.findOne({
-      email: "penkraft.ltd@gmail.com",
-    });
+    const existingAdmin =
+      await User.findOne({
+        email: "penkraft.ltd@gmail.com",
+      });
 
     if (existingAdmin) {
       return res.json({
@@ -165,10 +261,11 @@ router.get("/create-admin", async (req, res) => {
       });
     }
 
-    const hashedPassword = await bcrypt.hash(
-      "Temp@12345",
-      10
-    );
+    const hashedPassword =
+      await bcrypt.hash(
+        "Temp@12345",
+        10
+      );
 
     const admin = await User.create({
       name: "Admin",
@@ -189,48 +286,5 @@ router.get("/create-admin", async (req, res) => {
     });
   }
 });
-router.put("/employee/:id", async (req, res) => {
-  try {
-    const employee = await User.findByIdAndUpdate(
-      req.params.id,
-      {
-        name: req.body.name,
-        email: req.body.email,
-        employeeId: req.body.employeeId,
-        joiningDate: req.body.joiningDate,
-        hourlyRate: req.body.hourlyRate,
-        basicSalary: req.body.basicSalary,
-        monthlyHours: req.body.monthlyHours,
-      },
-      { new: true }
-    );
 
-    res.json({
-      success: true,
-      employee,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
-router.get("/employee/:email", async (req, res) => {
-  try {
-    const employee = await User.findOne({
-      email: req.params.email,
-    }).select("-password");
-
-    res.json({
-      success: true,
-      employee,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
-module.exports = router;    
+module.exports = router;
