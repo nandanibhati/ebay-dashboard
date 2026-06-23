@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import EmployeeSidebar from "../components/Sidebar";
+import Sidebar from "../components/Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
 import {
