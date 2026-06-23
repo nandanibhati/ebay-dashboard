@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import EmployeeSidebar from "../components/EmployeeSidebar";
+import EmployeeSidebar from "../components/Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
 import {
@@ -183,7 +183,7 @@ export default function Tasks() {
   return (
     <div className="flex min-h-screen bg-[#f8fafc]">
       <Toaster position="top-right" reverseOrder={false} />
-      <EmployeeSidebar />
+      <Sidebar/>
 
       <div className="flex-1 lg:ml-72 p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto flex flex-col gap-6 w-full">
 
