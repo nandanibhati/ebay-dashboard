@@ -23,6 +23,8 @@ export default function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [selectedEmployee, setSelectedEmployee] =
+  useState("All");
 
   const [form, setForm] = useState({
     title: "",
@@ -38,10 +40,9 @@ export default function Tasks() {
   // Fetch Tasks
   const fetchTasks = async () => {
     try {
-      const employeeName = localStorage.getItem("employeeName");
-      const res = await fetch(
-        `https://ebay-dashboard-z7h2.onrender.com/api/tasks/my-tasks/${employeeName}`
-      );
+       const res = await fetch(
+  "https://ebay-dashboard-z7h2.onrender.com/api/tasks"
+);
       const data = await res.json();
       if (data.success) {
         setTasks(data.tasks);
@@ -151,7 +152,39 @@ export default function Tasks() {
   const generalizedMeanProgress = totalTasksCount > 0
     ? (tasks.reduce((sum, t) => sum + Number(t.progress || 0), 0) / totalTasksCount).toFixed(0)
     : 0;
+const employeeStats = {};
 
+tasks.forEach((task) => {
+  const employee =
+    task.assignedTo || "Unassigned";
+
+  if (!employeeStats[employee]) {
+    employeeStats[employee] = {
+      total: 0,
+      pending: 0,
+      completed: 0,
+    };
+  }
+
+  employeeStats[employee].total++;
+
+  if (
+    task.status === "Done" ||
+    task.status === "Closed"
+  ) {
+    employeeStats[employee].completed++;
+  } else {
+    employeeStats[employee].pending++;
+  }
+});
+
+const filteredTasks =
+  selectedEmployee === "All"
+    ? tasks
+    : tasks.filter(
+        (task) =>
+          task.assignedTo === selectedEmployee
+      );
   // Reusable Styling Framework Constants
   const inputCls = "w-full px-4 py-3 text-sm bg-slate-50/60 border border-slate-200 rounded-xl outline-none focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-500/10 transition-all duration-200 text-slate-800 placeholder:text-slate-400 shadow-sm shadow-slate-100/50 hover:border-slate-300";
   const labelCls = "text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5";
@@ -264,6 +297,56 @@ export default function Tasks() {
           ))}
 
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+
+  <div
+    onClick={() => setSelectedEmployee("All")}
+    className={`cursor-pointer p-4 rounded-2xl border shadow-sm ${
+      selectedEmployee === "All"
+        ? "bg-violet-600 text-white"
+        : "bg-white"
+    }`}
+  >
+    <h3 className="font-bold">
+      All Employees
+    </h3>
+
+    <p className="text-sm">
+      {tasks.length} Tasks
+    </p>
+  </div>
+
+  {Object.entries(employeeStats).map(
+    ([name, stats]) => (
+      <div
+        key={name}
+        onClick={() =>
+          setSelectedEmployee(name)
+        }
+        className={`cursor-pointer p-4 rounded-2xl border shadow-sm transition-all ${
+          selectedEmployee === name
+            ? "bg-violet-600 text-white"
+            : "bg-white hover:shadow-md"
+        }`}
+      >
+        <h3 className="font-bold text-lg">
+          {name}
+        </h3>
+
+        <p>Total: {stats.total}</p>
+
+        <p>
+          Pending: {stats.pending}
+        </p>
+
+        <p>
+          Completed:
+          {stats.completed}
+        </p>
+      </div>
+    )
+  )}
+</div>
 
         {/* Dynamic Interactive Allocation Form */}
         <motion.form
@@ -470,7 +553,7 @@ export default function Tasks() {
 
                 <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                   <AnimatePresence>
-                    {tasks.map((task, idx) => (
+                    {filteredTasks.map((task, idx) => (
                       <motion.tr
                         key={task._id}
                         initial={{ opacity: 0 }}
