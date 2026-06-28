@@ -24,6 +24,7 @@ import EmployeeTasks from "./pages/EmployeeTasks";
 import Notes from "./pages/Notes";
 import Purchases from "./pages/Purchases";
 import Subscriptions from "./pages/Subscriptions";
+import Chat from "./pages/Chat";
 
 function App() {
   return (
@@ -42,6 +43,10 @@ function App() {
         <Route path="/analytics" element={<Analytics />} />
 
         <Route path="/stock" element={<Stock />} />
+        <Route
+  path="/chat"
+  element={<Chat />}
+/>
         
 <Route
   path="/subscriptions"

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { Link, useLocation } from "react-router-dom";
+import { MessageCircle } from "lucide-react";
 
 export default function Sidebar() {
   const location = useLocation();
@@ -44,6 +45,11 @@ export default function Sidebar() {
       icon: Package,
       path: "/stock",
     },
+    {
+  name: "Team Chat",
+  icon: MessageCircle,
+  path: "/chat",
+},
     {
   name: "Purchases",
   icon: Package,

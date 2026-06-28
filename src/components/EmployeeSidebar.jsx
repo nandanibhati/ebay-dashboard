@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { Link, useLocation } from "react-router-dom";
+import { MessageCircle } from "lucide-react";
 
 export default function EmployeeSidebar() {
   const location = useLocation();
@@ -22,6 +23,11 @@ export default function EmployeeSidebar() {
       icon: LayoutDashboard,
       path: "/employee-dashboard",
     },
+    {
+  name: "Team Chat",
+  icon: MessageCircle,
+  path: "/chat",
+},
     {
       name: "Manual Entry",
       icon: PlusCircle,
