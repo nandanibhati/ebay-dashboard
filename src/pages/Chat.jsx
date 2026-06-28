@@ -5,6 +5,8 @@ import ChatSidebar from "../components/chat/ChatSidebar";
 import ChatHeader from "../components/chat/ChatHeader";
 import MessageList from "../components/chat/MessageList";
 import ChatInput from "../components/chat/ChatInput";
+import Sidebar from "../components/Sidebar";
+import EmployeeSidebar from "../components/EmployeeSidebar";
 
 export default function Chat() {
   const [users, setUsers] = useState([]);
@@ -130,14 +132,19 @@ export default function Chat() {
 
   return (
     <div className="h-screen flex bg-slate-100">
+{currentUser.role === "admin" ? (
+  <Sidebar />
+) : (
+  <EmployeeSidebar />
+)}
 
-      <ChatSidebar
-        users={users}
-        onlineUsers={onlineUsers}
-        currentUser={currentUser}
-        selectedChat={selectedChat}
-        setSelectedChat={setSelectedChat}
-      />
+<ChatSidebar
+  users={users}
+  onlineUsers={onlineUsers}
+  currentUser={currentUser}
+  selectedChat={selectedChat}
+  setSelectedChat={setSelectedChat}
+/>
 
       <div className="flex-1 flex flex-col">
 

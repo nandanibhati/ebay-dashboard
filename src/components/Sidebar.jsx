@@ -26,6 +26,11 @@ export default function Sidebar() {
       path: "/dashboard",
     },
     {
+  name: "Team Chat",
+  icon: MessageCircle,
+  path: "/chat",
+},
+    {
       name: "Manual Entry",
       icon: PlusCircle,
       path: "/manual-entry",
@@ -45,11 +50,7 @@ export default function Sidebar() {
       icon: Package,
       path: "/stock",
     },
-    {
-  name: "Team Chat",
-  icon: MessageCircle,
-  path: "/chat",
-},
+    
     {
   name: "Purchases",
   icon: Package,
