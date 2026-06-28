@@ -2,34 +2,40 @@ const express = require("express");
 const router = express.Router();
 
 const Task = require("../models/Task");
+const upload = require("../middleware/upload");
 
 // CREATE TASK
-router.post("/create", async (req, res) => {
-  try {
-    const task = await Task.create({
-      title: req.body.title,
-      description: req.body.description,
-      assignedBy: req.body.assignedBy,
-      assignedTo: req.body.assignedTo,
-      priority: req.body.priority,
-      status: req.body.status,
-      startDate: req.body.startDate,
-      dueDate: req.body.dueDate,
-      progress: req.body.progress || 0,
-    });
+router.post(
+  "/create",
+  upload.single("screenshot"),
+  async (req, res) => {
+    try {
+      const task = await Task.create({
+        title: req.body.title,
+        description: req.body.description,
+        assignedBy: req.body.assignedBy,
+        assignedTo: req.body.assignedTo,
+        priority: req.body.priority,
+        status: req.body.status,
+        startDate: req.body.startDate,
+        dueDate: req.body.dueDate,
+        progress: req.body.progress || 0,
+        screenshot: req.file ? req.file.path : "",
+      });
 
-    res.status(201).json({
-      success: true,
-      message: "Task Created Successfully",
-      task,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+      res.status(201).json({
+        success: true,
+        message: "Task Created Successfully",
+        task,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
   }
-});
+);
 
 // GET MY TASKS (Employee ke liye)
 router.get("/my-tasks/:name", async (req, res) => {
@@ -92,11 +98,12 @@ router.get("/", async (req, res) => {
 });
 
 // UPDATE TASK
-router.put("/:id", async (req, res) => {
-  try {
-    const task = await Task.findByIdAndUpdate(
-      req.params.id,
-      {
+router.put(
+  "/:id",
+  upload.single("screenshot"),
+  async (req, res) => {
+    try {
+      const updateData = {
         title: req.body.title,
         description: req.body.description,
         assignedTo: req.body.assignedTo,
@@ -106,22 +113,31 @@ router.put("/:id", async (req, res) => {
         startDate: req.body.startDate,
         dueDate: req.body.dueDate,
         progress: req.body.progress,
-      },
-      { new: true }
-    );
+      };
 
-    res.json({
-      success: true,
-      message: "Task Updated Successfully",
-      task,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+      if (req.file) {
+        updateData.screenshot = req.file.path;
+      }
+
+      const task = await Task.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        { new: true }
+      );
+
+      res.json({
+        success: true,
+        message: "Task Updated Successfully",
+        task,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
   }
-});
+);
 
 // DELETE TASK
 router.delete("/:id", async (req, res) => {

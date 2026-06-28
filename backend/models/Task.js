@@ -41,6 +41,10 @@ const taskSchema = new mongoose.Schema(
     startDate: String,
 
     dueDate: String,
+    screenshot: {
+  type: String,
+  default: "",
+},
 
     progress: {
       type: Number,

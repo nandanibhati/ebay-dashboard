@@ -33,6 +33,7 @@ export default function Tasks() {
     startDate: "",
     dueDate: "",
     progress: 0,
+    screenshot: "",
   });
 
   // Fetch Tasks
@@ -421,6 +422,17 @@ export default function Tasks() {
                 }
               />
             </div>
+            <div>
+  <label className={labelCls}>
+    Task Screenshot / Proof
+  </label>
+
+  <input
+    type="file"
+    accept="image/*"
+    className={inputCls}
+  />
+</div>
 
             <div>
               <label className={labelCls}>Lifecycle State</label>
@@ -634,6 +646,7 @@ export default function Tasks() {
                                 ? task.dueDate.split("T")[0]
                                 : "",
                               progress: task.progress || 0,
+                              screenshot: task.screenshot || "",
                             });
                           }}
                           className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200 transition-all active:scale-95 shadow-sm"
@@ -689,6 +702,7 @@ export default function Tasks() {
                     <th className="px-4 py-4">State Module</th>
                     <th className="px-4 py-4">Due Epoch</th>
                     <th className="px-4 py-4">Completion Status</th>
+                    <th className="px-4 py-4">Screenshot</th>
                     <th className="px-6 py-4 text-center">Controls</th>
                   </tr>
                 </thead>
