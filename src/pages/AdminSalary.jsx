@@ -44,25 +44,25 @@ export default function AdminSalary() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            basicSalary,
-            monthlyHours,
-          }),
+  monthlySalary: basicSalary,
+  monthlyHours,
+}),
         }
       );
 
       const data = await res.json();
 
       setEmployees((prev) =>
-        prev.map((emp) =>
-          emp._id === editingId
-            ? {
-                ...emp,
-                basicSalary,
-                monthlyHours,
-              }
-            : emp
-        )
-      );
+  prev.map((emp) =>
+    emp._id === editingId
+      ? {
+          ...emp,
+          monthlySalary: Number(basicSalary),
+          monthlyHours: Number(monthlyHours),
+        }
+      : emp
+  )
+);
 
       if (data.success) {
         alert("Salary Updated Successfully");
@@ -80,6 +80,27 @@ export default function AdminSalary() {
   };
 
   const totalEmployees = employees.length;
+  const markSalaryPaid = async (id) => {
+  try {
+    await fetch(
+      `https://ebay-dashboard-z7h2.onrender.com/api/auth/employee/${id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          lastSalaryPaidMonth: new Date().getMonth() + 1,
+          lastSalaryPaidYear: new Date().getFullYear(),
+        }),
+      }
+    );
+
+    fetchEmployees();
+  } catch (err) {
+    console.log(err);
+  }
+};
 
   // Modern structured input element style
   const inputCls = "w-full px-4 py-3 text-sm bg-slate-50/60 border border-slate-200 rounded-xl outline-none focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-500/10 transition-all text-slate-800 placeholder:text-slate-400 shadow-sm shadow-slate-100/50";
@@ -231,18 +252,61 @@ export default function AdminSalary() {
                 <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   <th className="px-6 py-4">Employee Module</th>
                   <th className="px-4 py-4">System Contact</th>
-                  <th className="px-4 py-4">Contract Baseline</th>
-                  <th className="px-4 py-4">Hours Rendered</th>
-                  <th className="px-4 py-4">Gross Disbursable Salary</th>
-                  <th className="px-6 py-4 text-center">Execution Controls</th>
+                 <th className="px-4 py-4">Join Date</th>
+<th className="px-4 py-4">Salary</th>
+<th className="px-4 py-4">Hours</th>
+<th className="px-4 py-4">Hourly Rate</th>
+<th className="px-4 py-4">Payable</th>
+<th className="px-4 py-4">Due Date</th>
+<th className="px-4 py-4">Overdue</th>
+<th className="px-6 py-4 text-center">Action</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                 {employees.map((emp) => {
                   const hours = Number(emp.monthlyHours || 0);
-                  const hourlyRate = Number(emp.basicSalary || 0) / (8 * 6 * 4.33);
+                  const hourlyRate = Number(emp.monthlySalary || 0) / (8 * 6 * 4.33);
                   const salary = hours * hourlyRate;
+                  const joining = new Date(emp.joiningDate);
+
+const payoutDay = joining.getDate();
+
+const today = new Date();
+
+const dueDate = new Date(
+  today.getFullYear(),
+  today.getMonth(),
+  payoutDay
+);
+
+const diffDays = Math.floor(
+  (today - dueDate) / (1000 * 60 * 60 * 24)
+);
+
+const currentMonth = today.getMonth() + 1;
+const currentYear = today.getFullYear();
+
+const alreadyPaid =
+  emp.lastSalaryPaidMonth === currentMonth &&
+  emp.lastSalaryPaidYear === currentYear;
+
+let status = "";
+let overdue = "";
+
+if (alreadyPaid) {
+  status = "Paid";
+  overdue = "-";
+} else if (diffDays > 0) {
+  status = "Overdue";
+  overdue = `${diffDays} Days`;
+} else if (diffDays === 0) {
+  status = "Due Today";
+  overdue = "0 Days";
+} else {
+  status = "Upcoming";
+  overdue = "-";
+}
 
                   return (
                     <tr
@@ -273,9 +337,13 @@ export default function AdminSalary() {
                       </td>
 
                       {/* Base Fixed Compensation */}
-                      <td className="px-4 py-4 font-mono font-bold text-slate-700">
-                        ₹{Number(emp.basicSalary || 0).toLocaleString("en-IN")}
-                      </td>
+                     <td className="px-4 py-4">
+{joining.toLocaleDateString()}
+</td>
+
+<td className="px-4 py-4 font-bold">
+₹{Number(emp.monthlySalary).toLocaleString("en-IN")}
+</td>
 
                       {/* Logged Quantified Time */}
                       <td className="px-4 py-4 whitespace-nowrap">
@@ -284,27 +352,64 @@ export default function AdminSalary() {
                           <span>{hours.toFixed(2)} hrs</span>
                         </div>
                       </td>
+                      <td className="px-4 py-4 font-medium text-slate-700">
+  ₹{hourlyRate.toFixed(2)}/hr
+</td>
 
-                      {/* Total Aggregated Pay */}
-                      <td className="px-4 py-4 bg-emerald-50/15 font-mono font-black text-emerald-600 text-base">
-                        ₹{salary.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
+
+{/* Total Aggregated Pay */}
+<td className="px-4 py-4 bg-emerald-50/15 font-mono font-black text-emerald-600 text-base">
+  ₹{salary.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}
+</td>
+<td className="px-4 py-4">
+  {dueDate.toLocaleDateString("en-GB")}
+</td>
+
+<td className="px-4 py-4">
+  {status === "Paid" ? (
+  <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold">
+    ✅ Paid
+  </span>
+) : status === "Overdue" ? (
+  <span className="px-2 py-1 rounded-full bg-red-100 text-red-600 text-xs font-bold">
+    🔴 {overdue}
+  </span>
+) : status === "Due Today" ? (
+  <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-bold">
+    🟡 Due Today
+  </span>
+) : (
+  <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
+    🔵 Upcoming
+  </span>
+)}
+</td>
 
                       {/* Operational Trigger */}
                       <td className="px-6 py-4 text-center">
-                        <div className="flex justify-center">
-                          <button
-                            onClick={() => {
-                              setEditingId(emp._id);
-                              setBasicSalary(emp.basicSalary || 0);
-                              setMonthlyHours(emp.monthlyHours || 0);
-                            }}
-                            className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200 active:scale-[0.97] transition-all shadow-sm"
-                          >
-                            <Pencil size={12} className="stroke-[2.5]" />
-                            <span>Edit Matrix</span>
-                          </button>
-                        </div>
+                        <div className="flex justify-center gap-2">
+  <button
+    onClick={() => {
+      setEditingId(emp._id);
+      setBasicSalary(emp.monthlySalary || 0);
+      setMonthlyHours(emp.monthlyHours || 0);
+    }}
+    className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200 active:scale-[0.97] transition-all shadow-sm"
+  >
+    <Pencil size={12} className="stroke-[2.5]" />
+    <span>Edit</span>
+  </button>
+
+  <button
+    onClick={() => markSalaryPaid(emp._id)}
+    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+  >
+    ✓ Paid
+  </button>
+</div>
                       </td>
                     </tr>
                   );

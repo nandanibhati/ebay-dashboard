@@ -50,6 +50,20 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  monthlyHours: {
+  type: Number,
+  default: 0,
+},
+
+lastSalaryPaidMonth: {
+  type: Number,
+  default: 0,
+},
+
+lastSalaryPaidYear: {
+  type: Number,
+  default: 0,
+},
 }, { timestamps: true });
 
 module.exports = mongoose.model(

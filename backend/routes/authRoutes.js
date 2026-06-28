@@ -9,14 +9,15 @@ const User = require("../models/User");
 router.post("/signup", async (req, res) => {
   try {
     const {
-      name,
-      email,
-      password,
-      role,
-      joiningDate,
-      basicSalary,
-      employeeId,
-    } = req.body;
+  name,
+  email,
+  password,
+  role,
+  joiningDate,
+  monthlySalary,
+  monthlyHours,
+  employeeId,
+} = req.body;
 
     const existingUser = await User.findOne({
       $or: [{ email }, { employeeId }],
@@ -35,14 +36,9 @@ router.post("/signup", async (req, res) => {
     );
 
     const hourlyRate =
-      basicSalary > 0
-        ? Number(
-            (
-              basicSalary /
-              (8 * 6 * 4.33)
-            ).toFixed(2)
-          )
-        : 0;
+  monthlySalary > 0
+    ? Number((monthlySalary / (8 * 6 * 4.33)).toFixed(2))
+    : 0;
 
     const user = await User.create({
       name,
@@ -50,8 +46,11 @@ router.post("/signup", async (req, res) => {
       password: hashedPassword,
       role: role || "employee",
       joiningDate,
-      basicSalary,
-      hourlyRate,
+      monthlySalary,
+monthlyHours,
+hourlyRate,
+lastSalaryPaidMonth: 0,
+lastSalaryPaidYear: 0,
       employeeId,
     });
 
@@ -191,29 +190,50 @@ router.get("/employee/:email", async (req, res) => {
 // UPDATE EMPLOYEE
 router.put("/employee/:id", async (req, res) => {
   try {
-    const hourlyRate =
-      req.body.basicSalary > 0
-        ? Number(
-            (
-              req.body.basicSalary /
-              (8 * 6 * 4.33)
-            ).toFixed(2)
-          )
-        : 0;
+   
 
-    const employee =
-      await User.findByIdAndUpdate(
-        req.params.id,
-        {
-          name: req.body.name,
-          email: req.body.email,
-          employeeId: req.body.employeeId,
-          joiningDate: req.body.joiningDate,
-          basicSalary: req.body.basicSalary,
-          hourlyRate,
-        },
-        { new: true }
-      );
+    const updateData = {};
+
+if (req.body.name !== undefined)
+  updateData.name = req.body.name;
+
+if (req.body.email !== undefined)
+  updateData.email = req.body.email;
+
+if (req.body.employeeId !== undefined)
+  updateData.employeeId = req.body.employeeId;
+
+if (req.body.joiningDate !== undefined)
+  updateData.joiningDate = req.body.joiningDate;
+
+if (req.body.monthlySalary !== undefined) {
+  updateData.monthlySalary = req.body.monthlySalary;
+
+  updateData.hourlyRate = Number(
+    (
+      req.body.monthlySalary /
+      (8 * 6 * 4.33)
+    ).toFixed(2)
+  );
+}
+
+if (req.body.monthlyHours !== undefined)
+  updateData.monthlyHours = req.body.monthlyHours;
+
+if (req.body.lastSalaryPaidMonth !== undefined)
+  updateData.lastSalaryPaidMonth =
+    req.body.lastSalaryPaidMonth;
+
+if (req.body.lastSalaryPaidYear !== undefined)
+  updateData.lastSalaryPaidYear =
+    req.body.lastSalaryPaidYear;
+
+const employee = await User.findByIdAndUpdate(
+  req.params.id,
+  updateData,
+  { new: true }
+);
+        
 
     res.json({
       success: true,

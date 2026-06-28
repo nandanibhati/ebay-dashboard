@@ -13,6 +13,12 @@ const employeeSchema = new mongoose.Schema(
       required: true,
     },
 
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+
     password: {
       type: String,
       required: true,
@@ -34,6 +40,11 @@ const employeeSchema = new mongoose.Schema(
       default: 0,
     },
 
+    monthlyHours: {
+      type: Number,
+      default: 0,
+    },
+
     hourlyRate: {
       type: Number,
       default: 0,
@@ -44,6 +55,15 @@ const employeeSchema = new mongoose.Schema(
       enum: ["Active", "Inactive"],
       default: "Active",
     },
+    lastSalaryPaidMonth: {
+  type: Number,
+  default: 0,
+},
+
+lastSalaryPaidYear: {
+  type: Number,
+  default: 0,
+},
   },
   { timestamps: true }
 );
