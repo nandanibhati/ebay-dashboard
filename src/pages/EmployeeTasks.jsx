@@ -33,7 +33,7 @@ export default function Tasks() {
     startDate: "",
     dueDate: "",
     progress: 0,
-    screenshot: "",
+    screenshot: null,
   });
 
   // Fetch Tasks
@@ -82,17 +82,29 @@ export default function Tasks() {
         : "https://ebay-dashboard-z7h2.onrender.com/api/tasks/create";
 
       const method = editingId ? "PUT" : "POST";
+const formData = new FormData();
 
-      const res = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...form,
-          assignedBy: localStorage.getItem("employeeName") || "Employee",
-        }),
-      });
+formData.append("title", form.title);
+formData.append("description", form.description);
+formData.append("assignedTo", form.assignedTo);
+formData.append("priority", form.priority);
+formData.append("status", form.status);
+formData.append("startDate", form.startDate);
+formData.append("dueDate", form.dueDate);
+formData.append("progress", form.progress);
+formData.append(
+  "assignedBy",
+  localStorage.getItem("employeeName") || "Employee"
+);
+
+if (form.screenshot) {
+  formData.append("screenshot", form.screenshot);
+}
+
+const res = await fetch(url, {
+  method,
+  body: formData,
+});
 
       const data = await res.json();
 
@@ -110,6 +122,7 @@ export default function Tasks() {
           startDate: "",
           dueDate: "",
           progress: 0,
+          screenshot: null,
         });
 
         setEditingId(null);
@@ -158,20 +171,25 @@ export default function Tasks() {
         progress = 100;
       }
 
-      const res = await fetch(
-        `https://ebay-dashboard-z7h2.onrender.com/api/tasks/${id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...currentTask,
-            status,
-            progress,
-          }),
-        }
-      );
+      const formData = new FormData();
+
+formData.append("title", currentTask.title);
+formData.append("description", currentTask.description || "");
+formData.append("assignedTo", currentTask.assignedTo);
+formData.append("assignedBy", currentTask.assignedBy);
+formData.append("priority", currentTask.priority);
+formData.append("status", status);
+formData.append("startDate", currentTask.startDate || "");
+formData.append("dueDate", currentTask.dueDate || "");
+formData.append("progress", progress);
+
+const res = await fetch(
+  `https://ebay-dashboard-z7h2.onrender.com/api/tasks/${id}`,
+  {
+    method: "PUT",
+    body: formData,
+  }
+);
 
       const data = await res.json();
 
@@ -431,6 +449,12 @@ export default function Tasks() {
     type="file"
     accept="image/*"
     className={inputCls}
+      onChange={(e) =>
+    setForm({
+      ...form,
+      screenshot: e.target.files[0],
+    })
+  }
   />
 </div>
 
@@ -506,6 +530,7 @@ export default function Tasks() {
                     startDate: "",
                     dueDate: "",
                     progress: 0,
+                    screenshot: null,
                   });
                 }}
                 className="bg-slate-100 border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-200 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-1.5"
@@ -611,6 +636,16 @@ export default function Tasks() {
                             })
                           : "No Bounds Set"}
                       </span>
+                      {task.screenshot && (
+  <a
+    href={task.screenshot}
+    target="_blank"
+    rel="noreferrer"
+    className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600"
+  >
+    📷 View Screenshot
+  </a>
+)}
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -646,7 +681,7 @@ export default function Tasks() {
                                 ? task.dueDate.split("T")[0]
                                 : "",
                               progress: task.progress || 0,
-                              screenshot: task.screenshot || "",
+                             screenshot: null,
                             });
                           }}
                           className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200 transition-all active:scale-95 shadow-sm"
@@ -823,6 +858,20 @@ export default function Tasks() {
                           </div>
                         </div>
                       </td>
+                      <td className="px-4 py-4 text-center">
+  {task.screenshot ? (
+    <a
+      href={task.screenshot}
+      target="_blank"
+      rel="noreferrer"
+      className="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-xs font-bold"
+    >
+      View
+    </a>
+  ) : (
+    "-"
+  )}
+</td>
 
                       {/* Command actions panel operations */}
                       <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -843,6 +892,7 @@ export default function Tasks() {
                                   ? task.dueDate.split("T")[0]
                                   : "",
                                 progress: task.progress || 0,
+                                screenshot: null,
                               });
                             }}
                             className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200 transition-all active:scale-95 shadow-sm"
