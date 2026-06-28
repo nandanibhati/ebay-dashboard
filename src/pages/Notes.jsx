@@ -128,7 +128,18 @@ function NoteCard({ note, index, deleteNote, editNote, updateStatus }) {
       <p className="mt-2.5 text-slate-500 text-sm leading-relaxed line-clamp-3">
         {note.content}
       </p>
-
+{note.screenshot && (
+  <div className="mt-3">
+    <a
+      href={note.screenshot}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100"
+    >
+      📷 View Screenshot
+    </a>
+  </div>
+)}
       {/* Footer */}
       <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
         {/* Author */}
@@ -184,7 +195,7 @@ export default function Notes() {
   const [filterStatus, setFilterStatus] = useState("All");
   const role = localStorage.getItem("role");
 
-  const [form, setForm] = useState({ title: "", content: "", status: "Todo" });
+  const [form, setForm] = useState({ title: "", content: "", status: "Todo",  screenshot: null, });
 
   const fetchNotes = async () => {
     try {
@@ -205,63 +216,145 @@ export default function Notes() {
     } catch (error) { console.log(error); }
   };
 
-  const updateStatus = async (id, status) => {
-    try {
-      await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/notes/${id}`, {
+
+const updateStatus = async (id, status) => {
+  try {
+    const currentNote = notes.find((n) => n._id === id);
+
+    const formData = new FormData();
+
+    formData.append("title", currentNote.title);
+    formData.append("content", currentNote.content);
+    formData.append("status", status);
+    formData.append("createdBy", currentNote.createdBy);
+
+    const res = await fetch(
+      `https://ebay-dashboard-z7h2.onrender.com/api/notes/${id}`,
+      {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
+        body: formData,
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
       fetchNotes();
-    } catch (error) { console.log(error); }
-  };
-
-  const editNote = (note) => {
-    setEditingId(note._id);
-    setForm({ title: note.title, content: note.content, status: note.status });
-  };
-
-  const updateNote = async () => {
-    try {
-      const res = await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/notes/${editingId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert("Note Updated");
-        setEditingId(null);
-        setForm({ title: "", content: "", status: "Todo" });
-        fetchNotes();
-      }
-    } catch (error) { console.log(error); }
-  };
-
-  const createNote = async () => {
-    try {
-      const res = await fetch("https://ebay-dashboard-z7h2.onrender.com/api/notes/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          createdBy: localStorage.getItem("employeeName") || "Admin",
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert("Note Created Successfully");
-        setForm({ title: "", content: "", status: "Todo" });
-        setEditingId(null);
-        fetchNotes();
-      } else {
-        alert(data.message);
-      }
-    } catch (error) {
-      console.log(error);
-      alert("Failed to Create Note");
     }
-  };
+  } catch (error) {
+    console.log(error);
+  }
+};
+const updateNote = async () => {
+  try {
+    const formData = new FormData();
+
+    formData.append("title", form.title);
+    formData.append("content", form.content);
+    formData.append("status", form.status);
+    formData.append(
+      "createdBy",
+      localStorage.getItem("employeeName") || "Admin"
+    );
+
+    if (form.screenshot) {
+      formData.append("screenshot", form.screenshot);
+    }
+
+    const res = await fetch(
+      `https://ebay-dashboard-z7h2.onrender.com/api/notes/${editingId}`,
+      {
+        method: "PUT",
+        body: formData,
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert("Note Updated Successfully");
+
+      setEditingId(null);
+
+      setForm({
+        title: "",
+        content: "",
+        status: "Todo",
+        screenshot: null,
+      });
+
+      fetchNotes();
+    } else {
+      alert(data.message);
+    }
+  } catch (error) {
+    console.log(error);
+    alert("Failed to Update Note");
+  }
+};
+const editNote = (note) => {
+  setEditingId(note._id);
+
+  setForm({
+    title: note.title,
+    content: note.content,
+    status: note.status,
+    screenshot: null,
+  });
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth",
+  });
+};
+const createNote = async () => {
+  try {
+    const formData = new FormData();
+
+    formData.append("title", form.title);
+    formData.append("content", form.content);
+    formData.append("status", form.status);
+    formData.append(
+      "createdBy",
+      localStorage.getItem("employeeName") || "Admin"
+    );
+
+    if (form.screenshot) {
+      formData.append("screenshot", form.screenshot);
+    }
+
+    const res = await fetch(
+      "https://ebay-dashboard-z7h2.onrender.com/api/notes/create",
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert("Note Created Successfully");
+
+      setForm({
+        title: "",
+        content: "",
+        status: "Todo",
+        screenshot: null,
+      });
+
+      setEditingId(null);
+
+      fetchNotes();
+    } else {
+      alert(data.message);
+    }
+  } catch (error) {
+    console.log(error);
+    alert("Failed to Create Note");
+  }
+};
+     
 
   const filtered = filterStatus === "All" ? notes : notes.filter((n) => n.status === filterStatus);
   const FILTERS = ["All", "Todo", "In Progress", "Completed"];
@@ -314,7 +407,7 @@ export default function Notes() {
                 </div>
                 {editingId && (
                   <button
-                    onClick={() => { setEditingId(null); setForm({ title: "", content: "", status: "Todo" }); }}
+                    onClick={() => { setEditingId(null); setForm({ title: "", content: "", status: "Todo", screenshot: null, }); }}
                     className="text-xs text-slate-400 hover:text-slate-600 font-medium transition-colors"
                   >
                     ✕ Cancel
@@ -357,6 +450,23 @@ export default function Notes() {
                     <option value="Completed">Completed</option>
                   </select>
                 </div>
+                <div>
+  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+    Screenshot
+  </label>
+
+  <input
+    type="file"
+    accept="image/*"
+    onChange={(e) =>
+      setForm({
+        ...form,
+        screenshot: e.target.files[0],
+      })
+    }
+    className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-700 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-violet-400"
+  />
+</div>
 
                 <button
                   onClick={editingId ? updateNote : createNote}

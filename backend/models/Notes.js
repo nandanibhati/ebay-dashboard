@@ -22,6 +22,11 @@ const noteSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
+    screenshot: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true }
 );
