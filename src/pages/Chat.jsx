@@ -687,7 +687,7 @@ export default function Chat() {
               const result = await res.json();
               if (result.success) {
                 socket.emit("sendMessage", result.chat);
-                setMessages((prev) => [...prev, result.chat]);
+                
               }
               setReplyMessage(null);
             } catch (err) {

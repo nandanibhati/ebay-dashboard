@@ -76,9 +76,20 @@ io.on("connection", (socket) => {
   });
 
   // Live Message
-  socket.on("sendMessage", (message) => {
-    io.emit("newMessage", message);
-  });
+socket.on("sendMessage", (message) => {
+  const senderSocket = onlineUsers.get(message.senderEmail);
+  const receiverSocket = onlineUsers.get(message.receiverEmail);
+
+  // Sender ko message bhejo
+  if (senderSocket) {
+    io.to(senderSocket).emit("newMessage", message);
+  }
+
+  // Receiver ko message bhejo
+  if (receiverSocket && receiverSocket !== senderSocket) {
+    io.to(receiverSocket).emit("newMessage", message);
+  }
+});
 
   // Seen
   socket.on("seen", (data) => {

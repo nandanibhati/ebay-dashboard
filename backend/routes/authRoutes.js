@@ -120,27 +120,30 @@ router.post("/login", async (req, res) => {
 });
 
 // GET ALL EMPLOYEES
+// GET ALL USERS FOR CHAT
 router.get("/employees", async (req, res) => {
   try {
-    const employees = await User.find({
-      role: "employee",
+    const users = await User.find({
+      role: { $in: ["admin", "employee"] },
     }).select("-password");
 
-    const updatedEmployees = employees.map((emp) => {
-      const salaryDate = new Date(emp.joiningDate);
-      salaryDate.setDate(
-        salaryDate.getDate() + 15
-      );
+    const updatedUsers = users.map((user) => {
+      let salaryDate = null;
+
+      if (user.joiningDate) {
+        salaryDate = new Date(user.joiningDate);
+        salaryDate.setDate(salaryDate.getDate() + 15);
+      }
 
       return {
-        ...emp.toObject(),
+        ...user.toObject(),
         salaryDate,
       };
     });
 
     res.json({
       success: true,
-      employees: updatedEmployees,
+      employees: updatedUsers,
     });
   } catch (error) {
     res.status(500).json({
