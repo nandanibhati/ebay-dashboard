@@ -624,7 +624,11 @@ export default function Chat() {
 
   return (
     <div className="h-screen flex bg-slate-100 overflow-hidden">
+      {/* Fixed nav sidebar — renders at left:0, width ~280px */}
       {currentUser.role === "admin" ? <Sidebar /> : <EmployeeSidebar />}
+
+      {/* Everything else pushed past the fixed sidebar */}
+      <div className="flex flex-1 ml-[280px] h-screen overflow-hidden">
 
       <ChatSidebar
         users={users}
@@ -691,6 +695,7 @@ export default function Chat() {
             }
           }}
         />
+      </div>
       </div>
     </div>
   );
