@@ -628,7 +628,7 @@ export default function Chat() {
       {currentUser.role === "admin" ? <Sidebar /> : <EmployeeSidebar />}
 
       {/* Everything else pushed past the fixed sidebar */}
-      <div className="flex flex-1 ml-[280px] h-screen overflow-hidden">
+      <div className="flex flex-1 ml-72 h-screen overflow-hidden">
 
       <ChatSidebar
         users={users}

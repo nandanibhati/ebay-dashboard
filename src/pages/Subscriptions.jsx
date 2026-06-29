@@ -136,7 +136,7 @@ export default function Subscriptions() {
     <div className="flex min-h-screen bg-[#f5f6fa]">
       <Sidebar />
 
-      <div className="flex-1 ml-64 p-8 max-w-[1300px]">
+      <div className="flex-1 ml-72 p-8 max-w-[1300px]">
 
         {/* Hero */}
         <div className="relative overflow-hidden bg-gradient-to-r from-violet-600 via-purple-500 to-indigo-500 rounded-3xl p-8 text-white mb-8 shadow-lg">

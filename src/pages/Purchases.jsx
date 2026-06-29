@@ -35,15 +35,14 @@ export default function Purchases() {
   const [expandedNote, setExpandedNote] = useState(null);
 
   const [form, setForm] = useState({
-  supplier: "",
-  product: "",
-  sku: "",
-  quantity: "",
-  cost: "",
-  purchaseDate: "",
-  status: "Pending",
-  notes: "",
-});
+    supplier: "",
+    product: "",
+    sku: "",
+    quantity: "",
+    cost: "",
+    purchaseDate: "",
+    notes: "",
+  });
 
   const fetchPurchases = async () => {
     try {
@@ -73,7 +72,7 @@ export default function Purchases() {
       if (data.success) {
         alert(editingId ? "Purchase Updated ✅" : "Purchase Added ✅");
         setEditingId(null);
-        setForm({ supplier: "", product: "", sku: "", quantity: "", cost: "", purchaseDate: "", status: "Pending", notes: "" });
+        setForm({ supplier: "", product: "", sku: "", quantity: "", cost: "", purchaseDate: "", notes: "" });
         fetchPurchases();
       }
     } catch (err) { console.log(err); }
@@ -81,7 +80,7 @@ export default function Purchases() {
 
   const editPurchase = (item) => {
     setEditingId(item._id);
-    setForm({ supplier: item.supplier, product: item.product, sku: item.sku, quantity: item.quantity, cost: item.cost, purchaseDate: item.purchaseDate, status: item.status || "Pending", notes: item.notes || "" });
+    setForm({ supplier: item.supplier, product: item.product, sku: item.sku, quantity: item.quantity, cost: item.cost, purchaseDate: item.purchaseDate, notes: item.notes || "" });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -92,29 +91,6 @@ export default function Purchases() {
       fetchPurchases();
     } catch (err) { console.log(err); }
   };
-  const updateStatus = async (id, status) => {
-  try {
-    const res = await fetch(
-      `https://ebay-dashboard-z7h2.onrender.com/api/purchases/${id}/status`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status }),
-      }
-    );
-
-    const data = await res.json();
-
-    if (data.success) {
-      alert("Status Updated ✅");
-      fetchPurchases();
-    }
-  } catch (err) {
-    console.log(err);
-  }
-};
 
   const filteredPurchases = purchases.filter((item) => {
     const matchesSearch =
@@ -144,7 +120,7 @@ export default function Purchases() {
     <div className="flex min-h-screen bg-[#f5f6fa]">
       <Sidebar />
 
-      <div className="flex-1 ml-64 p-8 max-w-[1300px]">
+      <div className="flex-1 ml-72 p-8 max-w-[1300px]">
 
         {/* Hero */}
         <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 rounded-3xl p-8 text-white mb-8 shadow-lg">
@@ -233,7 +209,7 @@ export default function Purchases() {
                 </div>
                 {editingId && (
                   <button
-                    onClick={() => { setEditingId(null); setForm({ supplier: "", product: "", sku: "", quantity: "", cost: "", purchaseDate: "",  status: "Pending", notes: "" }); }}
+                    onClick={() => { setEditingId(null); setForm({ supplier: "", product: "", sku: "", quantity: "", cost: "", purchaseDate: "", notes: "" }); }}
                     className="text-xs text-slate-400 hover:text-slate-600 font-medium transition-colors"
                   >
                     ✕ Cancel
@@ -325,17 +301,7 @@ export default function Purchases() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-100">
-                        {[
-  "Supplier",
-  "Product",
-  "SKU",
-  "Qty",
-  "Cost",
-  "Date",
-  "Status",
-  "Notes",
-  ""
-].map((h) => (
+                        {["Supplier", "Product", "SKU", "Qty", "Cost", "Date", "Notes", ""].map((h) => (
                           <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
                             {h}
                           </th>
@@ -365,20 +331,6 @@ export default function Purchases() {
                               ? new Date(item.purchaseDate).toLocaleDateString("en-GB")
                               : "—"}
                           </td>
-                          <td className="px-4 py-3">
-  <select
-    value={item.status || "Pending"}
-    onChange={(e) =>
-      updateStatus(item._id, e.target.value)
-    }
-    className="border rounded-lg px-2 py-1 text-xs"
-  >
-    <option value="Pending">Pending</option>
-    <option value="Shipped">Shipped</option>
-    <option value="Delivered">Delivered</option>
-    <option value="Cancelled">Cancelled</option>
-  </select>
-</td>
                           <td className="px-4 py-3 max-w-[120px]">
                             {item.notes ? (
                               <div>
