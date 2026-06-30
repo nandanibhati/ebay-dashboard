@@ -289,7 +289,7 @@ const totalProfit = filteredOrders
             <option value="Amazon">Amazon</option>
             <option value="TikTok">TikTok penkraft</option>
             <option value="Shopify">Shopify</option>
-            <option value="Shopify">Backmarket</option>
+            <option value="Backmarket">Backmarket</option>
           </select>
 
           <select
