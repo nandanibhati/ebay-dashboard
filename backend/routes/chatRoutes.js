@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-
+const upload = require("../middleware/upload");
 const Chat = require("../models/Chat");
 
 // ==========================
@@ -70,7 +70,13 @@ router.get(
 // SEND MESSAGE
 // ==========================
 
-router.post("/send", async (req, res) => {
+router.post(
+  "/send",
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "file", maxCount: 1 },
+  ]),
+  async (req, res) => {
   try {
     const chat = await Chat.create({
       senderName: req.body.senderName,
@@ -87,9 +93,13 @@ router.post("/send", async (req, res) => {
 
       message: req.body.message,
 
-      image: req.body.image,
+      image: req.files?.image
+  ? req.files.image[0].path
+  : "",
 
-      file: req.body.file,
+file: req.files?.file
+  ? req.files.file[0].path
+  : "",
 
       voice: req.body.voice,
 

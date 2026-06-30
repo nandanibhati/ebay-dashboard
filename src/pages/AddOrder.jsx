@@ -285,8 +285,9 @@ const totalRevenue =
                   <option value="Smartzone">Smartzone</option>
                   <option value="Veluntra">Veluntra</option>
                   <option value="Amazon">Amazon</option>
-                  <option value="TikTok">TikTok</option>
+                  <option value="TikTok">TikTok penkraft</option>
                   <option value="Shopify">Shopify</option>
+                  <option value="Shopify">Backmarket</option>
                 </SelectField>
               </Field>
 

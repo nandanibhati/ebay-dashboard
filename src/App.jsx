@@ -25,6 +25,7 @@ import Notes from "./pages/Notes";
 import Purchases from "./pages/Purchases";
 import Subscriptions from "./pages/Subscriptions";
 import Chat from "./pages/Chat";
+import FloatingChat from "./components/FloatingChat";
 
 function App() {
   return (
@@ -115,6 +116,8 @@ function App() {
 
         <Route path="/signup" element={<Signup />} />
       </Routes>
+      <FloatingChat />
+
     </BrowserRouter>
   );
 }
