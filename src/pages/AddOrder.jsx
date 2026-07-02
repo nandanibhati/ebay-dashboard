@@ -381,6 +381,7 @@ const totalRevenue =
                   <option value="Shipped">Shipped</option>
                   <option value="Delivered">Delivered</option>
                   <option value="Returned">Returned</option>
+                  <option value="Cancelled">Cancelled</option>
                 </SelectField>
               </Field>
 

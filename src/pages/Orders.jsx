@@ -10,6 +10,8 @@ export default function Orders() {
   const [search, setSearch] = useState("");
   const [siteFilter, setSiteFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [editingOrder, setEditingOrder] = useState(null);
 
   useEffect(() => {
@@ -113,15 +115,36 @@ const margin =
     }
   };
 
-  const filteredOrders = orders.filter((order) => {
-    const matchesSearch =
-      order.orderId?.toLowerCase().includes(search.toLowerCase()) ||
-      order.sku?.toLowerCase().includes(search.toLowerCase()) ||
-      order.product?.toLowerCase().includes(search.toLowerCase());
-    const matchesSite = !siteFilter || order.site === siteFilter;
-    const matchesStatus = !statusFilter || order.status === statusFilter;
-    return matchesSearch && matchesSite && matchesStatus;
-  });
+ const filteredOrders = orders.filter((order) => {
+  const matchesSearch =
+    order.orderId?.toLowerCase().includes(search.toLowerCase()) ||
+    order.sku?.toLowerCase().includes(search.toLowerCase()) ||
+    order.product?.toLowerCase().includes(search.toLowerCase());
+
+  const matchesSite = !siteFilter || order.site === siteFilter;
+  const matchesStatus = !statusFilter || order.status === statusFilter;
+
+  // Date Range Filter
+  const orderDate = order.date ? new Date(order.date) : null;
+
+  const matchesFrom =
+    !fromDate ||
+    (orderDate &&
+      orderDate >= new Date(fromDate + "T00:00:00"));
+
+  const matchesTo =
+    !toDate ||
+    (orderDate &&
+      orderDate <= new Date(toDate + "T23:59:59"));
+
+  return (
+    matchesSearch &&
+    matchesSite &&
+    matchesStatus &&
+    matchesFrom &&
+    matchesTo
+  );
+});
 
   const pendingCount = orders.filter((o) => o.status === "Pending").length;
   const holdCount = orders.filter((o) => o.status === "Hold").length;
@@ -306,10 +329,29 @@ const totalProfit = filteredOrders
             <option value="Returned">Returned</option>
             <option value="Cancelled">Cancelled</option>
           </select>
+          <input
+  type="date"
+  value={fromDate}
+  onChange={(e) => setFromDate(e.target.value)}
+  className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+/>
 
-          {(search || siteFilter || statusFilter) && (
+<input
+  type="date"
+  value={toDate}
+  onChange={(e) => setToDate(e.target.value)}
+  className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+/>
+
+          {(search || siteFilter || statusFilter || fromDate || toDate) && (
             <button
-              onClick={() => { setSearch(""); setSiteFilter(""); setStatusFilter(""); }}
+  onClick={() => {
+  setSearch("");
+  setSiteFilter("");
+  setStatusFilter("");
+  setFromDate("");
+  setToDate("");
+}}
               className="px-3 py-2.5 text-sm text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl font-medium transition-colors"
             >
               Clear
