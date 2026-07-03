@@ -3,19 +3,36 @@ import Sidebar from "../components/Sidebar";
 import {
   Clock, Search, Bell, ChevronDown, UserCheck,
   LogIn, LogOut as LogOutIcon, Timer, CalendarDays,
-  ArrowUpRight, ArrowDownRight, TrendingUp,
+  ArrowUpRight, ArrowDownRight, TrendingUp, Menu, X,
 } from "lucide-react";
+
+/* Design tokens - BuildMaster reference palette
+   Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
+   Amber: #F59E0B  Red: #EF4444  Dark navy: #0F172A
+*/
+
+const FONT_LINK_ID = "ebay-dash-fonts";
+function ensureFonts() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(FONT_LINK_ID)) return;
+  const link = document.createElement("link");
+  link.id = FONT_LINK_ID;
+  link.rel = "stylesheet";
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap";
+  document.head.appendChild(link);
+}
 
 // ── Visual helpers ────────────────────────────────────────────────────────────
 function Avatar({ name = "?" }) {
   const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const COLORS = [
-    "from-violet-500 to-indigo-500",
+    "from-blue-500 to-indigo-500",
     "from-sky-500 to-blue-500",
     "from-emerald-500 to-teal-500",
     "from-amber-500 to-orange-500",
-    "from-rose-500 to-pink-500",
-    "from-fuchsia-500 to-purple-500",
+    "from-red-500 to-rose-500",
+    "from-yellow-500 to-amber-500",
   ];
   const color = COLORS[initials.charCodeAt(0) % COLORS.length];
   return (
@@ -30,17 +47,17 @@ function HoursBadge({ hours }) {
   const good = h >= 8;
   const mid  = h >= 5;
   if (good) return (
-    <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 rounded-full">
+    <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 rounded-full" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
       <ArrowUpRight size={11} />{h.toFixed(1)}h
     </span>
   );
   if (mid) return (
-    <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-100 px-2.5 py-0.5 rounded-full">
+    <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-100 px-2.5 py-0.5 rounded-full" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
       <Timer size={11} />{h.toFixed(1)}h
     </span>
   );
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 px-2.5 py-0.5 rounded-full">
+    <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-100 px-2.5 py-0.5 rounded-full" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
       <ArrowDownRight size={11} />{h.toFixed(1)}h
     </span>
   );
@@ -51,7 +68,7 @@ function TimePill({ time, type }) {
   const isIn = type === "in";
   return (
     <div className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg ${
-      isIn ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-600"
+      isIn ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"
     }`}>
       {isIn ? <LogIn size={11} /> : <LogOutIcon size={11} />}
       {time}
@@ -62,6 +79,11 @@ function TimePill({ time, type }) {
 // ── Main export — ALL logic UNTOUCHED ─────────────────────────────────────────
 export default function AdminAttendance() {
   const [attendance, setAttendance] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // UI-only drawer state
+
+  useEffect(() => {
+    ensureFonts();
+  }, []);
 
   useEffect(() => {
     fetch("https://ebay-dashboard-z7h2.onrender.com/api/attendance")
@@ -83,13 +105,40 @@ export default function AdminAttendance() {
   );
 
   return (
-    <div className="flex min-h-screen bg-[#f5f6fa]">
-      <Sidebar />
+    <div
+      className="min-h-screen w-full relative"
+      style={{ background: "#F8FAFC", fontFamily: "Inter, ui-sans-serif, system-ui" }}
+    >
+      {/* Sidebar drawer (hamburger-triggered, not sticky) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div className="absolute left-0 top-0 h-full w-72 shadow-2xl anim-slide-in">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="absolute top-4 right-3 z-10 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X size={17} />
+            </button>
+            <Sidebar />
+          </div>
+        </div>
+      )}
 
-      <div className="flex-1 ml-64 flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen">
 
         {/* ── Top bar ── */}
-        <header className="sticky top-0 z-10 flex items-center gap-4 px-8 py-4 bg-white/70 backdrop-blur-md border-b border-gray-100">
+        <header className="sticky top-0 z-20 flex items-center gap-4 px-5 md:px-8 py-4 bg-white/70 backdrop-blur-md border-b border-gray-100">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.08] shrink-0"
+          >
+            <Menu size={18} />
+          </button>
+
           <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2 flex-1 max-w-xs">
             <Search size={14} className="text-gray-400" />
             <input
@@ -102,10 +151,13 @@ export default function AdminAttendance() {
           <div className="ml-auto flex items-center gap-3">
             <button className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors">
               <Bell size={18} className="text-gray-500" />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-violet-500" />
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full" style={{ background: "#F4B400" }} />
             </button>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer select-none">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white text-[10px] font-bold">
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
+                style={{ background: "linear-gradient(135deg, #2563EB, #1D4ED8)" }}
+              >
                 AD
               </div>
               <span className="text-sm text-gray-700 font-medium">Admin</span>
@@ -114,12 +166,12 @@ export default function AdminAttendance() {
           </div>
         </header>
 
-        <main className="flex-1 px-8 py-8 space-y-6">
+        <main className="flex-1 px-5 md:px-8 py-8 space-y-6">
 
           {/* Page title */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Attendance Management</h1>
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: "Sora, sans-serif" }}>Attendance Management</h1>
               <p className="text-gray-400 text-sm mt-1">{attendance.length} records loaded</p>
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-400 bg-white border border-gray-100 px-3 py-2 rounded-xl"
@@ -136,15 +188,15 @@ export default function AdminAttendance() {
                 label: "Total Records",
                 value: attendance.length,
                 icon: UserCheck,
-                glow: "rgba(124,58,237,0.15)",
-                iconBg: "bg-violet-100", iconColor: "text-violet-600",
-                bar: "bg-gradient-to-r from-violet-400 to-indigo-400",
+                glow: "rgba(37,99,235,0.15)",
+                iconBg: "bg-blue-100", iconColor: "text-blue-600",
+                bar: "bg-gradient-to-r from-blue-400 to-indigo-400",
               },
               {
                 label: "Punched In",
                 value: presentToday,
                 icon: LogIn,
-                glow: "rgba(16,185,129,0.15)",
+                glow: "rgba(34,197,94,0.15)",
                 iconBg: "bg-emerald-100", iconColor: "text-emerald-600",
                 bar: "bg-gradient-to-r from-emerald-400 to-teal-400",
               },
@@ -152,9 +204,9 @@ export default function AdminAttendance() {
                 label: "Full Days (8h+)",
                 value: fullDays,
                 icon: TrendingUp,
-                glow: "rgba(14,165,233,0.15)",
-                iconBg: "bg-sky-100", iconColor: "text-sky-600",
-                bar: "bg-gradient-to-r from-sky-400 to-blue-400",
+                glow: "rgba(244,180,0,0.18)",
+                iconBg: "bg-amber-100", iconColor: "text-amber-700",
+                bar: "bg-gradient-to-r from-[#F4B400] to-[#F59E0B]",
               },
               {
                 label: "Avg Hours / Record",
@@ -174,7 +226,7 @@ export default function AdminAttendance() {
                   <Icon size={16} className={iconColor} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900 tracking-tight">{value}</p>
+                  <p className="text-2xl font-bold text-gray-900 tracking-tight tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{value}</p>
                   <p className="text-xs text-gray-400 font-medium mt-0.5 uppercase tracking-wider">{label}</p>
                 </div>
                 <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${bar}`} />
@@ -190,7 +242,7 @@ export default function AdminAttendance() {
             {/* Table header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
               <div>
-                <h2 className="text-sm font-semibold text-gray-900">Attendance Records</h2>
+                <h2 className="text-sm font-semibold text-gray-900" style={{ fontFamily: "Sora, sans-serif" }}>Attendance Records</h2>
                 <p className="text-xs text-gray-400 mt-0.5">
                   Showing <span className="font-semibold text-gray-600">{filtered.length}</span> of{" "}
                   <span className="font-semibold text-gray-600">{attendance.length}</span> entries
@@ -215,7 +267,7 @@ export default function AdminAttendance() {
                 </thead>
                 <tbody className="divide-y divide-gray-100/80">
                   {filtered.map((item) => (
-                    <tr key={item._id} className="hover:bg-violet-50/40 transition-colors duration-150 group">
+                    <tr key={item._id} className="hover:bg-[#F4B400]/[0.06] transition-colors duration-150 group">
                       <td className="py-3.5 px-6">
                         <div className="flex items-center gap-2.5">
                           <Avatar name={item.employeeName} />
@@ -255,19 +307,25 @@ export default function AdminAttendance() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/60">
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/60 flex-wrap gap-2">
               <p className="text-xs text-gray-400">
-                Total hours logged: <span className="font-semibold text-gray-700">{totalHours.toFixed(1)}h</span>
+                Total hours logged: <span className="font-semibold text-gray-700" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{totalHours.toFixed(1)}h</span>
               </p>
               <div className="flex items-center gap-3 text-xs">
                 <span className="flex items-center gap-1 text-emerald-600"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />8h+ full day</span>
                 <span className="flex items-center gap-1 text-amber-600"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />5–8h partial</span>
-                <span className="flex items-center gap-1 text-rose-500"><span className="w-2 h-2 rounded-full bg-rose-400 inline-block" />Under 5h</span>
+                <span className="flex items-center gap-1 text-red-500"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" />Under 5h</span>
               </div>
             </div>
           </div>
         </main>
       </div>
+
+      <style>{`
+        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        .anim-slide-in { animation: slideIn 0.28s cubic-bezier(0.22,1,0.36,1); }
+        @media (prefers-reduced-motion: reduce) { .anim-slide-in { animation: none !important; } }
+      `}</style>
     </div>
   );
 }

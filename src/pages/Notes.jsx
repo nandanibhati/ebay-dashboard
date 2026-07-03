@@ -1,6 +1,24 @@
 import { useState, useEffect, useRef } from "react";
 import Sidebar from "../components/Sidebar";
 import EmployeeSidebar from "../components/EmployeeSidebar";
+import { Menu, X } from "lucide-react";
+
+/* Design tokens - BuildMaster reference palette
+   Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
+   Amber: #F59E0B  Red: #EF4444  Dark navy: #0F172A
+*/
+
+const FONT_LINK_ID = "ebay-dash-fonts";
+function ensureFonts() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(FONT_LINK_ID)) return;
+  const link = document.createElement("link");
+  link.id = FONT_LINK_ID;
+  link.rel = "stylesheet";
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap";
+  document.head.appendChild(link);
+}
 
 const STATUS_CONFIG = {
   Todo: {
@@ -40,7 +58,7 @@ function StatCard({ label, value, color, icon, gradient }) {
           <span className="text-slate-500 text-xs font-semibold uppercase tracking-widest">{label}</span>
           <span className="text-xl">{icon}</span>
         </div>
-        <p className={`text-4xl font-extrabold tracking-tight ${color}`}>{value}</p>
+        <p className={`text-4xl font-bold tracking-tight tabular-nums ${color}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>{value}</p>
       </div>
     </div>
   );
@@ -66,7 +84,6 @@ function StatusDropdown({ value, onChange }) {
       >
         <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
         {value}
-        {/* chevron */}
         <svg xmlns="http://www.w3.org/2000/svg" className={`w-3 h-3 transition-transform duration-150 ${open ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="6 9 12 15 18 9" />
         </svg>
@@ -115,7 +132,7 @@ function NoteCard({ note, index, deleteNote, editNote, updateStatus }) {
     >
       {/* Title + status dropdown */}
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-semibold text-slate-800 text-base leading-snug truncate group-hover:text-violet-700 transition-colors duration-200 flex-1 min-w-0">
+        <h3 className="font-semibold text-slate-800 text-base leading-snug truncate transition-colors duration-200 flex-1 min-w-0 group-hover:text-[#B45F06]">
           {note.title}
         </h3>
         <StatusDropdown
@@ -128,23 +145,26 @@ function NoteCard({ note, index, deleteNote, editNote, updateStatus }) {
       <p className="mt-2.5 text-slate-500 text-sm leading-relaxed line-clamp-3">
         {note.content}
       </p>
-{note.screenshot && (
-  <div className="mt-3">
-    <a
-      href={note.screenshot}
-      target="_blank"
-      rel="noreferrer"
-      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100"
-    >
-      📷 View Screenshot
-    </a>
-  </div>
-)}
+      {note.screenshot && (
+        <div className="mt-3">
+          <a
+            href={note.screenshot}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100"
+          >
+            📷 View Screenshot
+          </a>
+        </div>
+      )}
       {/* Footer */}
       <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
         {/* Author */}
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+          <div
+            className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
+            style={{ background: "linear-gradient(135deg, #2563EB, #1D4ED8)" }}
+          >
             {initials}
           </div>
           <span className="text-xs text-slate-500 font-medium truncate">{note.createdBy}</span>
@@ -193,9 +213,14 @@ export default function Notes() {
   const [editingId, setEditingId] = useState(null);
   const [notes, setNotes] = useState([]);
   const [filterStatus, setFilterStatus] = useState("All");
+  const [sidebarOpen, setSidebarOpen] = useState(false); // UI-only drawer state
   const role = localStorage.getItem("role");
 
   const [form, setForm] = useState({ title: "", content: "", status: "Todo",  screenshot: null, });
+
+  useEffect(() => {
+    ensureFonts();
+  }, []);
 
   const fetchNotes = async () => {
     try {
@@ -217,176 +242,221 @@ export default function Notes() {
   };
 
 
-const updateStatus = async (id, status) => {
-  try {
-    const currentNote = notes.find((n) => n._id === id);
+  const updateStatus = async (id, status) => {
+    try {
+      const currentNote = notes.find((n) => n._id === id);
 
-    const formData = new FormData();
+      const formData = new FormData();
 
-    formData.append("title", currentNote.title);
-    formData.append("content", currentNote.content);
-    formData.append("status", status);
-    formData.append("createdBy", currentNote.createdBy);
+      formData.append("title", currentNote.title);
+      formData.append("content", currentNote.content);
+      formData.append("status", status);
+      formData.append("createdBy", currentNote.createdBy);
 
-    const res = await fetch(
-      `https://ebay-dashboard-z7h2.onrender.com/api/notes/${id}`,
-      {
-        method: "PUT",
-        body: formData,
+      const res = await fetch(
+        `https://ebay-dashboard-z7h2.onrender.com/api/notes/${id}`,
+        {
+          method: "PUT",
+          body: formData,
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        fetchNotes();
       }
-    );
-
-    const data = await res.json();
-
-    if (data.success) {
-      fetchNotes();
+    } catch (error) {
+      console.log(error);
     }
-  } catch (error) {
-    console.log(error);
-  }
-};
-const updateNote = async () => {
-  try {
-    const formData = new FormData();
+  };
+  const updateNote = async () => {
+    try {
+      const formData = new FormData();
 
-    formData.append("title", form.title);
-    formData.append("content", form.content);
-    formData.append("status", form.status);
-    formData.append(
-      "createdBy",
-      localStorage.getItem("employeeName") || "Admin"
-    );
+      formData.append("title", form.title);
+      formData.append("content", form.content);
+      formData.append("status", form.status);
+      formData.append(
+        "createdBy",
+        localStorage.getItem("employeeName") || "Admin"
+      );
 
-    if (form.screenshot) {
-      formData.append("screenshot", form.screenshot);
-    }
-
-    const res = await fetch(
-      `https://ebay-dashboard-z7h2.onrender.com/api/notes/${editingId}`,
-      {
-        method: "PUT",
-        body: formData,
+      if (form.screenshot) {
+        formData.append("screenshot", form.screenshot);
       }
-    );
 
-    const data = await res.json();
+      const res = await fetch(
+        `https://ebay-dashboard-z7h2.onrender.com/api/notes/${editingId}`,
+        {
+          method: "PUT",
+          body: formData,
+        }
+      );
 
-    if (data.success) {
-      alert("Note Updated Successfully");
+      const data = await res.json();
 
-      setEditingId(null);
+      if (data.success) {
+        alert("Note Updated Successfully");
 
-      setForm({
-        title: "",
-        content: "",
-        status: "Todo",
-        screenshot: null,
-      });
+        setEditingId(null);
 
-      fetchNotes();
-    } else {
-      alert(data.message);
-    }
-  } catch (error) {
-    console.log(error);
-    alert("Failed to Update Note");
-  }
-};
-const editNote = (note) => {
-  setEditingId(note._id);
+        setForm({
+          title: "",
+          content: "",
+          status: "Todo",
+          screenshot: null,
+        });
 
-  setForm({
-    title: note.title,
-    content: note.content,
-    status: note.status,
-    screenshot: null,
-  });
-
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth",
-  });
-};
-const createNote = async () => {
-  try {
-    const formData = new FormData();
-
-    formData.append("title", form.title);
-    formData.append("content", form.content);
-    formData.append("status", form.status);
-    formData.append(
-      "createdBy",
-      localStorage.getItem("employeeName") || "Admin"
-    );
-
-    if (form.screenshot) {
-      formData.append("screenshot", form.screenshot);
-    }
-
-    const res = await fetch(
-      "https://ebay-dashboard-z7h2.onrender.com/api/notes/create",
-      {
-        method: "POST",
-        body: formData,
+        fetchNotes();
+      } else {
+        alert(data.message);
       }
-    );
-
-    const data = await res.json();
-
-    if (data.success) {
-      alert("Note Created Successfully");
-
-      setForm({
-        title: "",
-        content: "",
-        status: "Todo",
-        screenshot: null,
-      });
-
-      setEditingId(null);
-
-      fetchNotes();
-    } else {
-      alert(data.message);
+    } catch (error) {
+      console.log(error);
+      alert("Failed to Update Note");
     }
-  } catch (error) {
-    console.log(error);
-    alert("Failed to Create Note");
-  }
-};
-     
+  };
+  const editNote = (note) => {
+    setEditingId(note._id);
+
+    setForm({
+      title: note.title,
+      content: note.content,
+      status: note.status,
+      screenshot: null,
+    });
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+  const createNote = async () => {
+    try {
+      const formData = new FormData();
+
+      formData.append("title", form.title);
+      formData.append("content", form.content);
+      formData.append("status", form.status);
+      formData.append(
+        "createdBy",
+        localStorage.getItem("employeeName") || "Admin"
+      );
+
+      if (form.screenshot) {
+        formData.append("screenshot", form.screenshot);
+      }
+
+      const res = await fetch(
+        "https://ebay-dashboard-z7h2.onrender.com/api/notes/create",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        alert("Note Created Successfully");
+
+        setForm({
+          title: "",
+          content: "",
+          status: "Todo",
+          screenshot: null,
+        });
+
+        setEditingId(null);
+
+        fetchNotes();
+      } else {
+        alert(data.message);
+      }
+    } catch (error) {
+      console.log(error);
+      alert("Failed to Create Note");
+    }
+  };
+
 
   const filtered = filterStatus === "All" ? notes : notes.filter((n) => n.status === filterStatus);
   const FILTERS = ["All", "Todo", "In Progress", "Completed"];
 
   return (
-    <div className="flex min-h-screen bg-[#f5f6fa]">
-      {role === "admin" ? <Sidebar /> : <EmployeeSidebar />}
+    <div
+      className="min-h-screen w-full relative"
+      style={{ background: "#F8FAFC", fontFamily: "Inter, ui-sans-serif, system-ui" }}
+    >
+      {/* Sidebar drawer (hamburger-triggered, not sticky) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div className="absolute left-0 top-0 h-full w-72 shadow-2xl anim-slide-in">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="absolute top-4 right-3 z-10 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X size={17} />
+            </button>
+            {role === "admin" ? <Sidebar /> : <EmployeeSidebar />}
+          </div>
+        </div>
+      )}
 
-      <div className="flex-1 ml-72 p-8 max-w-[1200px]">
+      <div className="p-4 lg:p-8 max-w-[1200px]">
+
+        {/* Top bar */}
+        <div className="flex items-center gap-3 mb-4">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.08] bg-white shrink-0"
+          >
+            <Menu size={18} />
+          </button>
+          <span className="text-sm font-semibold text-slate-500" style={{ fontFamily: "Sora, sans-serif" }}>
+            Workspace
+          </span>
+        </div>
 
         {/* Hero */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-violet-600 via-violet-500 to-indigo-500 rounded-3xl p-8 text-white mb-8 shadow-lg">
-          <div className="absolute -top-10 -right-10 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
-          <div className="absolute bottom-0 left-1/3 w-32 h-32 bg-indigo-400/30 rounded-full blur-2xl" />
+        <div
+          className="relative overflow-hidden rounded-3xl p-8 text-white mb-8 shadow-lg"
+          style={{ background: "linear-gradient(150deg, #0F172A, #1E293B)", boxShadow: "0 20px 45px -12px rgba(15,23,42,0.35)" }}
+        >
+          <div
+            className="absolute -top-10 -right-10 w-48 h-48 rounded-full blur-2xl"
+            style={{ background: "rgba(244,180,0,0.18)" }}
+          />
+          <div
+            className="absolute bottom-0 left-1/3 w-32 h-32 rounded-full blur-2xl"
+            style={{ background: "rgba(37,99,235,0.18)" }}
+          />
           <div className="relative z-10 flex items-center justify-between flex-wrap gap-4">
             <div>
-              <p className="text-violet-200 text-xs font-semibold uppercase tracking-widest mb-1">Workspace</p>
-              <h1 className="text-3xl font-extrabold tracking-tight">Notes 📝</h1>
-              <p className="mt-1.5 text-violet-100 text-sm max-w-sm">
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#F4B400" }}>Workspace</p>
+              <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: "Sora, sans-serif" }}>Notes</h1>
+              <p className="mt-1.5 text-slate-400 text-sm max-w-sm">
                 Capture ideas, client info, and internal docs — all in one place.
               </p>
             </div>
-            <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-2xl px-4 py-2.5">
-              <span className="text-2xl font-extrabold">{notes.length}</span>
-              <span className="text-violet-100 text-sm leading-tight">Total<br />Notes</span>
+            <div
+              className="flex items-center gap-2 backdrop-blur-sm border rounded-2xl px-4 py-2.5"
+              style={{ background: "rgba(244,180,0,0.12)", borderColor: "rgba(244,180,0,0.3)" }}
+            >
+              <span className="text-2xl font-bold tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{notes.length}</span>
+              <span className="text-slate-300 text-sm leading-tight">Total<br />Notes</span>
             </div>
           </div>
         </div>
 
         {/* Stat Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <StatCard label="Total Notes" value={notes.length} color="text-slate-800" icon="🗂️" gradient="bg-gradient-to-br from-slate-50 to-violet-50" />
+          <StatCard label="Total Notes" value={notes.length} color="text-slate-800" icon="🗂️" gradient="bg-gradient-to-br from-slate-50 to-blue-50" />
           <StatCard label="Todo" value={notes.filter((n) => n.status === "Todo").length} color="text-amber-500" icon="⏳" gradient="bg-gradient-to-br from-amber-50/60 to-orange-50/60" />
           <StatCard label="Completed" value={notes.filter((n) => n.status === "Completed").length} color="text-emerald-600" icon="✅" gradient="bg-gradient-to-br from-emerald-50/60 to-teal-50/60" />
         </div>
@@ -398,10 +468,17 @@ const createNote = async () => {
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sticky top-8">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2.5">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm transition-colors duration-200 ${editingId ? "bg-blue-500" : "bg-violet-600"}`}>
+                  <div
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-sm transition-colors duration-200"
+                    style={
+                      editingId
+                        ? { background: "linear-gradient(135deg, #2563EB, #1D4ED8)", color: "#fff" }
+                        : { background: "linear-gradient(135deg, #F4B400, #F59E0B)", color: "#0F172A" }
+                    }
+                  >
                     {editingId ? "✏️" : "➕"}
                   </div>
-                  <h2 className="text-base font-bold text-slate-800">
+                  <h2 className="text-base font-bold text-slate-800" style={{ fontFamily: "Sora, sans-serif" }}>
                     {editingId ? "Edit Note" : "New Note"}
                   </h2>
                 </div>
@@ -423,7 +500,7 @@ const createNote = async () => {
                     placeholder="Give your note a title…"
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all duration-200"
+                    className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#F4B400]/40 focus:border-[#F4B400] transition-all duration-200"
                   />
                 </div>
 
@@ -434,7 +511,7 @@ const createNote = async () => {
                     placeholder="Write your note here…"
                     value={form.content}
                     onChange={(e) => setForm({ ...form, content: e.target.value })}
-                    className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all duration-200 resize-none"
+                    className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#F4B400]/40 focus:border-[#F4B400] transition-all duration-200 resize-none"
                   />
                 </div>
 
@@ -443,7 +520,7 @@ const createNote = async () => {
                   <select
                     value={form.status}
                     onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-700 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all duration-200 cursor-pointer"
+                    className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-700 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#F4B400]/40 focus:border-[#F4B400] transition-all duration-200 cursor-pointer"
                   >
                     <option value="Todo">Todo</option>
                     <option value="In Progress">In Progress</option>
@@ -451,30 +528,31 @@ const createNote = async () => {
                   </select>
                 </div>
                 <div>
-  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
-    Screenshot
-  </label>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+                    Screenshot
+                  </label>
 
-  <input
-    type="file"
-    accept="image/*"
-    onChange={(e) =>
-      setForm({
-        ...form,
-        screenshot: e.target.files[0],
-      })
-    }
-    className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-700 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-violet-400"
-  />
-</div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        screenshot: e.target.files[0],
+                      })
+                    }
+                    className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-700 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#F4B400]/40"
+                  />
+                </div>
 
                 <button
                   onClick={editingId ? updateNote : createNote}
-                  className={`w-full text-white py-3 rounded-xl font-semibold text-sm shadow-md active:scale-[0.98] transition-all duration-200 mt-1 ${
+                  className="w-full py-3 rounded-xl font-semibold text-sm shadow-md active:scale-[0.98] transition-all duration-200 mt-1"
+                  style={
                     editingId
-                      ? "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-blue-200 hover:shadow-blue-300"
-                      : "bg-gradient-to-r from-violet-600 to-indigo-500 hover:from-violet-700 hover:to-indigo-600 shadow-violet-200 hover:shadow-violet-300"
-                  }`}
+                      ? { background: "linear-gradient(135deg, #2563EB, #1D4ED8)", color: "#fff", boxShadow: "0 8px 20px -6px rgba(37,99,235,0.4)" }
+                      : { background: "linear-gradient(135deg, #F4B400, #F59E0B)", color: "#0F172A", boxShadow: "0 8px 20px -6px rgba(244,180,0,0.4)" }
+                  }
                 >
                   {editingId ? "💾 Update Note" : "+ Create Note"}
                 </button>
@@ -486,17 +564,18 @@ const createNote = async () => {
           <div className="lg:col-span-3">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
               <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
-                <h2 className="text-base font-bold text-slate-800">All Notes</h2>
+                <h2 className="text-base font-bold text-slate-800" style={{ fontFamily: "Sora, sans-serif" }}>All Notes</h2>
                 <div className="flex gap-1.5 flex-wrap">
                   {FILTERS.map((f) => (
                     <button
                       key={f}
                       onClick={() => setFilterStatus(f)}
-                      className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all duration-150 ${
+                      className="text-xs font-semibold px-3 py-1.5 rounded-full transition-all duration-150"
+                      style={
                         filterStatus === f
-                          ? "bg-violet-600 text-white shadow-sm"
-                          : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                      }`}
+                          ? { background: "linear-gradient(135deg, #F4B400, #F59E0B)", color: "#0F172A", boxShadow: "0 4px 12px -2px rgba(244,180,0,0.4)" }
+                          : { background: "#F1F5F9", color: "#64748B" }
+                      }
                     >
                       {f}
                       {f !== "All" && (
@@ -533,6 +612,12 @@ const createNote = async () => {
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        .anim-slide-in { animation: slideIn 0.28s cubic-bezier(0.22,1,0.36,1); }
+        @media (prefers-reduced-motion: reduce) { .anim-slide-in { animation: none !important; } }
+      `}</style>
     </div>
   );
 }

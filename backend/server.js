@@ -35,7 +35,7 @@ const noteRoutes = require("./routes/noteRoutes");
 const purchaseRoutes = require("./routes/purchaseRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const chatRoutes = require("./routes/chatRoutes");
-
+const ebayRoutes = require("./routes/ebayRoutes");
 // =========================
 // MongoDB
 // =========================
@@ -129,6 +129,7 @@ app.use("/api/notes", noteRoutes);
 app.use("/api/purchases", purchaseRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/ebay", ebayRoutes);
 
 // =========================
 // Root

@@ -1,5 +1,23 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
+import { Menu, X } from "lucide-react";
+
+/* Design tokens - BuildMaster reference palette
+   Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
+   Amber: #F59E0B  Red: #EF4444  Dark navy: #0F172A
+*/
+
+const FONT_LINK_ID = "ebay-dash-fonts";
+function ensureFonts() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(FONT_LINK_ID)) return;
+  const link = document.createElement("link");
+  link.id = FONT_LINK_ID;
+  link.rel = "stylesheet";
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap";
+  document.head.appendChild(link);
+}
 
 const SUPPLIER_CONFIG = {
   Temu: {
@@ -33,6 +51,7 @@ export default function Purchases() {
   const [search, setSearch] = useState("");
   const [supplierFilter, setSupplierFilter] = useState("All");
   const [expandedNote, setExpandedNote] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // UI-only drawer state
 
   const [form, setForm] = useState({
     supplier: "",
@@ -43,6 +62,10 @@ export default function Purchases() {
     purchaseDate: "",
     notes: "",
   });
+
+  useEffect(() => {
+    ensureFonts();
+  }, []);
 
   const fetchPurchases = async () => {
     try {
@@ -117,26 +140,71 @@ export default function Purchases() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#f5f6fa]">
-      <Sidebar />
+    <div
+      className="min-h-screen w-full relative"
+      style={{ background: "#F8FAFC", fontFamily: "Inter, ui-sans-serif, system-ui" }}
+    >
+      {/* Sidebar drawer (hamburger-triggered, not sticky) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div className="absolute left-0 top-0 h-full w-72 shadow-2xl anim-slide-in">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="absolute top-4 right-3 z-10 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X size={17} />
+            </button>
+            <Sidebar />
+          </div>
+        </div>
+      )}
 
-      <div className="flex-1 ml-72 p-8 max-w-[1300px]">
+      <div className="p-4 lg:p-8 max-w-[1300px]">
+
+        {/* Top bar */}
+        <div className="flex items-center gap-3 mb-4">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.08] bg-white shrink-0"
+          >
+            <Menu size={18} />
+          </button>
+          <span className="text-sm font-semibold text-slate-500" style={{ fontFamily: "Sora, sans-serif" }}>
+            Inventory Intake
+          </span>
+        </div>
 
         {/* Hero */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 rounded-3xl p-8 text-white mb-8 shadow-lg">
-          <div className="absolute -top-10 -right-10 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
-          <div className="absolute bottom-0 left-1/3 w-32 h-32 bg-indigo-400/30 rounded-full blur-2xl" />
+        <div
+          className="relative overflow-hidden rounded-3xl p-8 text-white mb-8 shadow-lg"
+          style={{ background: "linear-gradient(150deg, #0F172A, #1E293B)", boxShadow: "0 20px 45px -12px rgba(15,23,42,0.35)" }}
+        >
+          <div
+            className="absolute -top-10 -right-10 w-48 h-48 rounded-full blur-2xl"
+            style={{ background: "rgba(244,180,0,0.18)" }}
+          />
+          <div
+            className="absolute bottom-0 left-1/3 w-32 h-32 rounded-full blur-2xl"
+            style={{ background: "rgba(37,99,235,0.18)" }}
+          />
           <div className="relative z-10 flex items-center justify-between flex-wrap gap-4">
             <div>
-              <p className="text-blue-200 text-xs font-semibold uppercase tracking-widest mb-1">Admin</p>
-              <h1 className="text-3xl font-extrabold tracking-tight">Purchases 🛒</h1>
-              <p className="mt-1.5 text-blue-100 text-sm max-w-sm">
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#F4B400" }}>Admin</p>
+              <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: "Sora, sans-serif" }}>Purchases</h1>
+              <p className="mt-1.5 text-slate-400 text-sm max-w-sm">
                 Track supplier orders, costs, and inventory intake.
               </p>
             </div>
-            <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-2xl px-4 py-2.5">
-              <span className="text-2xl font-extrabold">£{totalPurchases.toFixed(2)}</span>
-              <span className="text-blue-100 text-sm leading-tight">Total<br />Spend</span>
+            <div
+              className="flex items-center gap-2 backdrop-blur-sm border rounded-2xl px-4 py-2.5"
+              style={{ background: "rgba(244,180,0,0.12)", borderColor: "rgba(244,180,0,0.3)" }}
+            >
+              <span className="text-2xl font-bold tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>£{totalPurchases.toFixed(2)}</span>
+              <span className="text-slate-300 text-sm leading-tight">Total<br />Spend</span>
             </div>
           </div>
         </div>
@@ -155,7 +223,7 @@ export default function Purchases() {
                   <span className="text-slate-500 text-xs font-semibold uppercase tracking-widest">{label}</span>
                   <span className="text-xl">{icon}</span>
                 </div>
-                <p className={`text-3xl font-extrabold tracking-tight ${color}`}>{value}</p>
+                <p className={`text-3xl font-bold tracking-tight tabular-nums ${color}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>{value}</p>
               </div>
             </div>
           ))}
@@ -172,7 +240,7 @@ export default function Purchases() {
               placeholder="Search product or SKU…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 text-sm pl-9 pr-3 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+              className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 text-sm pl-9 pr-3 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-[#F4B400]/40 focus:border-[#F4B400] transition-all duration-200"
             />
           </div>
 
@@ -181,11 +249,12 @@ export default function Purchases() {
               <button
                 key={s}
                 onClick={() => setSupplierFilter(s)}
-                className={`text-xs font-semibold px-3 py-2 rounded-xl transition-all duration-150 ${
+                className="text-xs font-semibold px-3 py-2 rounded-xl transition-all duration-150"
+                style={
                   supplierFilter === s
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                }`}
+                    ? { background: "linear-gradient(135deg, #F4B400, #F59E0B)", color: "#0F172A", boxShadow: "0 4px 12px -2px rgba(244,180,0,0.4)" }
+                    : { background: "#F1F5F9", color: "#64748B" }
+                }
               >
                 {s}
               </button>
@@ -200,10 +269,17 @@ export default function Purchases() {
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sticky top-8">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2.5">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm transition-colors duration-200 ${editingId ? "bg-amber-500" : "bg-blue-600"}`}>
+                  <div
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-sm transition-colors duration-200"
+                    style={
+                      editingId
+                        ? { background: "linear-gradient(135deg, #F59E0B, #D97706)", color: "#fff" }
+                        : { background: "linear-gradient(135deg, #F4B400, #F59E0B)", color: "#0F172A" }
+                    }
+                  >
                     {editingId ? "✏️" : "➕"}
                   </div>
-                  <h2 className="text-base font-bold text-slate-800">
+                  <h2 className="text-base font-bold text-slate-800" style={{ fontFamily: "Sora, sans-serif" }}>
                     {editingId ? "Edit Purchase" : "New Purchase"}
                   </h2>
                 </div>
@@ -236,7 +312,7 @@ export default function Purchases() {
                       value={form[name]}
                       onChange={handleChange}
                       required={required}
-                      className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+                      className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#F4B400]/40 focus:border-[#F4B400] transition-all duration-200"
                     />
                   </div>
                 ))}
@@ -248,7 +324,7 @@ export default function Purchases() {
                     value={form.supplier}
                     onChange={handleChange}
                     required
-                    className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-700 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 cursor-pointer"
+                    className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-700 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#F4B400]/40 focus:border-[#F4B400] transition-all duration-200 cursor-pointer"
                   >
                     <option value="">Select Supplier</option>
                     <option value="Temu">Temu</option>
@@ -264,17 +340,18 @@ export default function Purchases() {
                     value={form.notes}
                     onChange={handleChange}
                     rows="3"
-                    className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 resize-none"
+                    className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#F4B400]/40 focus:border-[#F4B400] transition-all duration-200 resize-none"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className={`w-full text-white py-3 rounded-xl font-semibold text-sm shadow-md active:scale-[0.98] transition-all duration-200 ${
+                  className="w-full py-3 rounded-xl font-semibold text-sm shadow-md active:scale-[0.98] transition-all duration-200"
+                  style={
                     editingId
-                      ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-200"
-                      : "bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 shadow-blue-200"
-                  }`}
+                      ? { background: "linear-gradient(135deg, #F59E0B, #D97706)", color: "#fff", boxShadow: "0 8px 20px -6px rgba(245,158,11,0.4)" }
+                      : { background: "linear-gradient(135deg, #F4B400, #F59E0B)", color: "#0F172A", boxShadow: "0 8px 20px -6px rgba(244,180,0,0.4)" }
+                  }
                 >
                   {editingId ? "💾 Update Purchase" : "+ Add Purchase"}
                 </button>
@@ -286,7 +363,7 @@ export default function Purchases() {
           <div className="lg:col-span-3">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                <h2 className="text-base font-bold text-slate-800">Purchase Records</h2>
+                <h2 className="text-base font-bold text-slate-800" style={{ fontFamily: "Sora, sans-serif" }}>Purchase Records</h2>
                 <span className="text-xs text-slate-400 font-medium">{filteredPurchases.length} record{filteredPurchases.length !== 1 ? "s" : ""}</span>
               </div>
 
@@ -310,20 +387,20 @@ export default function Purchases() {
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                       {filteredPurchases.map((item) => (
-                        <tr key={item._id} className="hover:bg-slate-50/70 transition-colors duration-100 group">
+                        <tr key={item._id} className="hover:bg-[#F4B400]/[0.05] transition-colors duration-100 group">
                           <td className="px-4 py-3">
                             <SupplierBadge supplier={item.supplier} />
                           </td>
                           <td className="px-4 py-3 font-medium text-slate-800 max-w-[140px] truncate">
                             {item.product}
                           </td>
-                          <td className="px-4 py-3 text-slate-500 font-mono text-xs">
+                          <td className="px-4 py-3 text-slate-500 text-xs" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                             {item.sku || "—"}
                           </td>
-                          <td className="px-4 py-3 text-slate-700 font-semibold text-center">
+                          <td className="px-4 py-3 text-slate-700 font-semibold text-center" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                             {item.quantity}
                           </td>
-                          <td className="px-4 py-3 font-bold text-slate-800 whitespace-nowrap">
+                          <td className="px-4 py-3 font-bold text-slate-800 whitespace-nowrap" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                             £{Number(item.cost).toFixed(2)}
                           </td>
                           <td className="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">
@@ -336,7 +413,8 @@ export default function Purchases() {
                               <div>
                                 <button
                                   onClick={() => setExpandedNote(expandedNote === item._id ? null : item._id)}
-                                  className="text-xs text-blue-500 hover:text-blue-700 font-semibold transition-colors"
+                                  className="text-xs font-semibold transition-colors"
+                                  style={{ color: "#2563EB" }}
                                 >
                                   {expandedNote === item._id ? "Hide ▲" : "View ▼"}
                                 </button>
@@ -388,6 +466,12 @@ export default function Purchases() {
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        .anim-slide-in { animation: slideIn 0.28s cubic-bezier(0.22,1,0.36,1); }
+        @media (prefers-reduced-motion: reduce) { .anim-slide-in { animation: none !important; } }
+      `}</style>
     </div>
   );
 }

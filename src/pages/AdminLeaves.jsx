@@ -3,16 +3,33 @@ import Sidebar from "../components/Sidebar";
 import {
   CalendarDays, Search, Bell, ChevronDown,
   CheckCircle2, XCircle, Clock, AlertCircle,
-  CalendarCheck, CalendarX, Loader2, Filter,
+  CalendarCheck, CalendarX, Loader2, Filter, Menu, X,
 } from "lucide-react";
+
+/* Design tokens - BuildMaster reference palette
+   Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
+   Amber: #F59E0B  Red: #EF4444  Dark navy: #0F172A
+*/
+
+const FONT_LINK_ID = "ebay-dash-fonts";
+function ensureFonts() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(FONT_LINK_ID)) return;
+  const link = document.createElement("link");
+  link.id = FONT_LINK_ID;
+  link.rel = "stylesheet";
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap";
+  document.head.appendChild(link);
+}
 
 // ── Visual helpers ────────────────────────────────────────────────────────────
 function Avatar({ name = "?" }) {
   const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const COLORS = [
-    "from-violet-500 to-indigo-500", "from-sky-500 to-blue-500",
+    "from-blue-500 to-indigo-500", "from-sky-500 to-blue-500",
     "from-emerald-500 to-teal-500",  "from-amber-500 to-orange-500",
-    "from-rose-500 to-pink-500",     "from-fuchsia-500 to-purple-500",
+    "from-red-500 to-rose-500",     "from-yellow-500 to-amber-500",
   ];
   const color = COLORS[initials.charCodeAt(0) % COLORS.length];
   return (
@@ -25,7 +42,7 @@ function Avatar({ name = "?" }) {
 function StatusBadge({ status }) {
   const map = {
     Approved: { cls: "bg-emerald-50 text-emerald-700 border-emerald-100", icon: CheckCircle2 },
-    Rejected: { cls: "bg-rose-50 text-rose-600 border-rose-100",         icon: XCircle },
+    Rejected: { cls: "bg-red-50 text-red-600 border-red-100",         icon: XCircle },
     Pending:  { cls: "bg-amber-50 text-amber-700 border-amber-100",       icon: Clock },
   };
   const { cls, icon: Icon } = map[status] || map.Pending;
@@ -46,7 +63,7 @@ function StatCard({ label, value, icon: Icon, glow, iconBg, iconColor, bar }) {
         <Icon size={16} className={iconColor} />
       </div>
       <div>
-        <p className="text-2xl font-bold text-gray-900 tracking-tight">{value}</p>
+        <p className="text-2xl font-bold text-gray-900 tracking-tight tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{value}</p>
         <p className="text-xs text-gray-400 font-medium mt-0.5 uppercase tracking-wider">{label}</p>
       </div>
       <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${bar}`} />
@@ -57,6 +74,11 @@ function StatCard({ label, value, icon: Icon, glow, iconBg, iconColor, bar }) {
 // ── Main export — ALL logic UNTOUCHED ─────────────────────────────────────────
 export default function AdminLeaves() {
   const [leaves, setLeaves] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // UI-only drawer state
+
+  useEffect(() => {
+    ensureFonts();
+  }, []);
 
   const fetchLeaves = async () => {
     try {
@@ -106,13 +128,40 @@ export default function AdminLeaves() {
   const handleReject  = async (id) => { setActioning(id + "_reject");  await rejectLeave(id);  setActioning(null); };
 
   return (
-    <div className="flex min-h-screen bg-[#f5f6fa]">
-      <Sidebar />
+    <div
+      className="min-h-screen w-full relative"
+      style={{ background: "#F8FAFC", fontFamily: "Inter, ui-sans-serif, system-ui" }}
+    >
+      {/* Sidebar drawer (hamburger-triggered, not sticky) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div className="absolute left-0 top-0 h-full w-72 shadow-2xl anim-slide-in">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="absolute top-4 right-3 z-10 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X size={17} />
+            </button>
+            <Sidebar />
+          </div>
+        </div>
+      )}
 
-      <div className="flex-1 ml-64 flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen">
 
         {/* ── Top bar ── */}
-        <header className="sticky top-0 z-10 flex items-center gap-4 px-8 py-4 bg-white/70 backdrop-blur-md border-b border-gray-100">
+        <header className="sticky top-0 z-20 flex items-center gap-4 px-5 md:px-8 py-4 bg-white/70 backdrop-blur-md border-b border-gray-100">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.08] shrink-0"
+          >
+            <Menu size={18} />
+          </button>
+
           <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2 flex-1 max-w-xs">
             <Search size={14} className="text-gray-400" />
             <input
@@ -126,25 +175,33 @@ export default function AdminLeaves() {
             <button className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors">
               <Bell size={18} className="text-gray-500" />
               {pending > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-violet-500 text-white text-[9px] font-bold flex items-center justify-center">
+                <span
+                  className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center"
+                  style={{ background: "#F4B400", color: "#0F172A" }}
+                >
                   {pending}
                 </span>
               )}
             </button>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer select-none">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white text-[10px] font-bold">AD</div>
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
+                style={{ background: "linear-gradient(135deg, #2563EB, #1D4ED8)" }}
+              >
+                AD
+              </div>
               <span className="text-sm text-gray-700 font-medium">Admin</span>
               <ChevronDown size={13} className="text-gray-400" />
             </div>
           </div>
         </header>
 
-        <main className="flex-1 px-8 py-8 space-y-6">
+        <main className="flex-1 px-5 md:px-8 py-8 space-y-6">
 
           {/* Page title */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Leave Management</h1>
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: "Sora, sans-serif" }}>Leave Management</h1>
               <p className="text-gray-400 text-sm mt-1">{leaves.length} total requests</p>
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-400 bg-white border border-gray-100 px-3 py-2 rounded-xl"
@@ -156,10 +213,10 @@ export default function AdminLeaves() {
 
           {/* ── Summary stat cards ── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label="Total Requests" value={leaves.length}  icon={CalendarDays}  glow="rgba(124,58,237,0.15)"  iconBg="bg-violet-100"  iconColor="text-violet-600"  bar="bg-gradient-to-r from-violet-400 to-indigo-400" />
+            <StatCard label="Total Requests" value={leaves.length}  icon={CalendarDays}  glow="rgba(37,99,235,0.15)"  iconBg="bg-blue-100"  iconColor="text-blue-600"  bar="bg-gradient-to-r from-blue-400 to-indigo-400" />
             <StatCard label="Pending"        value={pending}         icon={AlertCircle}   glow="rgba(245,158,11,0.15)"  iconBg="bg-amber-100"   iconColor="text-amber-600"   bar="bg-gradient-to-r from-amber-400 to-orange-400" />
-            <StatCard label="Approved"       value={approved}        icon={CalendarCheck} glow="rgba(16,185,129,0.15)"  iconBg="bg-emerald-100" iconColor="text-emerald-600" bar="bg-gradient-to-r from-emerald-400 to-teal-400" />
-            <StatCard label="Days Approved"  value={`${totalDays}d`} icon={CalendarX}     glow="rgba(244,63,94,0.12)"   iconBg="bg-rose-100"    iconColor="text-rose-500"    bar="bg-gradient-to-r from-rose-400 to-pink-400" />
+            <StatCard label="Approved"       value={approved}        icon={CalendarCheck} glow="rgba(34,197,94,0.15)"  iconBg="bg-emerald-100" iconColor="text-emerald-600" bar="bg-gradient-to-r from-emerald-400 to-teal-400" />
+            <StatCard label="Days Approved"  value={`${totalDays}d`} icon={CalendarX}     glow="rgba(244,180,0,0.18)"   iconBg="bg-amber-100"    iconColor="text-amber-700"    bar="bg-gradient-to-r from-[#F4B400] to-[#F59E0B]" />
           </div>
 
           {/* ── Table card ── */}
@@ -170,7 +227,7 @@ export default function AdminLeaves() {
             {/* Table toolbar */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 gap-4 flex-wrap">
               <div>
-                <h2 className="text-sm font-semibold text-gray-900">Leave Requests</h2>
+                <h2 className="text-sm font-semibold text-gray-900" style={{ fontFamily: "Sora, sans-serif" }}>Leave Requests</h2>
                 <p className="text-xs text-gray-400 mt-0.5">
                   Showing <span className="font-semibold text-gray-600">{filtered.length}</span> of{" "}
                   <span className="font-semibold text-gray-600">{leaves.length}</span>
@@ -190,7 +247,7 @@ export default function AdminLeaves() {
                   >
                     {tab}
                     {tab === "Pending" && pending > 0 && (
-                      <span className="ml-1.5 bg-amber-400 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                      <span className="ml-1.5 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#F59E0B" }}>
                         {pending}
                       </span>
                     )}
@@ -215,7 +272,7 @@ export default function AdminLeaves() {
                     const appKey = leave._id + "_approve";
                     const rejKey = leave._id + "_reject";
                     return (
-                      <tr key={leave._id} className="hover:bg-violet-50/30 transition-colors duration-150">
+                      <tr key={leave._id} className="hover:bg-[#F4B400]/[0.05] transition-colors duration-150">
                         <td className="py-3.5 px-5">
                           <div className="flex items-center gap-2.5">
                             <Avatar name={leave.employeeName} />
@@ -230,7 +287,7 @@ export default function AdminLeaves() {
                           </span>
                         </td>
                         <td className="py-3.5 px-5">
-                          <span className="text-sm font-bold text-gray-800">{leave.leaveDays}</span>
+                          <span className="text-sm font-bold text-gray-800" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{leave.leaveDays}</span>
                           <span className="text-xs text-gray-400 ml-0.5">d</span>
                         </td>
                         <td className="py-3.5 px-5 max-w-[160px]">
@@ -246,7 +303,7 @@ export default function AdminLeaves() {
                                 onClick={() => handleApprove(leave._id)}
                                 disabled={!!actioning}
                                 className="flex items-center gap-1.5 text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-400 active:scale-95 disabled:opacity-50 px-3 py-1.5 rounded-lg transition-all"
-                                style={{ boxShadow: "0 2px 8px 0 rgba(16,185,129,0.30)" }}
+                                style={{ boxShadow: "0 2px 8px 0 rgba(34,197,94,0.30)" }}
                               >
                                 {actioning === appKey
                                   ? <Loader2 size={11} className="animate-spin" />
@@ -256,8 +313,8 @@ export default function AdminLeaves() {
                               <button
                                 onClick={() => handleReject(leave._id)}
                                 disabled={!!actioning}
-                                className="flex items-center gap-1.5 text-xs font-semibold text-white bg-rose-500 hover:bg-rose-400 active:scale-95 disabled:opacity-50 px-3 py-1.5 rounded-lg transition-all"
-                                style={{ boxShadow: "0 2px 8px 0 rgba(244,63,94,0.25)" }}
+                                className="flex items-center gap-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-400 active:scale-95 disabled:opacity-50 px-3 py-1.5 rounded-lg transition-all"
+                                style={{ boxShadow: "0 2px 8px 0 rgba(239,68,68,0.25)" }}
                               >
                                 {actioning === rejKey
                                   ? <Loader2 size={11} className="animate-spin" />
@@ -270,7 +327,7 @@ export default function AdminLeaves() {
                               <CheckCircle2 size={11} /> Approved
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-lg">
+                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-100 px-3 py-1.5 rounded-lg">
                               <XCircle size={11} /> Rejected
                             </span>
                           )}
@@ -294,19 +351,25 @@ export default function AdminLeaves() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/60">
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/60 flex-wrap gap-2">
               <p className="text-xs text-gray-400">
-                Approved days total: <span className="font-semibold text-gray-700">{totalDays} days</span>
+                Approved days total: <span className="font-semibold text-gray-700" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{totalDays} days</span>
               </p>
               <div className="flex items-center gap-3 text-xs">
                 <span className="flex items-center gap-1 text-amber-600"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />Pending review</span>
                 <span className="flex items-center gap-1 text-emerald-600"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />Approved</span>
-                <span className="flex items-center gap-1 text-rose-500"><span className="w-2 h-2 rounded-full bg-rose-400 inline-block" />Rejected</span>
+                <span className="flex items-center gap-1 text-red-500"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" />Rejected</span>
               </div>
             </div>
           </div>
         </main>
       </div>
+
+      <style>{`
+        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        .anim-slide-in { animation: slideIn 0.28s cubic-bezier(0.22,1,0.36,1); }
+        @media (prefers-reduced-motion: reduce) { .anim-slide-in { animation: none !important; } }
+      `}</style>
     </div>
   );
 }

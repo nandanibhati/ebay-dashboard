@@ -3,6 +3,24 @@ import Sidebar from "../components/Sidebar";
 import { useEffect, useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import * as XLSX from "xlsx";
+import { Menu, X } from "lucide-react";
+
+/* Design tokens - matched to BuildMaster reference palette
+   Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
+   Amber: #F59E0B  Red: #EF4444  Dark navy: #0F172A
+*/
+
+const FONT_LINK_ID = "ebay-dash-fonts";
+function ensureFonts() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(FONT_LINK_ID)) return;
+  const link = document.createElement("link");
+  link.id = FONT_LINK_ID;
+  link.rel = "stylesheet";
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap";
+  document.head.appendChild(link);
+}
 
 export default function Orders() {
   const role = localStorage.getItem("role");
@@ -13,6 +31,11 @@ export default function Orders() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [editingOrder, setEditingOrder] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // UI-only drawer state
+
+  useEffect(() => {
+    ensureFonts();
+  }, []);
 
   useEffect(() => {
     fetch("https://ebay-dashboard-z7h2.onrender.com/api/orders")
@@ -35,20 +58,20 @@ export default function Orders() {
       const deliveryCost = Number(editingOrder.deliveryCost || 0);
       const revenue = sellingPrice;
 
-const totalCost =
-  quantity * costPrice +
-  ebayFee +
-  adFee +
-  deliveryCost;
+      const totalCost =
+        quantity * costPrice +
+        ebayFee +
+        adFee +
+        deliveryCost;
 
-const profit = revenue - totalCost;
+      const profit = revenue - totalCost;
 
-const margin =
-  revenue > 0
-    ? ((profit / revenue) * 100).toFixed(2)
-    : 0;
+      const margin =
+        revenue > 0
+          ? ((profit / revenue) * 100).toFixed(2)
+          : 0;
       const updatedOrder = { ...editingOrder, revenue, profit, margin };
-      
+
 
       const response = await fetch(
         `https://ebay-dashboard-z7h2.onrender.com/api/orders/${editingOrder._id}`,
@@ -115,36 +138,35 @@ const margin =
     }
   };
 
- const filteredOrders = orders.filter((order) => {
-  const matchesSearch =
-    order.orderId?.toLowerCase().includes(search.toLowerCase()) ||
-    order.sku?.toLowerCase().includes(search.toLowerCase()) ||
-    order.product?.toLowerCase().includes(search.toLowerCase());
+  const filteredOrders = orders.filter((order) => {
+    const matchesSearch =
+      order.orderId?.toLowerCase().includes(search.toLowerCase()) ||
+      order.sku?.toLowerCase().includes(search.toLowerCase()) ||
+      order.product?.toLowerCase().includes(search.toLowerCase());
 
-  const matchesSite = !siteFilter || order.site === siteFilter;
-  const matchesStatus = !statusFilter || order.status === statusFilter;
+    const matchesSite = !siteFilter || order.site === siteFilter;
+    const matchesStatus = !statusFilter || order.status === statusFilter;
 
-  // Date Range Filter
-  const orderDate = order.date ? new Date(order.date) : null;
+    const orderDate = order.date ? new Date(order.date) : null;
 
-  const matchesFrom =
-    !fromDate ||
-    (orderDate &&
-      orderDate >= new Date(fromDate + "T00:00:00"));
+    const matchesFrom =
+      !fromDate ||
+      (orderDate &&
+        orderDate >= new Date(fromDate + "T00:00:00"));
 
-  const matchesTo =
-    !toDate ||
-    (orderDate &&
-      orderDate <= new Date(toDate + "T23:59:59"));
+    const matchesTo =
+      !toDate ||
+      (orderDate &&
+        orderDate <= new Date(toDate + "T23:59:59"));
 
-  return (
-    matchesSearch &&
-    matchesSite &&
-    matchesStatus &&
-    matchesFrom &&
-    matchesTo
-  );
-});
+    return (
+      matchesSearch &&
+      matchesSite &&
+      matchesStatus &&
+      matchesFrom &&
+      matchesTo
+    );
+  });
 
   const pendingCount = orders.filter((o) => o.status === "Pending").length;
   const holdCount = orders.filter((o) => o.status === "Hold").length;
@@ -155,49 +177,88 @@ const margin =
   const returnedCount = orders.filter((o) => o.status === "Returned").length;
   const courierScannedCount = orders.filter((o) => o.courierScanned === "Yes").length;
 
-const totalRevenue = filteredOrders
-  .filter((o) => o.status !== "Hold")
-  .reduce(
-    (acc, cur) => acc + Number(cur.revenue || 0),
-    0
-  );
+  const totalRevenue = filteredOrders
+    .filter((o) => o.status !== "Hold")
+    .reduce(
+      (acc, cur) => acc + Number(cur.revenue || 0),
+      0
+    );
 
-const totalProfit = filteredOrders
-  .filter((o) => o.status !== "Hold")
-  .reduce(
-    (acc, cur) => acc + Number(cur.profit || 0),
-    0
-  );
+  const totalProfit = filteredOrders
+    .filter((o) => o.status !== "Hold")
+    .reduce(
+      (acc, cur) => acc + Number(cur.profit || 0),
+      0
+    );
   const aggregateMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : 0;
 
   const statusConfig = {
     Pending:   { dot: "bg-amber-400",   badge: "bg-amber-50 text-amber-700 ring-amber-200" },
     Hold:      { dot: "bg-orange-400",   badge: "bg-orange-50 text-orange-700 ring-orange-200" },
     Expecting: { dot: "bg-green-400",   badge: "bg-green-50 text-green-700 ring-green-200" },
-    Shipped:   { dot: "bg-indigo-400",  badge: "bg-indigo-50 text-indigo-700 ring-indigo-200" },
+    Shipped:   { dot: "bg-blue-400",  badge: "bg-blue-50 text-blue-700 ring-blue-200" },
     Delivered: { dot: "bg-emerald-400", badge: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
     Returned:  { dot: "bg-purple-400",  badge: "bg-purple-50 text-purple-700 ring-purple-200" },
-    Cancelled: { dot: "bg-rose-400",    badge: "bg-rose-50 text-rose-700 ring-rose-200" },
+    Cancelled: { dot: "bg-red-400",    badge: "bg-red-50 text-red-700 ring-red-200" },
   };
 
   const inputCls =
-    "w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-slate-800 placeholder:text-slate-400";
+    "w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg outline-none focus:border-[#F4B400] focus:ring-2 focus:ring-[#F4B400]/25 transition-all text-slate-800 placeholder:text-slate-400";
   const labelCls = "block text-xs font-semibold text-slate-500 mb-1.5";
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      {role === "admin" ? <Sidebar /> : <EmployeeSidebar />}
-
-    <div className="flex-1 ml-0 md:ml-64 p-4 lg:p-6 space-y-6" >
-        {/* ── Page Header ── */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Orders</h1>
-            <p className="text-sm text-slate-500 mt-0.5">
-              {orders.length} total orders across all channels
-            </p>
+    <div
+      className="min-h-screen w-full relative"
+      style={{ background: "#F8FAFC", fontFamily: "Inter, ui-sans-serif, system-ui" }}
+    >
+      {/* Sidebar drawer (hamburger-triggered, not sticky) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div className="absolute left-0 top-0 h-full w-72 shadow-2xl anim-slide-in">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="absolute top-4 right-3 z-10 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X size={17} />
+            </button>
+            {role === "admin" ? <Sidebar /> : <EmployeeSidebar />}
           </div>
-          <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-sm font-semibold rounded-xl cursor-pointer transition-colors shadow-sm shadow-violet-600/25">
+        </div>
+      )}
+
+      <div className="p-4 lg:p-6 space-y-6">
+        {/* ── Top bar / Page Header ── */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.08] bg-white shrink-0"
+            >
+              <Menu size={18} />
+            </button>
+            <div>
+              <h1
+                className="text-2xl font-bold text-slate-900 tracking-tight"
+                style={{ fontFamily: "Sora, sans-serif" }}
+              >
+                Orders
+              </h1>
+              <p className="text-sm text-slate-500 mt-0.5">
+                {orders.length} total orders across all channels
+              </p>
+            </div>
+          </div>
+          <label
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-[#0F172A] text-sm font-semibold rounded-xl cursor-pointer transition-all shadow-sm"
+            style={{
+              background: "linear-gradient(135deg, #F4B400, #F59E0B)",
+              boxShadow: "0 8px 20px -6px rgba(244,180,0,0.4)",
+            }}
+          >
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             Import Excel
             <input type="file" accept=".xlsx,.xls" onChange={handleExcelUpload} className="hidden" />
@@ -224,8 +285,8 @@ const totalProfit = filteredOrders
               icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
               ),
-              color: "text-violet-700",
-              bg: "bg-violet-100",
+              color: "text-[#B45F06]",
+              bg: "bg-amber-100",
             },
             {
               label: "Net Profit",
@@ -234,8 +295,8 @@ const totalProfit = filteredOrders
               icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
               ),
-              color: totalProfit >= 0 ? "text-emerald-700" : "text-rose-600",
-              bg: totalProfit >= 0 ? "bg-emerald-100" : "bg-rose-100",
+              color: totalProfit >= 0 ? "text-emerald-700" : "text-red-600",
+              bg: totalProfit >= 0 ? "bg-emerald-100" : "bg-red-100",
             },
             {
               label: "Avg. Margin",
@@ -244,15 +305,15 @@ const totalProfit = filteredOrders
               icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
               ),
-              color: "text-indigo-700",
-              bg: "bg-indigo-100",
+              color: "text-blue-700",
+              bg: "bg-blue-100",
             },
           ].map((m) => (
             <div key={m.label} className="bg-white rounded-2xl border border-slate-200/70 p-5 flex items-center gap-4 shadow-sm">
               <div className={`${m.bg} ${m.color} p-3 rounded-xl flex-shrink-0`}>{m.icon}</div>
               <div>
                 <p className="text-xs font-medium text-slate-500">{m.label}</p>
-                <p className={`text-xl font-bold mt-0.5 ${m.color}`}>{m.value}</p>
+                <p className={`text-xl font-bold mt-0.5 ${m.color}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>{m.value}</p>
                 <p className="text-[11px] text-slate-400 mt-0.5">{m.sub}</p>
               </div>
             </div>
@@ -264,16 +325,16 @@ const totalProfit = filteredOrders
           {[
             { label: "Pending",   count: pendingCount,        dot: "bg-amber-400",   ring: "ring-amber-100",   num: "text-amber-700"   },
             {
-  label: "Hold",
-  count: holdCount,
-  dot: "bg-orange-400",
-  ring: "ring-orange-100",
-  num: "text-orange-700",
-},
+              label: "Hold",
+              count: holdCount,
+              dot: "bg-orange-400",
+              ring: "ring-orange-100",
+              num: "text-orange-700",
+            },
             { label: "Expecting",    count: ExpectingCount,         dot: "bg-green-400",  ring: "ring-green-100",  num: "text-green-700"  },
             { label: "Shipped",   count: shippedCount,        dot: "bg-blue-400",    ring: "ring-blue-100",    num: "text-blue-700"    },
             { label: "Delivered", count: deliveredCount,      dot: "bg-emerald-400", ring: "ring-emerald-100", num: "text-emerald-700" },
-            { label: "Cancelled", count: cancelledCount,      dot: "bg-rose-400",    ring: "ring-rose-100",    num: "text-rose-700"    },
+            { label: "Cancelled", count: cancelledCount,      dot: "bg-red-400",    ring: "ring-red-100",    num: "text-red-700"    },
             { label: "Returned",  count: returnedCount,       dot: "bg-purple-400",  ring: "ring-purple-100",  num: "text-purple-700"  },
             { label: "Scanned",   count: courierScannedCount, dot: "bg-slate-400",   ring: "ring-slate-100",   num: "text-slate-700"   },
           ].map((s) => (
@@ -282,7 +343,7 @@ const totalProfit = filteredOrders
                 <span className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
                 <p className="text-xs font-semibold text-slate-500 truncate">{s.label}</p>
               </div>
-              <p className={`text-2xl font-black ${s.num}`}>{s.count}</p>
+              <p className={`text-2xl font-black ${s.num}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>{s.count}</p>
             </div>
           ))}
         </div>
@@ -296,14 +357,14 @@ const totalProfit = filteredOrders
               placeholder="Search by Order ID, SKU or Product…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-slate-800 placeholder:text-slate-400"
+              className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-[#F4B400] focus:ring-2 focus:ring-[#F4B400]/25 transition-all text-slate-800 placeholder:text-slate-400"
             />
           </div>
 
           <select
             value={siteFilter}
             onChange={(e) => setSiteFilter(e.target.value)}
-            className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-slate-700 font-medium cursor-pointer"
+            className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#F4B400] focus:ring-2 focus:ring-[#F4B400]/25 transition-all text-slate-700 font-medium cursor-pointer"
           >
             <option value="">All Sites</option>
             <option value="TPS">TPS</option>
@@ -318,7 +379,7 @@ const totalProfit = filteredOrders
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-slate-700 font-medium cursor-pointer"
+            className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#F4B400] focus:ring-2 focus:ring-[#F4B400]/25 transition-all text-slate-700 font-medium cursor-pointer"
           >
             <option value="">All Status</option>
             <option value="Pending">Pending</option>
@@ -330,28 +391,28 @@ const totalProfit = filteredOrders
             <option value="Cancelled">Cancelled</option>
           </select>
           <input
-  type="date"
-  value={fromDate}
-  onChange={(e) => setFromDate(e.target.value)}
-  className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-/>
+            type="date"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#F4B400] focus:ring-2 focus:ring-[#F4B400]/25"
+          />
 
-<input
-  type="date"
-  value={toDate}
-  onChange={(e) => setToDate(e.target.value)}
-  className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-/>
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+            className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#F4B400] focus:ring-2 focus:ring-[#F4B400]/25"
+          />
 
           {(search || siteFilter || statusFilter || fromDate || toDate) && (
             <button
-  onClick={() => {
-  setSearch("");
-  setSiteFilter("");
-  setStatusFilter("");
-  setFromDate("");
-  setToDate("");
-}}
+              onClick={() => {
+                setSearch("");
+                setSiteFilter("");
+                setStatusFilter("");
+                setFromDate("");
+                setToDate("");
+              }}
               className="px-3 py-2.5 text-sm text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl font-medium transition-colors"
             >
               Clear
@@ -366,7 +427,10 @@ const totalProfit = filteredOrders
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs font-semibold text-slate-600">Live Orders</span>
             </div>
-            <span className="text-xs font-mono text-slate-400 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md">
+            <span
+              className="text-xs text-slate-400 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            >
               {filteredOrders.length} / {orders.length} shown
             </span>
           </div>
@@ -400,38 +464,38 @@ const totalProfit = filteredOrders
                   const sc = statusConfig[order.status] || { dot: "bg-slate-400", badge: "bg-slate-50 text-slate-600 ring-slate-200" };
                   const profit = Number(order.profit || 0);
                   return (
-                    <tr key={order._id} className="hover:bg-slate-50/70 transition-colors group">
+                    <tr key={order._id} className="hover:bg-[#F4B400]/[0.05] transition-colors group">
                       <td className="px-4 py-3 font-bold text-slate-900 text-sm whitespace-nowrap">{order.site}</td>
                       <td className="px-4 py-3 text-sm text-slate-500 whitespace-nowrap">
                         {order.date ? new Date(order.date).toLocaleDateString("en-GB") : "—"}
                       </td>
-                      <td className="px-4 py-3 font-mono text-sm text-slate-700 whitespace-nowrap">{order.orderId}</td>
+                      <td className="px-4 py-3 text-sm text-slate-700 whitespace-nowrap" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{order.orderId}</td>
                       <td className="px-4 py-3">
-                        <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono text-xs font-semibold">
+                        <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-semibold" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                           {order.sku}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-center font-mono font-bold text-slate-800">{order.quantity}</td>
-                      <td className="px-4 py-3 text-sm font-mono text-slate-600">£{Number(order.sellingPrice || 0).toFixed(2)}</td>
-                      <td className="px-4 py-3 text-sm font-mono text-slate-400">£{Number(order.costPrice || 0).toFixed(2)}</td>
-                      <td className="px-4 py-3 text-sm font-mono font-bold text-slate-800">£{Number(order.revenue || 0).toFixed(2)}</td>
-                      <td className={`px-4 py-3 text-sm font-mono font-bold ${profit >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                      <td className="px-4 py-3 text-sm text-center font-bold text-slate-800" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{order.quantity}</td>
+                      <td className="px-4 py-3 text-sm text-slate-600" style={{ fontFamily: "'JetBrains Mono', monospace" }}>£{Number(order.sellingPrice || 0).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-sm text-slate-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>£{Number(order.costPrice || 0).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-sm font-bold text-slate-800" style={{ fontFamily: "'JetBrains Mono', monospace" }}>£{Number(order.revenue || 0).toFixed(2)}</td>
+                      <td className={`px-4 py-3 text-sm font-bold ${profit >= 0 ? "text-emerald-600" : "text-red-500"}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                         £{order.status === "Hold" ? "0.00" : profit.toFixed(2)}
                       </td>
-                      <td className="px-4 py-3 max-w-[160px] truncate font-mono text-xs text-slate-400" title={order.trackingNo}>
+                      <td className="px-4 py-3 max-w-[160px] truncate text-xs text-slate-400" style={{ fontFamily: "'JetBrains Mono', monospace" }} title={order.trackingNo}>
                         {order.trackingNo || <span className="opacity-30">—</span>}
                       </td>
                       <td className="px-4 py-3">
-  <details>
-   <summary className="cursor-pointer text-violet-600 font-semibold text-xs">
-  📝 {order.notes ? "View Note" : "Add Note"}
-</summary>
+                        <details>
+                          <summary className="cursor-pointer text-[#B45F06] font-semibold text-xs">
+                            {order.notes ? "View Note" : "Add Note"}
+                          </summary>
 
-    <div className="mt-2 bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-600 max-w-[250px] whitespace-pre-wrap">
-      {order.notes || "No Notes"}
-    </div>
-  </details>
-</td>
+                          <div className="mt-2 bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-600 max-w-[250px] whitespace-pre-wrap">
+                            {order.notes || "No Notes"}
+                          </div>
+                        </details>
+                      </td>
 
                       {/* Status inline select */}
                       <td className="px-4 py-3">
@@ -455,6 +519,7 @@ const totalProfit = filteredOrders
                           <option value="Delivered">Delivered</option>
                           <option value="Returned">Returned</option>
                           <option value="Cancelled">Cancelled</option>
+                          <option value="Partial Refund">Partial Refund</option>
                         </select>
                       </td>
 
@@ -471,11 +536,11 @@ const totalProfit = filteredOrders
                             });
                             setOrders(orders.map((o) => (o._id === order._id ? { ...o, courierScanned: courierValue } : o)));
                           }}
-                         className={`text-xs font-semibold px-2 py-1.5 rounded-lg border outline-none cursor-pointer transition-all ${
-  (order.courierScanned || "No") === "Yes"
-    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-    : "bg-rose-50 text-rose-700 border-rose-200"
-}`}
+                          className={`text-xs font-semibold px-2 py-1.5 rounded-lg border outline-none cursor-pointer transition-all ${
+                            (order.courierScanned || "No") === "Yes"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : "bg-red-50 text-red-700 border-red-200"
+                          }`}
                         >
                           <option value="No">No</option>
                           <option value="Yes">Yes</option>
@@ -483,7 +548,7 @@ const totalProfit = filteredOrders
                       </td>
 
                       <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1 bg-violet-50 text-violet-700 border border-violet-100 px-2 py-0.5 rounded-lg text-xs font-semibold">
+                        <span className="inline-flex items-center gap-1 bg-amber-50 text-[#B45F06] border border-amber-200 px-2 py-0.5 rounded-lg text-xs font-semibold">
                           {order.employeeName || order.employeeId || "—"}
                         </span>
                       </td>
@@ -492,14 +557,14 @@ const totalProfit = filteredOrders
                         <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => editOrder(order)}
-                            className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-[#B45F06] hover:bg-amber-50 rounded-lg transition-colors"
                             title="Edit"
                           >
                             <FaEdit size={13} />
                           </button>
                           <button
                             onClick={() => deleteOrder(order._id)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Delete"
                           >
                             <FaTrash size={13} />
@@ -528,8 +593,8 @@ const totalProfit = filteredOrders
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div>
-                <h2 className="text-base font-bold text-slate-900">Edit Order</h2>
-                <p className="text-xs text-slate-400 mt-0.5 font-mono">{editingOrder._id}</p>
+                <h2 className="text-base font-bold text-slate-900" style={{ fontFamily: "Sora, sans-serif" }}>Edit Order</h2>
+                <p className="text-xs text-slate-400 mt-0.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{editingOrder._id}</p>
               </div>
               <button
                 onClick={() => setEditingOrder(null)}
@@ -544,7 +609,7 @@ const totalProfit = filteredOrders
 
               {/* Section 1: Channel Info */}
               <div>
-                <p className="text-[10px] font-bold text-violet-600 uppercase tracking-widest mb-3">Channel & Identity</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: "#B45F06" }}>Channel & Identity</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className={labelCls}>Site</label>
@@ -583,7 +648,7 @@ const totalProfit = filteredOrders
 
               {/* Section 2: Financials */}
               <div className="pt-4 border-t border-slate-100">
-                <p className="text-[10px] font-bold text-violet-600 uppercase tracking-widest mb-3">Costs & Pricing</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: "#B45F06" }}>Costs & Pricing</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {[
                     { label: "Quantity", key: "quantity", ph: "" },
@@ -599,7 +664,8 @@ const totalProfit = filteredOrders
                         type="number"
                         value={editingOrder[f.key] || ""}
                         onChange={(e) => setEditingOrder({ ...editingOrder, [f.key]: e.target.value })}
-                        className={inputCls + " font-mono"}
+                        className={inputCls}
+                        style={{ fontFamily: "'JetBrains Mono', monospace" }}
                         placeholder={f.ph}
                       />
                     </div>
@@ -609,40 +675,40 @@ const totalProfit = filteredOrders
 
               {/* Section 3: Logistics */}
               <div className="pt-4 border-t border-slate-100">
-                <p className="text-[10px] font-bold text-violet-600 uppercase tracking-widest mb-3">Logistics</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: "#B45F06" }}>Logistics</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className={labelCls}>Tracking Number</label>
-                    <input type="text" value={editingOrder.trackingNo || ""} onChange={(e) => setEditingOrder({ ...editingOrder, trackingNo: e.target.value })} className={inputCls + " font-mono"} placeholder="Enter tracking…" />
+                    <input type="text" value={editingOrder.trackingNo || ""} onChange={(e) => setEditingOrder({ ...editingOrder, trackingNo: e.target.value })} className={inputCls} style={{ fontFamily: "'JetBrains Mono', monospace" }} placeholder="Enter tracking…" />
                   </div>
                   <div>
                     <label className={labelCls}>Courier Scanned</label>
-                    <input type="text" value={editingOrder.courierScanned || ""} onChange={(e) => setEditingOrder({ ...editingOrder, courierScanned: e.target.value })} className={inputCls + " font-mono"} placeholder="Yes / No" />
+                    <input type="text" value={editingOrder.courierScanned || ""} onChange={(e) => setEditingOrder({ ...editingOrder, courierScanned: e.target.value })} className={inputCls} style={{ fontFamily: "'JetBrains Mono', monospace" }} placeholder="Yes / No" />
                   </div>
                 </div>
               </div>
               <div className="pt-4 border-t border-slate-100">
-  <p className="text-[10px] font-bold text-violet-600 uppercase tracking-widest mb-3">
-    Notes
-  </p>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: "#B45F06" }}>
+                  Notes
+                </p>
 
-  <div>
-    <label className={labelCls}>Order Notes</label>
+                <div>
+                  <label className={labelCls}>Order Notes</label>
 
-    <textarea
-      rows="4"
-      value={editingOrder.notes || ""}
-      onChange={(e) =>
-        setEditingOrder({
-          ...editingOrder,
-          notes: e.target.value,
-        })
-      }
-      className={inputCls}
-      placeholder="Enter order notes..."
-    />
-  </div>
-</div>
+                  <textarea
+                    rows="4"
+                    value={editingOrder.notes || ""}
+                    onChange={(e) =>
+                      setEditingOrder({
+                        ...editingOrder,
+                        notes: e.target.value,
+                      })
+                    }
+                    className={inputCls}
+                    placeholder="Enter order notes..."
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Modal Footer */}
@@ -655,7 +721,11 @@ const totalProfit = filteredOrders
               </button>
               <button
                 onClick={saveEdit}
-                className="px-5 py-2 text-sm font-bold text-white bg-violet-600 hover:bg-violet-700 rounded-xl transition-colors shadow-sm shadow-violet-600/20"
+                className="px-5 py-2 text-sm font-bold text-[#0F172A] rounded-xl transition-all shadow-sm"
+                style={{
+                  background: "linear-gradient(135deg, #F4B400, #F59E0B)",
+                  boxShadow: "0 8px 20px -6px rgba(244,180,0,0.4)",
+                }}
               >
                 Save Changes
               </button>
@@ -663,6 +733,12 @@ const totalProfit = filteredOrders
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        .anim-slide-in { animation: slideIn 0.28s cubic-bezier(0.22,1,0.36,1); }
+        @media (prefers-reduced-motion: reduce) { .anim-slide-in { animation: none !important; } }
+      `}</style>
     </div>
   );
 }

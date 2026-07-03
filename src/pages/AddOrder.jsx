@@ -1,11 +1,29 @@
 import Sidebar from "../components/Sidebar";
 import EmployeeSidebar from "../components/EmployeeSidebar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ShoppingBag, Calendar, Hash, User, Package, Tag,
   DollarSign, Truck, FileText, ChevronDown, Loader2,
   CheckCircle2, Store, BarChart2, ScanLine, Bell, Search,
+  Menu, X,
 } from "lucide-react";
+
+/* Design tokens - matched to BuildMaster reference palette
+   Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
+   Amber: #F59E0B  Red: #EF4444  Dark navy: #0F172A
+*/
+
+const FONT_LINK_ID = "ebay-dash-fonts";
+function ensureFonts() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(FONT_LINK_ID)) return;
+  const link = document.createElement("link");
+  link.id = FONT_LINK_ID;
+  link.rel = "stylesheet";
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap";
+  document.head.appendChild(link);
+}
 
 // ── Visual-only field wrapper ─────────────────────────────────────────────────
 function Field({ label, icon: Icon, children, span = false }) {
@@ -29,17 +47,17 @@ function Field({ label, icon: Icon, children, span = false }) {
 }
 
 const inputCls =
-  "w-full px-4 py-3 text-sm text-slate-800 bg-slate-50/60 border border-slate-200 rounded-xl outline-none focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-500/10 transition-all placeholder:text-slate-400 shadow-sm shadow-slate-100/50";
+  "w-full px-4 py-3 text-sm text-slate-800 bg-slate-50/60 border border-slate-200 rounded-xl outline-none focus:border-[#F4B400] focus:bg-white focus:ring-4 focus:ring-[#F4B400]/15 transition-all placeholder:text-slate-400 shadow-sm shadow-slate-100/50";
 
 const selectCls =
-  "w-full px-4 py-3 text-sm text-slate-700 bg-slate-50/60 border border-slate-200 rounded-xl outline-none focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-500/10 transition-all appearance-none cursor-pointer shadow-sm shadow-slate-100/50";
+  "w-full px-4 py-3 text-sm text-slate-700 bg-slate-50/60 border border-slate-200 rounded-xl outline-none focus:border-[#F4B400] focus:bg-white focus:ring-4 focus:ring-[#F4B400]/15 transition-all appearance-none cursor-pointer shadow-sm shadow-slate-100/50";
 
 // ── Section divider ───────────────────────────────────────────────────────────
 function SectionHeading({ label }) {
   return (
     <div className="md:col-span-2 flex items-center gap-4 pt-6 pb-2 first:pt-2">
-      <div className="h-4 w-1 bg-violet-500 rounded-full" />
-      <span className="text-xs font-bold text-slate-700 uppercase tracking-widest whitespace-nowrap">{label}</span>
+      <div className="h-4 w-1 rounded-full" style={{ background: "#F4B400" }} />
+      <span className="text-xs font-bold text-slate-700 uppercase tracking-widest whitespace-nowrap" style={{ fontFamily: "Sora, sans-serif" }}>{label}</span>
       <div className="flex-1 h-px bg-slate-100" />
     </div>
   );
@@ -59,6 +77,7 @@ function SelectField({ children, ...props }) {
 export default function AddOrder() {
   const role = localStorage.getItem("role");
   const [loading, setLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // UI-only drawer state
   const [form, setForm] = useState({
     site: "",
     date: localStorage.getItem("selectedDate") || new Date().toISOString().split("T")[0],
@@ -76,69 +95,74 @@ export default function AddOrder() {
     courierScanned: "",
     notes: "",
   });
+
+  useEffect(() => {
+    ensureFonts();
+  }, []);
+
   const handleSkuChange = async (e) => {
-  const sku = e.target.value;
+    const sku = e.target.value;
     if (!sku.trim()) {
+      setForm((prev) => ({
+        ...prev,
+        sku: "",
+        product: "",
+        costPrice: "",
+      }));
+      return;
+    }
+
     setForm((prev) => ({
       ...prev,
-      sku: "",
-      product: "",
-      costPrice: "",
+      sku,
     }));
-    return;
-  }
 
-  setForm((prev) => ({
-    ...prev,
-    sku,
-  }));
 
- 
 
-  try {
-    const res = await fetch(
-      `https://ebay-dashboard-z7h2.onrender.com/api/stock/sku/${sku}`
-    );
+    try {
+      const res = await fetch(
+        `https://ebay-dashboard-z7h2.onrender.com/api/stock/sku/${sku}`
+      );
 
-    if (!res.ok) {
-  setForm((prev) => ({
-    ...prev,
-    sku,
-    product: "",
-    costPrice: "",
-  }));
-  return;
-}
+      if (!res.ok) {
+        setForm((prev) => ({
+          ...prev,
+          sku,
+          product: "",
+          costPrice: "",
+        }));
+        return;
+      }
 
-    const stock = await res.json();
+      const stock = await res.json();
+
+      setForm((prev) => ({
+        ...prev,
+        sku,
+        product: stock.product || "",
+        costPrice: stock.price || "",
+        sellingPrice: stock.price || "",
+      }));
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
 
     setForm((prev) => ({
-  ...prev,
-  sku,
-  product: stock.product || "",
-  costPrice: stock.price || "",
-  sellingPrice: stock.price || "",
-}));
-  } catch (err) {
-    console.log(err);
-  }
-};
+      ...prev,
+      [name]: value,
+    }));
 
-const handleChange = (e) => {
-  const { name, value } = e.target;
-
-  setForm((prev) => ({
-    ...prev,
-    [name]: value,
-  }));
-
-  if (name === "date") {
-    localStorage.setItem("selectedDate", value);
-  }
-};
-const totalRevenue =
-  Number(form.quantity || 0) *
-  Number(form.sellingPrice || 0);
+    if (name === "date") {
+      localStorage.setItem("selectedDate", value);
+    }
+  };
+  const totalRevenue =
+    Number(form.quantity || 0) *
+    Number(form.sellingPrice || 0);
   const employeeName  = localStorage.getItem("employeeName")  || "Employee";
   const employeeEmail = localStorage.getItem("employeeEmail") || "";
 
@@ -206,13 +230,40 @@ const totalRevenue =
   const initials = employeeName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc]">
-      {role === "admin" ? <Sidebar /> : <EmployeeSidebar />}
+    <div
+      className="min-h-screen w-full relative"
+      style={{ background: "#F8FAFC", fontFamily: "Inter, ui-sans-serif, system-ui" }}
+    >
+      {/* Sidebar drawer (hamburger-triggered, not sticky) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div className="absolute left-0 top-0 h-full w-72 shadow-2xl anim-slide-in">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="absolute top-4 right-3 z-10 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X size={17} />
+            </button>
+            {role === "admin" ? <Sidebar /> : <EmployeeSidebar />}
+          </div>
+        </div>
+      )}
 
-      <div className="flex-1 ml-64 flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen">
 
         {/* ── Top bar ── */}
-        <header className="sticky top-0 z-10 flex items-center gap-4 px-8 py-4 bg-white/80 backdrop-blur-md border-b border-slate-100">
+        <header className="sticky top-0 z-20 flex items-center gap-4 px-5 md:px-8 py-4 bg-white/80 backdrop-blur-md border-b border-slate-100">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.08] shrink-0"
+          >
+            <Menu size={18} />
+          </button>
+
           <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 flex-1 max-w-xs transition-all focus-within:border-slate-200">
             <Search size={15} className="text-slate-400" />
             <input
@@ -224,10 +275,13 @@ const totalRevenue =
           <div className="ml-auto flex items-center gap-4">
             <button className="relative p-2.5 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all text-slate-500 hover:text-slate-700">
               <Bell size={18} />
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white" />
+              <span className="absolute top-2 right-2 w-2 h-2 rounded-full ring-2 ring-white" style={{ background: "#F4B400" }} />
             </button>
             <div className="flex items-center gap-3 px-3 py-1.5 rounded-xl border border-transparent hover:border-slate-100 hover:bg-slate-50/50 transition-all cursor-pointer select-none">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center text-white text-[11px] font-bold shadow-sm shadow-violet-200">
+              <div
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[11px] font-bold shadow-sm"
+                style={{ background: "linear-gradient(135deg, #2563EB, #1D4ED8)", boxShadow: "0 4px 12px rgba(37,99,235,0.3)" }}
+              >
                 {initials}
               </div>
               <div className="hidden sm:flex flex-col text-left">
@@ -240,16 +294,19 @@ const totalRevenue =
         </header>
 
         {/* ── Page body ── */}
-        <main className="flex-1 px-8 py-8 max-w-5xl w-full mx-auto">
+        <main className="flex-1 px-5 md:px-8 py-8 max-w-5xl w-full mx-auto">
 
           {/* Page title */}
           <div className="mb-8 flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-1">
-                <div className="w-10 h-10 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center shadow-sm shadow-violet-100">
-                  <ShoppingBag size={18} className="text-violet-600" />
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
+                  style={{ background: "rgba(244,180,0,0.12)", border: "1px solid rgba(244,180,0,0.28)" }}
+                >
+                  <ShoppingBag size={18} style={{ color: "#B45F06" }} />
                 </div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight">Manual Entry</h1>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight" style={{ fontFamily: "Sora, sans-serif" }}>Manual Entry</h1>
               </div>
               <p className="text-slate-400 text-xs ml-13">
                 Logged in as <span className="font-semibold text-slate-600">{employeeName}</span>
@@ -268,7 +325,10 @@ const totalRevenue =
                 <p className="text-sm font-bold text-slate-800">New Order Details</p>
                 <p className="text-xs text-slate-400 mt-0.5">Please provide precision data metrics</p>
               </div>
-              <span className="text-[11px] bg-violet-50 text-violet-600 border border-violet-100/70 font-bold px-3 py-1 rounded-lg tracking-wider uppercase">
+              <span
+                className="text-[11px] font-bold px-3 py-1 rounded-lg tracking-wider uppercase"
+                style={{ background: "rgba(244,180,0,0.12)", color: "#B45F06", border: "1px solid rgba(244,180,0,0.3)" }}
+              >
                 Draft Mode
               </span>
             </div>
@@ -301,7 +361,10 @@ const totalRevenue =
 
               <Field label="Employee" icon={User}>
                 <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-50/40 border border-slate-200 rounded-xl shadow-sm shadow-slate-100/50">
-                  <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-violet-500 to-indigo-500 flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0">
+                  <div
+                    className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0"
+                    style={{ background: "linear-gradient(135deg, #2563EB, #1D4ED8)" }}
+                  >
                     {initials}
                   </div>
                   <span className="text-sm text-slate-600 font-semibold">{employeeName}</span>
@@ -312,24 +375,24 @@ const totalRevenue =
               <SectionHeading label="Product Info" />
 
               <Field label="SKU *" icon={Tag}>
-             
-  <input
-    type="text"
-    name="sku"
-    placeholder="e.g. SKU-4821"
-    value={form.sku}
-    onChange={handleSkuChange}
-    className={inputCls}
-  />
-</Field>
+
+                <input
+                  type="text"
+                  name="sku"
+                  placeholder="e.g. SKU-4821"
+                  value={form.sku}
+                  onChange={handleSkuChange}
+                  className={inputCls}
+                />
+              </Field>
               <Field label="Product" icon={Package}>
-  <input
-    type="text"
-    value={form.product || ""}
-    readOnly
-    className={`${inputCls} bg-slate-100`}
-  />
-</Field>
+                <input
+                  type="text"
+                  value={form.product || ""}
+                  readOnly
+                  className={`${inputCls} bg-slate-100`}
+                />
+              </Field>
 
               <Field label="Quantity *" icon={Package}>
                 <input type="number" name="quantity" placeholder="0" value={form.quantity} onChange={handleChange} className={inputCls} />
@@ -346,13 +409,13 @@ const totalRevenue =
                 <input type="number" step="0.01" name="sellingPrice" placeholder="0.00" value={form.sellingPrice} onChange={handleChange} className={inputCls} />
               </Field>
               <Field label="Total Revenue (£)" icon={DollarSign}>
-  <input
-    type="number"
-    value={totalRevenue.toFixed(2)}
-    readOnly
-    className={`${inputCls} bg-slate-100 font-bold`}
-  />
-</Field>
+                <input
+                  type="number"
+                  value={totalRevenue.toFixed(2)}
+                  readOnly
+                  className={`${inputCls} bg-slate-100 font-bold`}
+                />
+              </Field>
 
               <Field label="eBay Transaction Fee (£)" icon={BarChart2}>
                 <input type="number" step="0.01" name="ebayFee" placeholder="0.00" value={form.ebayFee} onChange={handleChange} className={inputCls} />
@@ -412,11 +475,18 @@ const totalRevenue =
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold tracking-wide transform transition-all duration-200 ${
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold tracking-wide transform transition-all duration-200"
+                  style={
                     loading
-                      ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
-                      : "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 active:scale-[0.99] text-white shadow-lg shadow-violet-600/20 hover:shadow-xl hover:shadow-violet-600/30"
-                  }`}
+                      ? { background: "#F1F5F9", color: "#94A3B8", border: "1px solid #E2E8F0", cursor: "not-allowed" }
+                      : {
+                          background: "linear-gradient(135deg, #F4B400, #F59E0B)",
+                          color: "#0F172A",
+                          boxShadow: "0 10px 24px -6px rgba(244,180,0,0.4)",
+                        }
+                  }
+                  onMouseEnter={(e) => { if (!loading) e.currentTarget.style.boxShadow = "0 12px 30px -6px rgba(244,180,0,0.55)"; }}
+                  onMouseLeave={(e) => { if (!loading) e.currentTarget.style.boxShadow = "0 10px 24px -6px rgba(244,180,0,0.4)"; }}
                 >
                   {loading ? (
                     <>
@@ -435,6 +505,12 @@ const totalRevenue =
           </form>
         </main>
       </div>
+
+      <style>{`
+        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        .anim-slide-in { animation: slideIn 0.28s cubic-bezier(0.22,1,0.36,1); }
+        @media (prefers-reduced-motion: reduce) { .anim-slide-in { animation: none !important; } }
+      `}</style>
     </div>
   );
 }

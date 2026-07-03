@@ -14,6 +14,11 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import { MessageCircle } from "lucide-react";
 
+/* Design tokens - BuildMaster reference palette
+   Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
+   Dark navy: #0F172A / #0B1220
+*/
+
 export default function EmployeeSidebar() {
   const location = useLocation();
 
@@ -24,10 +29,10 @@ export default function EmployeeSidebar() {
       path: "/employee-dashboard",
     },
     {
-  name: "Team Chat",
-  icon: MessageCircle,
-  path: "/chat",
-},
+      name: "Team Chat",
+      icon: MessageCircle,
+      path: "/chat",
+    },
     {
       name: "Manual Entry",
       icon: PlusCircle,
@@ -64,29 +69,35 @@ export default function EmployeeSidebar() {
       path: "/salary",
     },
     {
-  name: "Notes",
-  icon: ClipboardList,
-  path: "/notes",
-},
+      name: "Notes",
+      icon: ClipboardList,
+      path: "/notes",
+    },
   ];
 
   return (
-    <div className="fixed left-0 top-0 h-screen w-72 bg-slate-950 border-r border-slate-800 flex flex-col">
+    <div
+      className="fixed left-0 top-0 h-screen w-72 border-r border-white/[0.06] flex flex-col"
+      style={{ background: "linear-gradient(180deg, #0F172A 0%, #0B1220 100%)" }}
+    >
 
       {/* Logo */}
-      <div className="p-6 border-b border-slate-800">
+      <div className="p-6 border-b border-white/[0.06]">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg">
-            <Sparkles className="text-white" size={22} />
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+            style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", boxShadow: "0 0 24px rgba(244,180,0,0.35)" }}
+          >
+            <Sparkles className="text-[#0F172A]" size={22} />
           </div>
 
           <div>
-            <h1 className="text-white text-xl font-bold">
+            <h1 className="text-white text-xl font-bold" style={{ fontFamily: "Sora, sans-serif" }}>
               eBay Analytics
             </h1>
 
-            <p className="text-slate-400 text-xs">
-              Employee Workspace
+            <p className="text-[10px] font-semibold tracking-[0.2em]" style={{ color: "#F4B400" }}>
+              EMPLOYEE WORKSPACE
             </p>
           </div>
         </div>
@@ -98,30 +109,42 @@ export default function EmployeeSidebar() {
           Main Menu
         </p>
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const active =
-              location.pathname === item.path;
+            const active = location.pathname === item.path;
 
             return (
               <Link
                 key={item.name}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 group
-                  
-                  ${
-                    active
-                      ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg"
-                      : "text-slate-300 hover:bg-slate-900 hover:text-white"
+                className="relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group"
+                style={
+                  active
+                    ? { background: "linear-gradient(135deg, #F4B400, #F59E0B)", color: "#0F172A", fontWeight: 600, boxShadow: "0 4px 16px rgba(244,180,0,0.25)" }
+                    : { color: "#CBD5E1" }
+                }
+                onMouseEnter={(e) => {
+                  if (!active) {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                    e.currentTarget.style.color = "#fff";
                   }
-                `}
+                }}
+                onMouseLeave={(e) => {
+                  if (!active) {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = "#CBD5E1";
+                  }
+                }}
               >
+                {active && (
+                  <span
+                    className="absolute -left-3 top-1/2 -translate-y-1/2 w-1 h-6 rounded-full"
+                    style={{ background: "#F4B400", boxShadow: "0 0 8px #F4B400" }}
+                  />
+                )}
                 <Icon size={20} />
-
-                <span className="font-medium">
-                  {item.name}
-                </span>
+                <span className="font-medium">{item.name}</span>
               </Link>
             );
           })}
@@ -129,10 +152,13 @@ export default function EmployeeSidebar() {
       </div>
 
       {/* Employee Profile */}
-      <div className="p-4 border-t border-slate-800">
-        <div className="bg-slate-900 rounded-2xl p-4">
+      <div className="p-4 border-t border-white/[0.06]">
+        <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 flex items-center justify-center text-white font-bold text-lg">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg"
+              style={{ background: "linear-gradient(135deg, #2563EB, #1D4ED8)", boxShadow: "0 4px 14px rgba(37,99,235,0.35)" }}
+            >
               {(
                 localStorage.getItem(
                   "employeeName"
@@ -149,15 +175,24 @@ export default function EmployeeSidebar() {
                 ) || "Employee"}
               </h3>
 
-              <p className="text-emerald-400 text-xs">
-                ● Online
+              <p className="text-emerald-400 text-xs flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Online
               </p>
             </div>
           </div>
 
           <Link
             to="/"
-            className="mt-4 flex items-center justify-center gap-2 w-full bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white py-3 rounded-xl transition-all duration-300"
+            className="mt-4 flex items-center justify-center gap-2 w-full py-3 rounded-xl transition-all duration-300"
+            style={{ background: "rgba(239,68,68,0.1)", color: "#F87171" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#EF4444";
+              e.currentTarget.style.color = "#fff";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(239,68,68,0.1)";
+              e.currentTarget.style.color = "#F87171";
+            }}
           >
             <LogOut size={18} />
             Logout
