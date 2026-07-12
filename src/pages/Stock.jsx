@@ -17,6 +17,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { apiFetch } from "../api";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -87,7 +88,7 @@ export default function Stock() {
   }, []);
 
   useEffect(() => {
-    fetch("https://ebay-dashboard-z7h2.onrender.com/api/stock")
+    apiFetch("/api/stock")
       .then((res) => res.json())
       .then((data) => setStock(data))
       .catch((err) => console.log(err));
@@ -105,16 +106,13 @@ export default function Stock() {
 
     try {
       const url = editingId
-        ? `https://ebay-dashboard-z7h2.onrender.com/api/stock/${editingId}`
-        : "https://ebay-dashboard-z7h2.onrender.com/api/stock";
+        ? `/api/stock/${editingId}`
+        : "/api/stock";
 
       const method = editingId ? "PUT" : "POST";
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           ...form,
           updatedBy: employeeName,
@@ -157,7 +155,7 @@ export default function Stock() {
     if (!confirmDelete) return;
 
     try {
-      await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/stock/${id}`, {
+      await apiFetch(`/api/stock/${id}`, {
         method: "DELETE",
       });
       setStock(stock.filter((item) => item._id !== id));
@@ -510,7 +508,7 @@ export default function Stock() {
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#2563EB" }} />
                 <span className="text-xs font-bold text-slate-700">
-                  Stock Ledger
+                  Stock List
                 </span>
               </div>
 
@@ -518,7 +516,7 @@ export default function Stock() {
                 className="text-[10px] font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
               >
-                POOL SIZE: {filteredStock.length} ITEMS
+                {filteredStock.length} ITEMS
               </span>
             </div>
 
@@ -570,7 +568,7 @@ export default function Stock() {
                         </div>
                         <span>No stock items found.</span>
                         <span className="text-[10px] text-slate-300 font-medium">
-                          Add a record above to populate the ledger.
+                          Add an item above to get started.
                         </span>
                       </div>
                     </td>

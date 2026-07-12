@@ -12,6 +12,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { apiFetch } from "../api";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -47,13 +48,10 @@ export default function Leaves() {
     e.preventDefault();
 
     try {
-      const response = await fetch(
-        "https://ebay-dashboard-z7h2.onrender.com/api/leaves/apply",
+      const response = await apiFetch(
+        "/api/leaves/apply",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
           body: JSON.stringify({
             employeeName: localStorage.getItem("employeeName"),
             employeeEmail: localStorage.getItem("employeeEmail"),

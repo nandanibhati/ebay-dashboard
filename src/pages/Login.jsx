@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Mail, Lock, ArrowRight, Loader2, ShoppingBag, TrendingUp, BarChart2, Sparkles } from "lucide-react";
+import { apiFetch } from "../api";
 
 /* Design tokens - BuildMaster reference palette, pushed to full premium treatment
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -33,11 +34,10 @@ export default function Login() {
   const handleLogin = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        "https://ebay-dashboard-z7h2.onrender.com/api/auth/login",
+      const response = await apiFetch(
+        "/api/auth/login",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         }
       );
@@ -118,7 +118,7 @@ export default function Login() {
               className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full"
               style={{ background: "rgba(244,180,0,0.12)", border: "1px solid rgba(244,180,0,0.3)", color: "#F4B400" }}
             >
-              <Sparkles size={11} /> Live business intelligence
+              <Sparkles size={11} /> Real-time dashboard
             </span>
             <h2 className="text-[2.6rem] font-bold text-white leading-[1.1] tracking-tight" style={{ fontFamily: "Sora, sans-serif" }}>
               Your sales,<br />at a glance.

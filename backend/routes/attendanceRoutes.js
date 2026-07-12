@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 
 const Attendance = require("../models/Attendance");
+const { protect } = require("../middleware/auth");
+
+router.use(protect);
 
 // Punch In
 router.post("/punch-in", async (req, res) => {

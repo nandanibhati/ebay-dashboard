@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import Sidebar from "../components/Sidebar";
 import EmployeeSidebar from "../components/EmployeeSidebar";
 import { Menu, X } from "lucide-react";
+import { apiFetch } from "../api";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -224,7 +225,7 @@ export default function Notes() {
 
   const fetchNotes = async () => {
     try {
-      const res = await fetch("https://ebay-dashboard-z7h2.onrender.com/api/notes");
+      const res = await apiFetch("/api/notes");
       const data = await res.json();
       if (data.success) setNotes(data.notes);
     } catch (error) { console.log(error); }
@@ -236,7 +237,7 @@ export default function Notes() {
     const ok = window.confirm("Delete this note?");
     if (!ok) return;
     try {
-      await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/notes/${id}`, { method: "DELETE" });
+      await apiFetch(`/api/notes/${id}`, { method: "DELETE" });
       fetchNotes();
     } catch (error) { console.log(error); }
   };
@@ -253,8 +254,8 @@ export default function Notes() {
       formData.append("status", status);
       formData.append("createdBy", currentNote.createdBy);
 
-      const res = await fetch(
-        `https://ebay-dashboard-z7h2.onrender.com/api/notes/${id}`,
+      const res = await apiFetch(
+        `/api/notes/${id}`,
         {
           method: "PUT",
           body: formData,
@@ -286,8 +287,8 @@ export default function Notes() {
         formData.append("screenshot", form.screenshot);
       }
 
-      const res = await fetch(
-        `https://ebay-dashboard-z7h2.onrender.com/api/notes/${editingId}`,
+      const res = await apiFetch(
+        `/api/notes/${editingId}`,
         {
           method: "PUT",
           body: formData,
@@ -348,8 +349,8 @@ export default function Notes() {
         formData.append("screenshot", form.screenshot);
       }
 
-      const res = await fetch(
-        "https://ebay-dashboard-z7h2.onrender.com/api/notes/create",
+      const res = await apiFetch(
+        "/api/notes/create",
         {
           method: "POST",
           body: formData,

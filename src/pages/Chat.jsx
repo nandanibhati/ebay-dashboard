@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import socket from "../socket";
+import { apiFetch } from "../api";
 import Sidebar from "../components/Sidebar";
 import EmployeeSidebar from "../components/EmployeeSidebar";
 import {
@@ -566,9 +567,17 @@ export default function Chat() {
 
   const [selectedChat, setSelectedChat] = useState({ type: "group", id: "general" });
 
+  // Socket handlers close over stale state if we don't track the
+  // current selection in a ref, since the subscription effect below
+  // only runs once on mount.
+  const selectedChatRef = useRef(selectedChat);
+  useEffect(() => {
+    selectedChatRef.current = selectedChat;
+  }, [selectedChat]);
+
   // Load employees
   useEffect(() => {
-    fetch("https://ebay-dashboard-z7h2.onrender.com/api/auth/employees")
+    apiFetch("/api/auth/employees")
       .then((res) => res.json())
       .then((data) => {
         if (!data.success) return;
@@ -584,7 +593,22 @@ export default function Chat() {
 
   // Socket events
   useEffect(() => {
-    socket.on("newMessage", (message) => setMessages((prev) => [...prev, message]));
+    socket.on("newMessage", (message) => {
+      const chat = selectedChatRef.current;
+
+      const belongsToCurrentChat =
+        chat.type === "group"
+          ? message.chatType === "group"
+          : message.chatType === "private" &&
+            ((message.senderEmail === currentUser.email &&
+              message.receiverEmail === chat.user?.email) ||
+              (message.senderEmail === chat.user?.email &&
+                message.receiverEmail === currentUser.email));
+
+      if (belongsToCurrentChat) {
+        setMessages((prev) => [...prev, message]);
+      }
+    });
 
     socket.on("onlineUsers", (list) => {
       setOnlineUsers(list);
@@ -609,14 +633,14 @@ export default function Chat() {
   }, [selectedChat]);
 
   async function loadGroupMessages() {
-    const res = await fetch("https://ebay-dashboard-z7h2.onrender.com/api/chat/group");
+    const res = await apiFetch("/api/chat/group");
     const data = await res.json();
     if (data.success) setMessages(data.chats);
   }
 
   async function loadPrivateMessages() {
-    const res = await fetch(
-      `https://ebay-dashboard-z7h2.onrender.com/api/chat/private/${currentUser.email}/${selectedChat.user.email}`
+    const res = await apiFetch(
+      `/api/chat/private/${currentUser.email}/${selectedChat.user.email}`
     );
     const data = await res.json();
     if (data.success) setMessages(data.chats);
@@ -653,7 +677,7 @@ export default function Chat() {
           onReply={(msg) => setReplyMessage(msg)}
           onEdit={(msg) => console.log("Edit", msg)}
           onDelete={async (msg) => {
-            await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/chat/${msg._id}`, { method: "DELETE" });
+            await apiFetch(`/api/chat/${msg._id}`, { method: "DELETE" });
             setMessages((prev) => prev.filter((m) => m._id !== msg._id));
           }}
           onReaction={(msg) => console.log("Reaction", msg)}
@@ -665,29 +689,50 @@ export default function Chat() {
           onTyping={() => socket.emit("typing", { senderName: currentUser.name })}
           onStopTyping={() => socket.emit("stopTyping")}
           onSend={async (data) => {
-            const body = {
-              senderName: currentUser.name,
-              senderEmail: currentUser.email,
-              senderRole: currentUser.role,
-              receiverName: selectedChat.type === "private" ? selectedChat.user.name : "",
-              receiverEmail: selectedChat.type === "private" ? selectedChat.user.email : "",
-              chatType: selectedChat.type,
-              message: data.message,
-              image: data.image || "",
-              file: data.file || "",
-              voice: "",
-              replyTo: data.replyTo ? data.replyTo._id : null,
-            };
+            const isPrivate = selectedChat.type === "private";
+            const receiverName = isPrivate ? selectedChat.user.name : "";
+            const receiverEmail = isPrivate ? selectedChat.user.email : "";
+
+            // An image/file needs multipart/form-data so multer + Cloudinary
+            // can actually receive it — a JSON body can't carry a real File.
+            let body;
+            if (data.image || data.file) {
+              body = new FormData();
+              body.append("senderName", currentUser.name);
+              body.append("senderEmail", currentUser.email);
+              body.append("senderRole", currentUser.role);
+              body.append("receiverName", receiverName);
+              body.append("receiverEmail", receiverEmail);
+              body.append("chatType", selectedChat.type);
+              body.append("message", data.message || "");
+              body.append("voice", "");
+              if (data.replyTo) body.append("replyTo", data.replyTo._id);
+              if (data.image) body.append("image", data.image);
+              if (data.file) body.append("file", data.file);
+            } else {
+              body = {
+                senderName: currentUser.name,
+                senderEmail: currentUser.email,
+                senderRole: currentUser.role,
+                receiverName,
+                receiverEmail,
+                chatType: selectedChat.type,
+                message: data.message,
+                image: "",
+                file: "",
+                voice: "",
+                replyTo: data.replyTo ? data.replyTo._id : null,
+              };
+            }
+
             try {
-              const res = await fetch("https://ebay-dashboard-z7h2.onrender.com/api/chat/send", {
+              const res = await apiFetch("/api/chat/send", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body),
+                body,
               });
               const result = await res.json();
               if (result.success) {
                 socket.emit("sendMessage", result.chat);
-                
               }
               setReplyMessage(null);
             } catch (err) {

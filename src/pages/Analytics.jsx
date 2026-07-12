@@ -19,6 +19,7 @@ import {
 import {
   AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid,
 } from "recharts";
+import { apiFetch } from "../api";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -124,25 +125,31 @@ export default function Analytics() {
   }, []);
 
   useEffect(() => {
-    fetch("https://ebay-dashboard-z7h2.onrender.com/api/orders")
+    apiFetch("/api/orders")
       .then((res) => res.json())
       .then((data) => setOrders(data))
       .catch((err) => console.log(err));
   }, []);
 
-  const totalRevenue = orders.reduce(
+  // Cancelled/returned orders never earned real revenue, so they're left out
+  // of every revenue/profit/margin figure on this page.
+  const billableOrders = orders.filter(
+    (order) => !["Cancelled", "Returned"].includes(order.status)
+  );
+
+  const totalRevenue = billableOrders.reduce(
     (sum, order) => sum + Number(order.revenue || 0),
     0
   );
 
-  const totalProfit = orders.reduce(
+  const totalProfit = billableOrders.reduce(
     (sum, order) => sum + Number(order.profit || 0),
     0
   );
 
   const highestMargin =
-    orders.length > 0
-      ? Math.max(...orders.map((o) => Number(o.margin || 0))).toFixed(2)
+    billableOrders.length > 0
+      ? Math.max(...billableOrders.map((o) => Number(o.margin || 0))).toFixed(2)
       : 0;
 
   const topProduct =
@@ -168,9 +175,9 @@ export default function Analytics() {
 
   /* ── UI-only: bucket real orders by month for trend chart + sparklines ── */
   const monthlyData = useMemo(() => {
-    if (orders.length === 0) return [];
+    if (billableOrders.length === 0) return [];
     const buckets = {};
-    orders.forEach((o) => {
+    billableOrders.forEach((o) => {
       if (!o.date) return;
       const d = new Date(o.date);
       if (isNaN(d)) return;
@@ -202,8 +209,6 @@ export default function Analytics() {
   const revenueTrend = pctChange(revenueSpark);
   const profitTrend = pctChange(profitSpark);
   const ordersTrend = pctChange(ordersSpark);
-
-  const chartTotal = monthlyData.reduce((s, m) => s + m.revenue, 0);
 
   return (
     <div
@@ -326,61 +331,102 @@ export default function Analytics() {
 
         </div>
 
-        {/* Revenue & Profit Trend Chart — built from real monthly order data */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl border border-slate-200/80 shadow-xl shadow-slate-200/20 p-6"
-        >
-          <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
-            <div>
-              <h2 className="text-lg font-bold text-slate-800" style={{ fontFamily: "Sora, sans-serif" }}>
-                Revenue &amp; Profit
-              </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                {monthlyData.length > 0
-                  ? `£${chartTotal.toFixed(0)} total across ${monthlyData.length} month${monthlyData.length !== 1 ? "s" : ""}`
-                  : "Awaiting order data with valid dates"}
-              </p>
-            </div>
-            <div className="flex items-center gap-3 text-xs text-slate-500">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: "#F4B400" }} />Revenue</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: "#22C55E" }} />Profit</span>
-            </div>
-          </div>
+        {/* Revenue & Profit Trends — built from real monthly order data.
+            Two single-series panels instead of one shared axis: revenue runs
+            roughly 10x the scale of profit, so overlaying them on one Y-axis
+            made profit read as a flat line near zero. */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[
+            {
+              key: "revenue",
+              title: "Revenue Trend",
+              stroke: "#B45F06",
+              fill: "#F4B400",
+              trend: revenueTrend,
+              gradId: "revGrad",
+            },
+            {
+              key: "profit",
+              title: "Profit Trend",
+              stroke: "#16A34A",
+              fill: "#22C55E",
+              trend: profitTrend,
+              gradId: "profGrad",
+            },
+          ].map((panel) => {
+            const latest = monthlyData[monthlyData.length - 1];
+            const latestValue = latest ? latest[panel.key] : 0;
+            const hasTrend = panel.trend !== null && panel.trend !== undefined;
+            const up = Number(panel.trend) >= 0;
 
-          {monthlyData.length > 1 ? (
-            <div className="h-72 mt-3">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthlyData} margin={{ left: -16, right: 8, top: 10 }}>
-                  <defs>
-                    <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#F4B400" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="#F4B400" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="profGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#22C55E" stopOpacity={0.25} />
-                      <stop offset="100%" stopColor="#22C55E" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke="rgba(15,23,42,0.06)" vertical={false} />
-                  <XAxis dataKey="label" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    formatter={(v) => `£${Number(v).toFixed(2)}`}
-                    contentStyle={{ background: "#fff", border: "1px solid rgba(15,23,42,0.08)", borderRadius: 14, fontSize: 12, boxShadow: "0 12px 32px rgba(15,23,42,0.12)" }}
-                  />
-                  <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#F4B400" fill="url(#revGrad)" strokeWidth={2.5} />
-                  <Area type="monotone" dataKey="profit" name="Profit" stroke="#22C55E" fill="url(#profGrad)" strokeWidth={2.5} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="h-40 flex items-center justify-center text-sm text-slate-400 mt-3">
-              Need orders across more than one month to plot a trend.
-            </div>
-          )}
-        </motion.div>
+            return (
+              <motion.div
+                key={panel.key}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-2xl border border-slate-200/80 shadow-xl shadow-slate-200/20 p-6"
+              >
+                <div className="flex items-start justify-between gap-3 mb-1">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-800" style={{ fontFamily: "Sora, sans-serif" }}>
+                      {panel.title}
+                    </h2>
+                    <p className="text-2xl font-bold tracking-tight mt-1 tabular-nums" style={{ color: panel.stroke, fontFamily: "'JetBrains Mono', monospace" }}>
+                      £{Number(latestValue || 0).toFixed(2)}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-0.5">latest month</p>
+                  </div>
+                  {hasTrend && (
+                    <span
+                      className={`flex items-center gap-1 text-xs font-semibold tabular-nums px-2 py-1 rounded-lg ${
+                        up ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"
+                      }`}
+                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                    >
+                      {up ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                      {Math.abs(panel.trend)}%
+                    </span>
+                  )}
+                </div>
+
+                {monthlyData.length > 1 ? (
+                  <div className="h-56 mt-3">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={monthlyData} margin={{ left: -16, right: 8, top: 10 }}>
+                        <defs>
+                          <linearGradient id={panel.gradId} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={panel.fill} stopOpacity={0.1} />
+                            <stop offset="100%" stopColor={panel.fill} stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid stroke="#e1e0d9" vertical={false} />
+                        <XAxis dataKey="label" stroke="#898781" fontSize={11} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#898781" fontSize={11} tickLine={false} axisLine={false} width={48} />
+                        <Tooltip
+                          formatter={(v) => [`£${Number(v).toFixed(2)}`, panel.title.replace(" Trend", "")]}
+                          contentStyle={{ background: "#fff", border: "1px solid rgba(15,23,42,0.08)", borderRadius: 14, fontSize: 12, boxShadow: "0 12px 32px rgba(15,23,42,0.12)" }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey={panel.key}
+                          stroke={panel.stroke}
+                          fill={`url(#${panel.gradId})`}
+                          strokeWidth={2}
+                          dot={{ r: 3, fill: panel.stroke, stroke: "#fff", strokeWidth: 2 }}
+                          activeDot={{ r: 5, fill: panel.stroke, stroke: "#fff", strokeWidth: 2 }}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-40 flex items-center justify-center text-sm text-slate-400 mt-3">
+                    Need orders across more than one month to plot a trend.
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
 
         {/* Recent Orders Table */}
         <motion.div

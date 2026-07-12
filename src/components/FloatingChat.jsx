@@ -4,10 +4,7 @@ import socket from "../socket";
 import FloatingChatButton from "./FloatingChatButton";
 import ChatPopup from "./ChatPopup";
 import NotificationToast from "./NotificationToast";
-
-const API =
-  import.meta.env.VITE_API_URL ||
-  "https://ebay-dashboard-z7h2.onrender.com/api";
+import { apiFetch } from "../api";
 
 // Notification Sound
 function playNotificationSound() {
@@ -113,7 +110,7 @@ export default function FloatingChat() {
   useEffect(() => {
     if (!currentUser.email) return;
 
-    fetch(`${API}/auth/employees`)
+    apiFetch("/api/auth/employees")
       .then((res) => res.json())
       .then((data) => {
         if (!data.success) return;
@@ -270,7 +267,7 @@ export default function FloatingChat() {
     setMessages([]);
 
     if (selectedChat.type === "group") {
-      fetch(`${API}/chat/group`)
+      apiFetch("/api/chat/group")
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
@@ -279,8 +276,8 @@ export default function FloatingChat() {
         })
         .catch(console.error);
     } else if (selectedChat.user?.email) {
-      fetch(
-        `${API}/chat/private/${currentUser.email}/${selectedChat.user.email}`
+      apiFetch(
+        `/api/chat/private/${currentUser.email}/${selectedChat.user.email}`
       )
         .then((res) => res.json())
         .then((data) => {
@@ -349,7 +346,7 @@ const handleSend = useCallback(
     }
 
     try {
-      const res = await fetch(`${API}/chat/send`, {
+      const res = await apiFetch("/api/chat/send", {
         method: "POST",
         body: formData,
       });
@@ -371,7 +368,7 @@ const handleSend = useCallback(
   const handleDelete = useCallback(
     async (msg) => {
       try {
-        await fetch(`${API}/chat/${msg._id}`, {
+        await apiFetch(`/api/chat/${msg._id}`, {
           method: "DELETE",
         });
 

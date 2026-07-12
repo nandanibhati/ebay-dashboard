@@ -11,6 +11,7 @@ import {
   CalendarDays,
   LogOut,
   Sparkles,
+  FileText,
 } from "lucide-react";
 
 import { Link, useLocation } from "react-router-dom";
@@ -95,6 +96,11 @@ export default function Sidebar() {
       name: "Notes",
       icon: ClipboardList,
       path: "/notes",
+    },
+    {
+      name: "Templates",
+      icon: FileText,
+      path: "/templates",
     },
   ];
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import { Menu, X } from "lucide-react";
+import { apiFetch } from "../api";
 
 /* Design tokens - matched to BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -38,7 +39,7 @@ export default function Orders() {
   }, []);
 
   useEffect(() => {
-    fetch("https://ebay-dashboard-z7h2.onrender.com/api/orders")
+    apiFetch("/api/orders")
       .then((res) => res.json())
       .then((data) => setOrders(data))
       .catch((err) => console.log(err));
@@ -73,11 +74,10 @@ export default function Orders() {
       const updatedOrder = { ...editingOrder, revenue, profit, margin };
 
 
-      const response = await fetch(
-        `https://ebay-dashboard-z7h2.onrender.com/api/orders/${editingOrder._id}`,
+      const response = await apiFetch(
+        `/api/orders/${editingOrder._id}`,
         {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updatedOrder),
         }
       );
@@ -96,7 +96,7 @@ export default function Orders() {
     const confirmDelete = window.confirm("Are you sure you want to delete this order?");
     if (!confirmDelete) return;
     try {
-      await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/orders/${id}`, { method: "DELETE" });
+      await apiFetch(`/api/orders/${id}`, { method: "DELETE" });
       setOrders(orders.filter((order) => order._id !== id));
     } catch (error) {
       console.log(error);
@@ -121,15 +121,14 @@ export default function Orders() {
 
   const uploadOrders = async (orders) => {
     try {
-      const response = await fetch("https://ebay-dashboard-z7h2.onrender.com/api/orders/bulk", {
+      const response = await apiFetch("/api/orders/bulk", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(orders),
       });
       const data = await response.json();
       if (data.success) {
         alert("Orders Imported Successfully");
-        const res = await fetch("https://ebay-dashboard-z7h2.onrender.com/api/orders");
+        const res = await apiFetch("/api/orders");
         const updatedOrders = await res.json();
         setOrders(updatedOrders);
       }
@@ -175,22 +174,17 @@ export default function Orders() {
   const deliveredCount = orders.filter((o) => o.status === "Delivered").length;
   const cancelledCount = orders.filter((o) => o.status === "Cancelled").length;
   const returnedCount = orders.filter((o) => o.status === "Returned").length;
+  const partialRefundCount = orders.filter((o) => o.status === "Partial Refund").length;
   const courierScannedCount = orders.filter((o) => o.courierScanned === "Yes").length;
 
+  // Cancelled/returned orders never actually earned revenue, so they're
+  // excluded here (and everywhere else profit/margin is totalled).
   const totalRevenue = filteredOrders
-    .filter((o) => o.status !== "Hold")
+    .filter((o) => !["Hold", "Cancelled", "Returned"].includes(o.status))
     .reduce(
       (acc, cur) => acc + Number(cur.revenue || 0),
       0
     );
-
-  const totalProfit = filteredOrders
-    .filter((o) => o.status !== "Hold")
-    .reduce(
-      (acc, cur) => acc + Number(cur.profit || 0),
-      0
-    );
-  const aggregateMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : 0;
 
   const statusConfig = {
     Pending:   { dot: "bg-amber-400",   badge: "bg-amber-50 text-amber-700 ring-amber-200" },
@@ -200,6 +194,7 @@ export default function Orders() {
     Delivered: { dot: "bg-emerald-400", badge: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
     Returned:  { dot: "bg-purple-400",  badge: "bg-purple-50 text-purple-700 ring-purple-200" },
     Cancelled: { dot: "bg-red-400",    badge: "bg-red-50 text-red-700 ring-red-200" },
+    "Partial Refund": { dot: "bg-teal-400", badge: "bg-teal-50 text-teal-700 ring-teal-200" },
   };
 
   const inputCls =
@@ -266,7 +261,7 @@ export default function Orders() {
         </div>
 
         {/* ── Summary Metrics ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {[
             {
               label: "Filtered Orders",
@@ -287,26 +282,6 @@ export default function Orders() {
               ),
               color: "text-[#B45F06]",
               bg: "bg-amber-100",
-            },
-            {
-              label: "Net Profit",
-              value: `£${totalProfit.toFixed(2)}`,
-              sub: "after all costs",
-              icon: (
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-              ),
-              color: totalProfit >= 0 ? "text-emerald-700" : "text-red-600",
-              bg: totalProfit >= 0 ? "bg-emerald-100" : "bg-red-100",
-            },
-            {
-              label: "Avg. Margin",
-              value: `${aggregateMargin}%`,
-              sub: "profit margin",
-              icon: (
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
-              ),
-              color: "text-blue-700",
-              bg: "bg-blue-100",
             },
           ].map((m) => (
             <div key={m.label} className="bg-white rounded-2xl border border-slate-200/70 p-5 flex items-center gap-4 shadow-sm">
@@ -336,6 +311,7 @@ export default function Orders() {
             { label: "Delivered", count: deliveredCount,      dot: "bg-emerald-400", ring: "ring-emerald-100", num: "text-emerald-700" },
             { label: "Cancelled", count: cancelledCount,      dot: "bg-red-400",    ring: "ring-red-100",    num: "text-red-700"    },
             { label: "Returned",  count: returnedCount,       dot: "bg-purple-400",  ring: "ring-purple-100",  num: "text-purple-700"  },
+            { label: "Partial Refund", count: partialRefundCount, dot: "bg-teal-400", ring: "ring-teal-100", num: "text-teal-700" },
             { label: "Scanned",   count: courierScannedCount, dot: "bg-slate-400",   ring: "ring-slate-100",   num: "text-slate-700"   },
           ].map((s) => (
             <div key={s.label} className={`bg-white border border-slate-200/70 rounded-2xl p-4 shadow-sm ring-4 ${s.ring}`}>
@@ -389,6 +365,7 @@ export default function Orders() {
             <option value="Delivered">Delivered</option>
             <option value="Returned">Returned</option>
             <option value="Cancelled">Cancelled</option>
+            <option value="Partial Refund">Partial Refund</option>
           </select>
           <input
             type="date"
@@ -439,7 +416,7 @@ export default function Orders() {
             <table className="min-w-[1400px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/60">
-                  {["Site", "Date", "Order ID", "SKU", "Qty", "Unit Price", "Cost", "Revenue", "Profit", "Tracking", "Notes", "Status", "Courier", "Employee", "Actions"].map((h) => (
+                  {["Site", "Date", "Order ID", "SKU", "Qty", "Unit Price", "Cost", "Revenue", "Tracking", "Notes", "Status", "Courier", "Employee", "Actions"].map((h) => (
                     <th key={h} className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
@@ -450,7 +427,7 @@ export default function Orders() {
               <tbody className="divide-y divide-slate-50">
                 {filteredOrders.length === 0 && (
                   <tr>
-                    <td colSpan="15" className="py-20 text-center">
+                    <td colSpan="14" className="py-20 text-center">
                       <div className="flex flex-col items-center gap-3 text-slate-400">
                         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         <p className="text-sm font-medium">No orders match your filters</p>
@@ -462,9 +439,14 @@ export default function Orders() {
 
                 {filteredOrders.map((order) => {
                   const sc = statusConfig[order.status] || { dot: "bg-slate-400", badge: "bg-slate-50 text-slate-600 ring-slate-200" };
-                  const profit = Number(order.profit || 0);
+                  const isCancelled = order.status === "Cancelled";
                   return (
-                    <tr key={order._id} className="hover:bg-[#F4B400]/[0.05] transition-colors group">
+                    <tr
+                      key={order._id}
+                      className={`hover:bg-[#F4B400]/[0.05] transition-colors group ${
+                        isCancelled ? "line-through opacity-50" : ""
+                      }`}
+                    >
                       <td className="px-4 py-3 font-bold text-slate-900 text-sm whitespace-nowrap">{order.site}</td>
                       <td className="px-4 py-3 text-sm text-slate-500 whitespace-nowrap">
                         {order.date ? new Date(order.date).toLocaleDateString("en-GB") : "—"}
@@ -479,9 +461,6 @@ export default function Orders() {
                       <td className="px-4 py-3 text-sm text-slate-600" style={{ fontFamily: "'JetBrains Mono', monospace" }}>£{Number(order.sellingPrice || 0).toFixed(2)}</td>
                       <td className="px-4 py-3 text-sm text-slate-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>£{Number(order.costPrice || 0).toFixed(2)}</td>
                       <td className="px-4 py-3 text-sm font-bold text-slate-800" style={{ fontFamily: "'JetBrains Mono', monospace" }}>£{Number(order.revenue || 0).toFixed(2)}</td>
-                      <td className={`px-4 py-3 text-sm font-bold ${profit >= 0 ? "text-emerald-600" : "text-red-500"}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                        £{order.status === "Hold" ? "0.00" : profit.toFixed(2)}
-                      </td>
                       <td className="px-4 py-3 max-w-[160px] truncate text-xs text-slate-400" style={{ fontFamily: "'JetBrains Mono', monospace" }} title={order.trackingNo}>
                         {order.trackingNo || <span className="opacity-30">—</span>}
                       </td>
@@ -503,9 +482,8 @@ export default function Orders() {
                           value={order.status || "Pending"}
                           onChange={async (e) => {
                             const updatedStatus = e.target.value;
-                            await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/orders/${order._id}`, {
+                            await apiFetch(`/api/orders/${order._id}`, {
                               method: "PUT",
-                              headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({ ...order, status: updatedStatus }),
                             });
                             setOrders(orders.map((o) => (o._id === order._id ? { ...o, status: updatedStatus } : o)));
@@ -529,9 +507,8 @@ export default function Orders() {
                           value={order.courierScanned || "No"}
                           onChange={async (e) => {
                             const courierValue = e.target.value;
-                            await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/orders/${order._id}`, {
+                            await apiFetch(`/api/orders/${order._id}`, {
                               method: "PUT",
-                              headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({ ...order, courierScanned: courierValue }),
                             });
                             setOrders(orders.map((o) => (o._id === order._id ? { ...o, courierScanned: courierValue } : o)));

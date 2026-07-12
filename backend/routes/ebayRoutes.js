@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const EbayStore = require("../models/EbayStore");
+const { protect, adminOnly } = require("../middleware/auth");
 const {
   connectStore,
   callback,
@@ -11,15 +12,19 @@ const {
   receiveNotification,
 } = require("../controllers/ebayNotificationController");
 
+const HIDDEN_FIELDS = "-accessToken -refreshToken -tokenType";
+
 // =========================================
 // GET ALL STORES
 // =========================================
 
-router.get("/stores", async (req, res) => {
+router.get("/stores", protect, adminOnly, async (req, res) => {
   try {
-    let stores = await EbayStore.find().sort({
-      createdAt: 1,
-    });
+    let stores = await EbayStore.find()
+      .select(HIDDEN_FIELDS)
+      .sort({
+        createdAt: 1,
+      });
 
     if (stores.length === 0) {
       await EbayStore.insertMany([
@@ -33,9 +38,11 @@ router.get("/stores", async (req, res) => {
         },
       ]);
 
-      stores = await EbayStore.find().sort({
-        createdAt: 1,
-      });
+      stores = await EbayStore.find()
+        .select(HIDDEN_FIELDS)
+        .sort({
+          createdAt: 1,
+        });
     }
 
     res.json({
@@ -54,11 +61,11 @@ router.get("/stores", async (req, res) => {
 // GET SINGLE STORE
 // =========================================
 
-router.get("/store/:name", async (req, res) => {
+router.get("/store/:name", protect, adminOnly, async (req, res) => {
   try {
     const store = await EbayStore.findOne({
       storeName: req.params.name,
-    });
+    }).select(HIDDEN_FIELDS);
 
     if (!store) {
       return res.status(404).json({
@@ -80,15 +87,21 @@ router.get("/store/:name", async (req, res) => {
 });
 // =========================================
 // CONNECT STORE (OAuth)
+// Triggered by a full browser navigation, so the token travels
+// as a query param (?token=) instead of an Authorization header.
 // =========================================
 
 router.get(
   "/connect/:storeName",
+  protect,
+  adminOnly,
   connectStore
 );
 
 // =========================================
 // EBAY OAUTH CALLBACK
+// eBay's servers hit this directly, not a logged-in browser session,
+// so it can't require our own JWT here.
 // =========================================
 
 router.get(
@@ -101,7 +114,7 @@ router.get(
 // DISCONNECT STORE
 // =========================================
 
-router.post("/disconnect", async (req, res) => {
+router.post("/disconnect", protect, adminOnly, async (req, res) => {
   try {
     const { storeName } = req.body;
 
@@ -129,7 +142,6 @@ router.post("/disconnect", async (req, res) => {
     res.json({
       success: true,
       message: `${storeName} disconnected successfully.`,
-      store,
     });
   } catch (err) {
     res.status(500).json({
@@ -143,7 +155,7 @@ router.post("/disconnect", async (req, res) => {
 // SYNC STORE (Temporary)
 // =========================================
 
-router.post("/sync", async (req, res) => {
+router.post("/sync", protect, adminOnly, async (req, res) => {
   try {
     const { storeName } = req.body;
 
@@ -178,7 +190,7 @@ router.post("/sync", async (req, res) => {
 // GET CONNECTION STATUS
 // =========================================
 
-router.get("/status", async (req, res) => {
+router.get("/status", protect, adminOnly, async (req, res) => {
   try {
     const stores = await EbayStore.find(
       {},
@@ -206,7 +218,7 @@ router.get("/status", async (req, res) => {
 // RESET STORE (Development)
 // =========================================
 
-router.delete("/reset/:name", async (req, res) => {
+router.delete("/reset/:name", protect, adminOnly, async (req, res) => {
   try {
     const store = await EbayStore.findOne({
       storeName: req.params.name,
@@ -235,7 +247,6 @@ router.delete("/reset/:name", async (req, res) => {
     res.json({
       success: true,
       message: `${store.storeName} reset successfully.`,
-      store,
     });
   } catch (err) {
     res.status(500).json({
@@ -246,13 +257,13 @@ router.delete("/reset/:name", async (req, res) => {
 });
 
 // =========================================
-// EBAY NOTIFICATION VERIFICATION
+// EBAY NOTIFICATION VERIFICATION (public - called by eBay)
 // =========================================
 
 router.get("/notifications", verification);
 
 // =========================================
-// EBAY MARKETPLACE NOTIFICATIONS
+// EBAY MARKETPLACE NOTIFICATIONS (public - called by eBay)
 // =========================================
 
 router.post("/notifications", receiveNotification);

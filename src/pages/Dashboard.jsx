@@ -1,10 +1,13 @@
 import Sidebar from "../components/Sidebar";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   TrendingUp, ShoppingBag, DollarSign, BarChart2,
-  ArrowUpRight, ArrowDownRight, Clock, Search, Bell, ChevronDown,
-  Menu, X, Plus, PieChart, Boxes, Layers,
+  ArrowUpRight, ArrowDownRight, Clock, Search, ChevronDown,
+  Menu, X, Plus, PieChart, Boxes, Layers, User,
 } from "lucide-react";
+import { apiFetch } from "../api";
+import NotificationBell from "../components/NotificationBell";
 
 /* Design tokens - BuildMaster reference palette
    Display face: Sora  Body face: Inter  Numeral face: JetBrains Mono
@@ -281,19 +284,32 @@ export default function Dashboard() {
   const [orders, setOrders] = useState([]);
   const [purchases, setPurchases] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false); // UI-only state for drawer
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     ensureFonts();
   }, []);
 
   useEffect(() => {
-    fetch("https://ebay-dashboard-z7h2.onrender.com/api/orders")
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) setSearchOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    apiFetch("/api/orders")
       .then((res) => res.json())
       .then((data) => setOrders(data))
       .catch((err) => console.log(err));
 
-    fetch("https://ebay-dashboard-z7h2.onrender.com/api/purchases")
+    apiFetch("/api/purchases")
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -302,7 +318,7 @@ export default function Dashboard() {
       })
       .catch((err) => console.log(err));
 
-    fetch("https://ebay-dashboard-z7h2.onrender.com/api/subscriptions")
+    apiFetch("/api/subscriptions")
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -310,25 +326,39 @@ export default function Dashboard() {
         }
       })
       .catch((err) => console.log(err));
+
+    apiFetch("/api/auth/employees")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setEmployees(data.employees);
+        }
+      })
+      .catch((err) => console.log(err));
   }, []);
 
-  const totalRevenue = orders.reduce(
+  // Cancelled/returned orders never earned real revenue, so they're left out
+  // of every revenue/profit/margin figure on this page.
+  const billableOrders = orders.filter(
+    (order) => !["Cancelled", "Returned"].includes(order.status)
+  );
+
+  const totalRevenue = billableOrders.reduce(
     (sum, order) => sum + Number(order.revenue || 0),
     0
   );
 
-  const totalProfit = orders.reduce(
+  const totalProfit = billableOrders.reduce(
     (sum, order) => sum + Number(order.profit || 0),
     0
   );
 
+  // Overall margin has to be revenue-weighted (totalProfit / totalRevenue).
+  // Averaging each order's own margin % gives every order equal weight
+  // regardless of size, so a handful of tiny loss-making orders can drag
+  // the "average" deep negative even while the store is solidly profitable.
   const avgMargin =
-    orders.length > 0
-      ? (
-          orders.reduce((sum, order) => sum + Number(order.margin || 0), 0) /
-          orders.length
-        ).toFixed(2)
-      : "0.00";
+    totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(2) : "0.00";
 
   const totalPurchases = purchases.reduce(
     (sum, item) => sum + Number(item.cost || 0),
@@ -342,16 +372,85 @@ export default function Dashboard() {
 
   const netProfit = totalProfit - totalPurchases - totalSubscriptions;
 
+  // Real month-over-month trends (this calendar month vs the previous one),
+  // computed from each order's own date instead of hardcoded placeholder %s.
+  const now = new Date();
+  const thisMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
+  const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonthKey = `${prevMonthDate.getFullYear()}-${prevMonthDate.getMonth()}`;
+
+  const monthBuckets = { [thisMonthKey]: [], [prevMonthKey]: [] };
+  billableOrders.forEach((order) => {
+    if (!order.date) return;
+    const d = new Date(order.date);
+    if (isNaN(d)) return;
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    if (monthBuckets[key]) monthBuckets[key].push(order);
+  });
+
+  const sumBy = (list, field) =>
+    list.reduce((sum, o) => sum + Number(o[field] || 0), 0);
+
+  const thisMonthOrders = monthBuckets[thisMonthKey];
+  const prevMonthOrders = monthBuckets[prevMonthKey];
+
+  const pctChange = (curr, prev) => {
+    if (!prev) return 0;
+    return Number((((curr - prev) / prev) * 100).toFixed(1));
+  };
+
+  const revenueTrend = pctChange(sumBy(thisMonthOrders, "revenue"), sumBy(prevMonthOrders, "revenue"));
+  const profitTrend = pctChange(sumBy(thisMonthOrders, "profit"), sumBy(prevMonthOrders, "profit"));
+  const ordersTrend = pctChange(thisMonthOrders.length, prevMonthOrders.length);
+
+  const prevMonthRevenue = sumBy(prevMonthOrders, "revenue");
+  const prevMonthProfit = sumBy(prevMonthOrders, "profit");
+  const prevMonthMargin = prevMonthRevenue > 0 ? (prevMonthProfit / prevMonthRevenue) * 100 : 0;
+  const marginTrend = pctChange(Number(avgMargin), prevMonthMargin);
+
   /* ─── UI only from here ─────────────────────────────────────────────────── */
   const stats = [
-    { title: "Total Revenue", value: `£${totalRevenue.toFixed(2)}`, icon: DollarSign, trend: 12.4, trendLabel: "vs last 30 days", color: "#F4B400" },
-    { title: "Total Profit", value: `£${totalProfit.toFixed(2)}`, icon: TrendingUp, trend: 8.1, trendLabel: "vs last 30 days", color: "#22C55E" },
-    { title: "Orders", value: orders.length, icon: ShoppingBag, trend: 5.3, trendLabel: `${orders.length} total orders`, color: "#2563EB" },
-    { title: "Avg Margin", value: `${avgMargin}%`, icon: BarChart2, trend: -2.0, trendLabel: "margin efficiency", color: "#F59E0B" },
+    { title: "Total Revenue", value: `£${totalRevenue.toFixed(2)}`, icon: DollarSign, trend: revenueTrend, trendLabel: "vs last month", color: "#F4B400" },
+    { title: "Total Profit", value: `£${totalProfit.toFixed(2)}`, icon: TrendingUp, trend: profitTrend, trendLabel: "vs last month", color: "#22C55E" },
+    { title: "Orders", value: orders.length, icon: ShoppingBag, trend: ordersTrend, trendLabel: `${orders.length} total orders`, color: "#2563EB" },
+    { title: "Avg Margin", value: `${avgMargin}%`, icon: BarChart2, trend: marginTrend, trendLabel: "margin efficiency", color: "#F59E0B" },
     { title: "Purchases", value: `£${totalPurchases.toFixed(2)}`, icon: ShoppingBag, trend: 0, trendLabel: "inventory expenses", color: "#EF4444" },
     { title: "Subscriptions", value: `£${totalSubscriptions.toFixed(2)}`, icon: DollarSign, trend: 0, trendLabel: "monthly tools cost", color: "#2563EB" },
     { title: "Net Profit", value: `£${netProfit.toFixed(2)}`, icon: TrendingUp, trend: 0, trendLabel: "after expenses", color: "#22C55E" },
   ];
+
+  const query = searchQuery.trim().toLowerCase();
+  const matchedOrders = query
+    ? orders
+        .filter(
+          (o) =>
+            o.orderId?.toLowerCase().includes(query) ||
+            o.sku?.toLowerCase().includes(query) ||
+            o.employeeName?.toLowerCase().includes(query)
+        )
+        .slice(0, 5)
+    : [];
+  const matchedEmployees = query
+    ? employees
+        .filter(
+          (e) =>
+            e.name?.toLowerCase().includes(query) ||
+            e.email?.toLowerCase().includes(query)
+        )
+        .slice(0, 5)
+    : [];
+  const hasSearchResults = matchedOrders.length > 0 || matchedEmployees.length > 0;
+
+  const goToOrders = () => {
+    setSearchOpen(false);
+    setSearchQuery("");
+    navigate("/orders");
+  };
+  const goToEmployees = () => {
+    setSearchOpen(false);
+    setSearchQuery("");
+    navigate("/employees");
+  };
 
   return (
     <div
@@ -390,20 +489,67 @@ export default function Dashboard() {
             <Menu size={18} />
           </button>
 
-          <div className="hidden md:flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-900/[0.03] border border-slate-900/[0.07] w-80 text-slate-400 focus-within:ring-1 focus-within:ring-[#F4B400]/50 focus-within:border-[#F4B400]/40 transition-all">
-            <Search size={15} />
-            <input
-              className="bg-transparent outline-none text-sm placeholder:text-slate-400 text-slate-700 w-full"
-              placeholder="Search orders, employees…"
-              readOnly
-            />
+          <div className="relative hidden md:block w-80" ref={searchRef}>
+            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-900/[0.03] border border-slate-900/[0.07] text-slate-400 focus-within:ring-1 focus-within:ring-[#F4B400]/50 focus-within:border-[#F4B400]/40 transition-all">
+              <Search size={15} />
+              <input
+                className="bg-transparent outline-none text-sm placeholder:text-slate-400 text-slate-700 w-full"
+                placeholder="Search orders, employees…"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setSearchOpen(true);
+                }}
+                onFocus={() => setSearchOpen(true)}
+              />
+            </div>
+
+            {searchOpen && query && (
+              <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/40 z-50 max-h-96 overflow-y-auto">
+                {!hasSearchResults ? (
+                  <div className="py-8 text-center text-sm text-slate-400">No matches for "{searchQuery}"</div>
+                ) : (
+                  <>
+                    {matchedOrders.length > 0 && (
+                      <div className="py-2">
+                        <p className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Orders</p>
+                        {matchedOrders.map((o) => (
+                          <button
+                            key={o._id}
+                            onClick={goToOrders}
+                            className="w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors"
+                          >
+                            <ShoppingBag size={14} className="text-blue-500 flex-shrink-0" />
+                            <span className="text-sm text-slate-700 truncate">{o.orderId}</span>
+                            <span className="text-xs text-slate-400 ml-auto flex-shrink-0">{o.sku}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {matchedEmployees.length > 0 && (
+                      <div className="py-2 border-t border-slate-100">
+                        <p className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Employees</p>
+                        {matchedEmployees.map((e) => (
+                          <button
+                            key={e._id}
+                            onClick={goToEmployees}
+                            className="w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors"
+                          >
+                            <User size={14} className="text-amber-500 flex-shrink-0" />
+                            <span className="text-sm text-slate-700 truncate">{e.name}</span>
+                            <span className="text-xs text-slate-400 ml-auto flex-shrink-0 truncate max-w-[140px]">{e.email}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <button className="relative w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.07]">
-              <Bell size={16} />
-              <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-[#F4B400] anim-pulse-ring" />
-            </button>
+            <NotificationBell />
             <div className="flex items-center gap-2 pl-3 ml-1 border-l border-slate-900/[0.08] cursor-pointer">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-semibold text-white"

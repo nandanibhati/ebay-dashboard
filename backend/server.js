@@ -10,15 +10,24 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "http://localhost:5173",
+].filter(Boolean);
+
 const io = new Server(server, {
   cors: {
-    origin: "*", // Deploy hone ke baad frontend URL laga dena
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
   },
 });
 
-app.use(cors());
-app.use(express.json());
+app.use(
+  cors({
+    origin: allowedOrigins,
+  })
+);
+app.use(express.json({ limit: "2mb" }));
 
 // =========================
 // Routes
@@ -36,6 +45,7 @@ const purchaseRoutes = require("./routes/purchaseRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const ebayRoutes = require("./routes/ebayRoutes");
+const templateRoutes = require("./routes/templateRoutes");
 // =========================
 // MongoDB
 // =========================
@@ -77,6 +87,12 @@ io.on("connection", (socket) => {
 
   // Live Message
 socket.on("sendMessage", (message) => {
+  if (message.chatType === "group") {
+    // Group messages go to everyone online, not just sender/receiver.
+    io.emit("newMessage", message);
+    return;
+  }
+
   const senderSocket = onlineUsers.get(message.senderEmail);
   const receiverSocket = onlineUsers.get(message.receiverEmail);
 
@@ -90,6 +106,12 @@ socket.on("sendMessage", (message) => {
     io.to(receiverSocket).emit("newMessage", message);
   }
 });
+
+  // Task assignment — relayed to everyone online; each client decides
+  // locally whether the task was assigned to them.
+  socket.on("taskAssigned", (data) => {
+    socket.broadcast.emit("taskAssigned", data);
+  });
 
   // Seen
   socket.on("seen", (data) => {
@@ -130,6 +152,7 @@ app.use("/api/purchases", purchaseRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/ebay", ebayRoutes);
+app.use("/api/templates", templateRoutes);
 
 // =========================
 // Root

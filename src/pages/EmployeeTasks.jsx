@@ -20,6 +20,7 @@ import {
   Sparkles,
   Menu,
 } from "lucide-react";
+import { apiFetch } from "../api";
 
 /* Design tokens - matched to BuildMaster reference palette
    Display face: Sora (headings)
@@ -112,8 +113,8 @@ export default function Tasks() {
   const fetchTasks = async () => {
     try {
       const employeeName = localStorage.getItem("employeeName");
-      const res = await fetch(
-        `https://ebay-dashboard-z7h2.onrender.com/api/tasks/my-tasks/${employeeName}`
+      const res = await apiFetch(
+        `/api/tasks/my-tasks/${employeeName}`
       );
       const data = await res.json();
       if (data.success) {
@@ -127,8 +128,8 @@ export default function Tasks() {
   // Fetch Employees
   const fetchEmployees = async () => {
     try {
-      const res = await fetch(
-        "https://ebay-dashboard-z7h2.onrender.com/api/auth/employees"
+      const res = await apiFetch(
+        "/api/auth/employees"
       );
       const data = await res.json();
       if (data.success) {
@@ -150,8 +151,8 @@ export default function Tasks() {
 
     try {
       const url = editingId
-        ? `https://ebay-dashboard-z7h2.onrender.com/api/tasks/${editingId}`
-        : "https://ebay-dashboard-z7h2.onrender.com/api/tasks/create";
+        ? `/api/tasks/${editingId}`
+        : "/api/tasks/create";
 
       const method = editingId ? "PUT" : "POST";
       const formData = new FormData();
@@ -173,7 +174,7 @@ export default function Tasks() {
         formData.append("screenshot", form.screenshot);
       }
 
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         body: formData,
       });
@@ -211,8 +212,8 @@ export default function Tasks() {
     if (!window.confirm("Delete Task?")) return;
 
     try {
-      const res = await fetch(
-        `https://ebay-dashboard-z7h2.onrender.com/api/tasks/${id}`,
+      const res = await apiFetch(
+        `/api/tasks/${id}`,
         {
           method: "DELETE",
         }
@@ -255,8 +256,8 @@ export default function Tasks() {
       formData.append("dueDate", currentTask.dueDate || "");
       formData.append("progress", progress);
 
-      const res = await fetch(
-        `https://ebay-dashboard-z7h2.onrender.com/api/tasks/${id}`,
+      const res = await apiFetch(
+        `/api/tasks/${id}`,
         {
           method: "PUT",
           body: formData,

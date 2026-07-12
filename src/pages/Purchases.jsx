@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import { Menu, X } from "lucide-react";
+import { apiFetch } from "../api";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -69,7 +70,7 @@ export default function Purchases() {
 
   const fetchPurchases = async () => {
     try {
-      const res = await fetch("https://ebay-dashboard-z7h2.onrender.com/api/purchases");
+      const res = await apiFetch("/api/purchases");
       const data = await res.json();
       if (data.success) setPurchases(data.purchases);
     } catch (err) { console.log(err); }
@@ -83,12 +84,11 @@ export default function Purchases() {
     e.preventDefault();
     try {
       const url = editingId
-        ? `https://ebay-dashboard-z7h2.onrender.com/api/purchases/${editingId}`
-        : "https://ebay-dashboard-z7h2.onrender.com/api/purchases";
+        ? `/api/purchases/${editingId}`
+        : "/api/purchases";
       const method = editingId ? "PUT" : "POST";
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
       const data = await res.json();
@@ -110,7 +110,7 @@ export default function Purchases() {
   const deletePurchase = async (id) => {
     if (!window.confirm("Delete Purchase?")) return;
     try {
-      await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/purchases/${id}`, { method: "DELETE" });
+      await apiFetch(`/api/purchases/${id}`, { method: "DELETE" });
       fetchPurchases();
     } catch (err) { console.log(err); }
   };

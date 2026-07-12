@@ -9,6 +9,7 @@ import {
   LogOut,
   CalendarDays,
   Sparkles,
+  FileText,
 } from "lucide-react";
 
 import { Link, useLocation } from "react-router-dom";
@@ -72,6 +73,11 @@ export default function EmployeeSidebar() {
       name: "Notes",
       icon: ClipboardList,
       path: "/notes",
+    },
+    {
+      name: "Templates",
+      icon: FileText,
+      path: "/templates",
     },
   ];
 

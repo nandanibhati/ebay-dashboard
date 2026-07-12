@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Activity,
 } from "lucide-react";
+import { apiFetch, API_BASE_URL, getToken } from "../api";
 
 export default function EbayIntegration() {
   const [stores, setStores] = useState([
@@ -33,8 +34,8 @@ export default function EbayIntegration() {
 
   async function loadStores() {
     try {
-      const res = await fetch(
-        "https://ebay-dashboard-z7h2.onrender.com/api/ebay/stores"
+      const res = await apiFetch(
+        "/api/ebay/stores"
       );
 
       const data = await res.json();
@@ -222,7 +223,7 @@ export default function EbayIntegration() {
                 <button
   onClick={() => {
     window.location.href =
-      `https://ebay-dashboard-z7h2.onrender.com/api/ebay/connect/${store.storeName}`;
+      `${API_BASE_URL}/api/ebay/connect/${store.storeName}?token=${getToken()}`;
   }}
   className="flex items-center gap-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white px-6 py-3 font-semibold transition"
 >
@@ -243,13 +244,10 @@ export default function EbayIntegration() {
 
                     <button
   onClick={async () => {
-    await fetch(
-      "https://ebay-dashboard-z7h2.onrender.com/api/ebay/disconnect",
+    await apiFetch(
+      "/api/ebay/disconnect",
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           storeName: store.storeName,
         }),

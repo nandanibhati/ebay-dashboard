@@ -1,11 +1,9 @@
 import { io } from "socket.io-client";
+import { API_BASE_URL } from "./api";
 
-const socket = io(
-  "https://ebay-dashboard-z7h2.onrender.com",
-  {
-    transports: ["websocket"],
-    autoConnect: true,
-  }
-);
+const socket = io(API_BASE_URL, {
+  transports: ["websocket"],
+  autoConnect: true,
+});
 
 export default socket;

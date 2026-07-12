@@ -3,6 +3,9 @@ const router = express.Router();
 
 const Leave = require("../models/Leave");
 const User = require("../models/User");
+const { protect } = require("../middleware/auth");
+
+router.use(protect);
 
 // Apply Leave
 router.post("/apply", async (req, res) => {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import { Menu, X } from "lucide-react";
+import { apiFetch } from "../api";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -88,7 +89,7 @@ export default function Subscriptions() {
 
   const fetchSubscriptions = async () => {
     try {
-      const res = await fetch("https://ebay-dashboard-z7h2.onrender.com/api/subscriptions");
+      const res = await apiFetch("/api/subscriptions");
       const data = await res.json();
       if (data.success) setSubscriptions(data.subscriptions);
     } catch (err) { console.log(err); }
@@ -102,12 +103,11 @@ export default function Subscriptions() {
     e.preventDefault();
     try {
       const url = editingId
-        ? `https://ebay-dashboard-z7h2.onrender.com/api/subscriptions/${editingId}`
-        : "https://ebay-dashboard-z7h2.onrender.com/api/subscriptions";
+        ? `/api/subscriptions/${editingId}`
+        : "/api/subscriptions";
       const method = editingId ? "PUT" : "POST";
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
       const data = await res.json();
@@ -129,7 +129,7 @@ export default function Subscriptions() {
   const deleteSubscription = async (id) => {
     if (!window.confirm("Delete Subscription?")) return;
     try {
-      await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/subscriptions/${id}`, { method: "DELETE" });
+      await apiFetch(`/api/subscriptions/${id}`, { method: "DELETE" });
       fetchSubscriptions();
     } catch (err) { console.log(err); }
   };

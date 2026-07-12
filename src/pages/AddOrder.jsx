@@ -7,6 +7,7 @@ import {
   CheckCircle2, Store, BarChart2, ScanLine, Bell, Search,
   Menu, X,
 } from "lucide-react";
+import { apiFetch } from "../api";
 
 /* Design tokens - matched to BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -120,8 +121,8 @@ export default function AddOrder() {
 
 
     try {
-      const res = await fetch(
-        `https://ebay-dashboard-z7h2.onrender.com/api/stock/sku/${sku}`
+      const res = await apiFetch(
+        `/api/stock/sku/${sku}`
       );
 
       if (!res.ok) {
@@ -189,9 +190,8 @@ export default function AddOrder() {
     const margin       = revenue > 0 ? ((profit / revenue) * 100).toFixed(2) : 0;
 
     try {
-      const response = await fetch("https://ebay-dashboard-z7h2.onrender.com/api/orders", {
+      const response = await apiFetch("/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           site: form.site, date: form.date, orderId: form.orderId,
           employeeId: "EMP001", employeeName, employeeEmail,

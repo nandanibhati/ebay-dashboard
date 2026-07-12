@@ -14,6 +14,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { apiFetch } from "../api";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -43,7 +44,7 @@ export default function Salary() {
   useEffect(() => {
     const email = localStorage.getItem("employeeEmail");
 
-    fetch(`https://ebay-dashboard-z7h2.onrender.com/api/salary/${email}`)
+    apiFetch(`/api/salary/${email}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {

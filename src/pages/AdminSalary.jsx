@@ -9,6 +9,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { apiFetch } from "../api";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -40,8 +41,8 @@ export default function AdminSalary() {
 
   const fetchEmployees = async () => {
     try {
-      const res = await fetch(
-        "https://ebay-dashboard-z7h2.onrender.com/api/auth/employees"
+      const res = await apiFetch(
+        "/api/auth/employees"
       );
 
       const data = await res.json();
@@ -60,13 +61,10 @@ export default function AdminSalary() {
 
   const updateSalary = async () => {
     try {
-      const res = await fetch(
-        `https://ebay-dashboard-z7h2.onrender.com/api/auth/employee/${editingId}`,
+      const res = await apiFetch(
+        `/api/auth/employee/${editingId}`,
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
           body: JSON.stringify({
             monthlySalary: basicSalary,
             monthlyHours,
@@ -106,13 +104,10 @@ export default function AdminSalary() {
   const totalEmployees = employees.length;
   const markSalaryPaid = async (id) => {
     try {
-      await fetch(
-        `https://ebay-dashboard-z7h2.onrender.com/api/auth/employee/${id}`,
+      await apiFetch(
+        `/api/auth/employee/${id}`,
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
           body: JSON.stringify({
             lastSalaryPaidMonth: new Date().getMonth() + 1,
             lastSalaryPaidYear: new Date().getFullYear(),
@@ -190,7 +185,7 @@ export default function AdminSalary() {
               Salary Management
             </h1>
             <p className="mt-1.5 text-slate-400 text-sm max-w-xl font-medium">
-              Manage employee pay ledgers, adjust baseline compensation, and track payment status dynamically.
+              Manage employee salaries and track payments.
             </p>
           </div>
         </div>
@@ -204,7 +199,7 @@ export default function AdminSalary() {
           >
             <div>
               <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">
-                Total Roster
+                Total Employees
               </p>
               <h2
                 className="text-3xl font-bold mt-2 text-slate-900 tracking-tight tabular-nums"
@@ -224,11 +219,11 @@ export default function AdminSalary() {
           >
             <div>
               <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">
-                Salary Configuration
+                Pay Calculation
               </p>
               <h2 className="text-2xl font-bold mt-2 text-emerald-600 inline-flex items-center gap-2 tracking-tight">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                Live System
+                Automatic
               </h2>
             </div>
             <div className="bg-white/80 border border-emerald-100 p-3.5 rounded-xl text-emerald-600 shadow-sm">
@@ -242,7 +237,7 @@ export default function AdminSalary() {
           >
             <div>
               <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">
-                Financial Ledger
+                Payroll Status
               </p>
               <h2 className="text-2xl font-bold mt-2 tracking-tight" style={{ color: "#B45F06" }}>
                 Ready
@@ -266,9 +261,9 @@ export default function AdminSalary() {
               </div>
               <div>
                 <h2 className="text-base font-bold text-slate-800">
-                  Modify Compensation
+                  Edit Salary
                 </h2>
-                <p className="text-xs text-slate-400">Update pay parameters for this employee.</p>
+                <p className="text-xs text-slate-400">Update salary and hours for this employee.</p>
               </div>
             </div>
 
@@ -323,15 +318,14 @@ export default function AdminSalary() {
           </div>
         )}
 
-        {/* Payroll Table */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xl shadow-slate-200/20 overflow-hidden w-full flex flex-col">
 
           <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-slate-800" style={{ fontFamily: "Sora, sans-serif" }}>
-                Staff Payroll Registry
+                Salary Records
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">Calculated dynamically relative to hours and base parameters.</p>
+              <p className="text-xs text-slate-400 mt-0.5">Calculated from base salary and hours worked.</p>
             </div>
           </div>
 

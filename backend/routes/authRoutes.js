@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 
 const router = express.Router();
 const User = require("../models/User");
+const { protect, adminOnly } = require("../middleware/auth");
 
 // SIGNUP
 router.post("/signup", async (req, res) => {
@@ -72,6 +73,13 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    if (typeof email !== "string" || typeof password !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email or password",
+      });
+    }
+
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -97,8 +105,9 @@ router.post("/login", async (req, res) => {
       {
         id: user._id,
         role: user.role,
+        email: user.email,
       },
-      "secretkey",
+      process.env.JWT_SECRET,
       {
         expiresIn: "7d",
       }
@@ -121,7 +130,7 @@ router.post("/login", async (req, res) => {
 
 // GET ALL EMPLOYEES
 // GET ALL USERS FOR CHAT
-router.get("/employees", async (req, res) => {
+router.get("/employees", protect, async (req, res) => {
   try {
     const users = await User.find({
       role: { $in: ["admin", "employee"] },
@@ -154,7 +163,7 @@ router.get("/employees", async (req, res) => {
 });
 
 // GET SINGLE EMPLOYEE
-router.get("/employee/:email", async (req, res) => {
+router.get("/employee/:email", protect, async (req, res) => {
   try {
     const employee = await User.findOne({
       email: req.params.email,
@@ -191,7 +200,7 @@ router.get("/employee/:email", async (req, res) => {
 });
 
 // UPDATE EMPLOYEE
-router.put("/employee/:id", async (req, res) => {
+router.put("/employee/:id", protect, adminOnly, async (req, res) => {
   try {
    
 
@@ -251,7 +260,7 @@ const employee = await User.findByIdAndUpdate(
 });
 
 // DELETE EMPLOYEE
-router.delete("/employee/:id", async (req, res) => {
+router.delete("/employee/:id", protect, adminOnly, async (req, res) => {
   try {
     await User.findByIdAndDelete(
       req.params.id
@@ -260,47 +269,6 @@ router.delete("/employee/:id", async (req, res) => {
     res.json({
       success: true,
       message: "Employee Deleted",
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
-
-// CREATE ADMIN
-router.get("/create-admin", async (req, res) => {
-  try {
-    const existingAdmin =
-      await User.findOne({
-        email: "penkraft.ltd@gmail.com",
-      });
-
-    if (existingAdmin) {
-      return res.json({
-        success: true,
-        message: "Admin already exists",
-      });
-    }
-
-    const hashedPassword =
-      await bcrypt.hash(
-        "Temp@12345",
-        10
-      );
-
-    const admin = await User.create({
-      name: "Admin",
-      email: "penkraft.ltd@gmail.com",
-      password: hashedPassword,
-      role: "admin",
-    });
-
-    res.json({
-      success: true,
-      message: "Admin Created Successfully",
-      admin,
     });
   } catch (error) {
     res.status(500).json({

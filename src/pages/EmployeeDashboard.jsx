@@ -1,9 +1,11 @@
 import EmployeeSidebar from "../components/EmployeeSidebar";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { apiFetch } from "../api";
+import NotificationBell from "../components/NotificationBell";
 import {
   LogIn, LogOut as LogOutIcon, CalendarCheck, CalendarX, CalendarClock,
-  Wallet, Bell, Search, ChevronDown, ArrowUpRight, Sparkles,
+  Wallet, Search, ChevronDown, ArrowUpRight, Sparkles,
   Clock, CheckCircle2, XCircle, AlertCircle, Menu, X,
   ClipboardList, CalendarDays, AlertTriangle, TrendingUp, BarChart3, PieChart,
 } from "lucide-react";
@@ -268,6 +270,7 @@ export default function EmployeeDashboard() {
   const [leaves, setLeaves] = useState([]);
   const [leaveBalance, setLeaveBalance] = useState(2);
   const [tasks, setTasks] = useState([]);
+  const [salary, setSalary] = useState({ basicSalary: 0, totalHours: "0.00", salary: "0.00" });
   const [sidebarOpen, setSidebarOpen] = useState(false); // UI-only drawer state
 
   const employeeName = localStorage.getItem("employeeName") || "Employee";
@@ -281,7 +284,7 @@ export default function EmployeeDashboard() {
     const email = localStorage.getItem("employeeEmail");
     const name = localStorage.getItem("employeeName");
 
-    fetch("https://ebay-dashboard-z7h2.onrender.com/api/leaves")
+    apiFetch("/api/leaves")
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -290,7 +293,7 @@ export default function EmployeeDashboard() {
       })
       .catch((err) => console.log(err));
 
-    fetch(`https://ebay-dashboard-z7h2.onrender.com/api/auth/employee/${email}`)
+    apiFetch(`/api/auth/employee/${email}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -300,7 +303,7 @@ export default function EmployeeDashboard() {
       .catch((err) => console.log(err));
 
     // Tasks assigned to this employee (backend matches by name)
-    fetch(`https://ebay-dashboard-z7h2.onrender.com/api/tasks/employee/${name}`)
+    apiFetch(`/api/tasks/employee/${name}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -308,22 +311,27 @@ export default function EmployeeDashboard() {
         }
       })
       .catch((err) => console.log(err));
+
+    apiFetch(`/api/salary/${email}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setSalary(data);
+        }
+      })
+      .catch((err) => console.log(err));
   }, []);
 
   const handlePunchIn = async () => {
     try {
-      const response = await fetch(
-        "https://ebay-dashboard-z7h2.onrender.com/api/attendance/punch-in",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            employeeId: localStorage.getItem("employeeEmail"),
-            employeeName: localStorage.getItem("employeeName"),
-            employeeEmail: localStorage.getItem("employeeEmail"),
-          }),
-        }
-      );
+      const response = await apiFetch("/api/attendance/punch-in", {
+        method: "POST",
+        body: {
+          employeeId: localStorage.getItem("employeeEmail"),
+          employeeName: localStorage.getItem("employeeName"),
+          employeeEmail: localStorage.getItem("employeeEmail"),
+        },
+      });
       const data = await response.json();
       alert(data.message);
     } catch (error) {
@@ -334,16 +342,12 @@ export default function EmployeeDashboard() {
 
   const handlePunchOut = async () => {
     try {
-      const response = await fetch(
-        "https://ebay-dashboard-z7h2.onrender.com/api/attendance/punch-out",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            employeeEmail: localStorage.getItem("employeeEmail"),
-          }),
-        }
-      );
+      const response = await apiFetch("/api/attendance/punch-out", {
+        method: "POST",
+        body: {
+          employeeEmail: localStorage.getItem("employeeEmail"),
+        },
+      });
       const data = await response.json();
       alert(data.message);
     } catch (error) {
@@ -430,10 +434,7 @@ export default function EmployeeDashboard() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <button className="relative w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.07]">
-              <Bell size={16} />
-              <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-[#F4B400] anim-pulse-ring" />
-            </button>
+            <NotificationBell />
             <div className="flex items-center gap-2 pl-3 ml-1 border-l border-slate-900/[0.08] cursor-pointer select-none">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-semibold text-white relative"
@@ -663,20 +664,17 @@ export default function EmployeeDashboard() {
                     className="text-slate-900 text-3xl font-bold tracking-tight relative tabular-nums"
                     style={{ fontFamily: "'JetBrains Mono', monospace" }}
                   >
-                    ₹0
+                    ₹{Number(salary.salary || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                   </p>
-                  <p className="text-slate-400 text-xs mt-1 relative">Disbursement pending</p>
+                  <p className="text-slate-400 text-xs mt-1 relative">Based on hours logged this month</p>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs text-slate-400 py-1.5 border-b border-slate-900/[0.06]">
-                    <span>Basic</span><span className="text-slate-600 font-medium tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>₹—</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-slate-400 py-1.5 border-b border-slate-900/[0.06]">
-                    <span>Deductions</span><span className="text-slate-600 font-medium tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>₹—</span>
+                    <span>Basic</span><span className="text-slate-600 font-medium tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>₹{Number(salary.basicSalary || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
                   </div>
                   <div className="flex justify-between text-xs text-slate-400 py-1.5">
-                    <span>Bonus</span><span className="text-slate-600 font-medium tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>₹—</span>
+                    <span>Hours Logged</span><span className="text-slate-600 font-medium tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{salary.totalHours}h</span>
                   </div>
                 </div>
               </div>

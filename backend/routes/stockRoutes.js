@@ -3,6 +3,9 @@ const express = require("express");
 const router = express.Router();
 
 const Stock = require("../models/Stock");
+const { protect } = require("../middleware/auth");
+
+router.use(protect);
 
 
 // Get All Stock

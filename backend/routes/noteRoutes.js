@@ -3,6 +3,9 @@ const router = express.Router();
 
 const Note = require("../models/Notes");
 const upload = require("../middleware/upload");
+const { protect } = require("../middleware/auth");
+
+router.use(protect);
 
 /* Create Note */
 router.post(

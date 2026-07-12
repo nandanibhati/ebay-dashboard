@@ -1,22 +1,18 @@
 const express = require("express");
 const router = express.Router();
 
-const Subscription = require("../models/Subscription");
+const Template = require("../models/Template");
 const { protect } = require("../middleware/auth");
 
 router.use(protect);
 
-// GET ALL
 router.get("/", async (req, res) => {
   try {
-    const subscriptions =
-      await Subscription.find().sort({
-        createdAt: -1,
-      });
+    const templates = await Template.find().sort({ createdAt: -1 });
 
     res.json({
       success: true,
-      subscriptions,
+      templates,
     });
   } catch (error) {
     res.status(500).json({
@@ -26,15 +22,18 @@ router.get("/", async (req, res) => {
   }
 });
 
-// CREATE
 router.post("/", async (req, res) => {
   try {
-    const subscription =
-      await Subscription.create(req.body);
+    const template = await Template.create({
+      title: req.body.title,
+      content: req.body.content,
+      category: req.body.category || "General",
+      createdBy: req.body.createdBy,
+    });
 
-    res.json({
+    res.status(201).json({
       success: true,
-      subscription,
+      template,
     });
   } catch (error) {
     res.status(500).json({
@@ -44,38 +43,37 @@ router.post("/", async (req, res) => {
   }
 });
 
-// UPDATE
 router.put("/:id", async (req, res) => {
   try {
-    const subscription =
-      await Subscription.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        { new: true }
-      );
-
-    res.json({
-      success: true,
-      subscription,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
-
-// DELETE
-router.delete("/:id", async (req, res) => {
-  try {
-    await Subscription.findByIdAndDelete(
-      req.params.id
+    const template = await Template.findByIdAndUpdate(
+      req.params.id,
+      {
+        title: req.body.title,
+        content: req.body.content,
+        category: req.body.category,
+      },
+      { new: true }
     );
 
     res.json({
       success: true,
-      message: "Deleted",
+      template,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+router.delete("/:id", async (req, res) => {
+  try {
+    await Template.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: "Template Deleted",
     });
   } catch (error) {
     res.status(500).json({

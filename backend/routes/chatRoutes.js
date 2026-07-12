@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const upload = require("../middleware/upload");
 const Chat = require("../models/Chat");
+const { protect } = require("../middleware/auth");
+
+router.use(protect);
 
 // ==========================
 // GET GROUP CHAT

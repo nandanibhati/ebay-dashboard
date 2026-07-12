@@ -3,6 +3,9 @@ const router = express.Router();
 
 const Task = require("../models/Task");
 const upload = require("../middleware/upload");
+const { protect } = require("../middleware/auth");
+
+router.use(protect);
 
 // CREATE TASK
 router.post(

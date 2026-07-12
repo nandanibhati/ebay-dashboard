@@ -3,6 +3,9 @@ const router = express.Router();
 
 const Attendance = require("../models/Attendance");
 const User = require("../models/User");
+const { protect } = require("../middleware/auth");
+
+router.use(protect);
 
 router.get("/:email", async (req, res) => {
   try {

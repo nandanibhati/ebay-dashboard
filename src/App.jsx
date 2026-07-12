@@ -22,101 +22,116 @@ import AdminLeaves from "./pages/AdminLeaves";
 import AdminTasks from "./pages/AdminTasks";
 import EmployeeTasks from "./pages/EmployeeTasks";
 import Notes from "./pages/Notes";
+import Templates from "./pages/Templates";
+import EbayIntegration from "./pages/EbayIntegration";
 import Purchases from "./pages/Purchases";
 import Subscriptions from "./pages/Subscriptions";
 import Chat from "./pages/Chat";
 import FloatingChat from "./components/FloatingChat";
+import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
+  const isLoggedIn = !!localStorage.getItem("token");
+
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
 
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
 
-        <Route path="/manual-entry" element={<AddOrder />} />
+        <Route path="/manual-entry" element={<PrivateRoute><AddOrder /></PrivateRoute>} />
 
-        <Route path="/orders" element={<Orders />} />
+        <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
 
-        <Route path="/employees" element={<Employees />} />
+        <Route path="/employees" element={<PrivateRoute><Employees /></PrivateRoute>} />
 
-        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/analytics" element={<PrivateRoute><Analytics /></PrivateRoute>} />
 
-        <Route path="/stock" element={<Stock />} />
+        <Route path="/stock" element={<PrivateRoute><Stock /></PrivateRoute>} />
         <Route
   path="/chat"
-  element={<Chat />}
+  element={<PrivateRoute><Chat /></PrivateRoute>}
 />
-        
+
 <Route
   path="/subscriptions"
   element={
-    localStorage.getItem("role") === "admin"
-      ? <Subscriptions />
-      : <Navigate to="/dashboard" />
+    <PrivateRoute>
+      {localStorage.getItem("role") === "admin"
+        ? <Subscriptions />
+        : <Navigate to="/dashboard" />}
+    </PrivateRoute>
   }
 />
         <Route
   path="/tasks"
-  element={<AdminTasks />}
+  element={<PrivateRoute><AdminTasks /></PrivateRoute>}
 />
 
 <Route
   path="/purchases"
   element={
-    localStorage.getItem("role") === "admin"
-      ? <Purchases />
-      : <Navigate to="/dashboard" />
+    <PrivateRoute>
+      {localStorage.getItem("role") === "admin"
+        ? <Purchases />
+        : <Navigate to="/dashboard" />}
+    </PrivateRoute>
   }
 />
 <Route
   path="/employee-tasks"
-  element={<EmployeeTasks />}
+  element={<PrivateRoute><EmployeeTasks /></PrivateRoute>}
 />
         <Route
   path="/admin-leaves"
-  element={<AdminLeaves />}
+  element={<PrivateRoute><AdminLeaves /></PrivateRoute>}
 />
 
         <Route
   path="/employee-dashboard"
-  element={<EmployeeDashboard />}
+  element={<PrivateRoute><EmployeeDashboard /></PrivateRoute>}
 />
 <Route
   path="/admin-attendance"
-  element={<AdminAttendance />}
+  element={<PrivateRoute><AdminAttendance /></PrivateRoute>}
 />
 
 <Route
   path="/admin-salary"
-  element={<AdminSalary />}
+  element={<PrivateRoute><AdminSalary /></PrivateRoute>}
 />
 
 <Route
   path="/attendance"
-  element={<Attendance />}
+  element={<PrivateRoute><Attendance /></PrivateRoute>}
 />
 
 <Route
   path="/leaves"
-  element={<Leaves />}
+  element={<PrivateRoute><Leaves /></PrivateRoute>}
 />
 
 <Route
   path="/salary"
-  element={<Salary />}
+  element={<PrivateRoute><Salary /></PrivateRoute>}
 />
 <Route
   path="/notes"
-  element={<Notes />}
+  element={<PrivateRoute><Notes /></PrivateRoute>}
 />
-
-       
+<Route
+  path="/templates"
+  element={<PrivateRoute><Templates /></PrivateRoute>}
+/>
+<Route
+  path="/ebay-integration"
+  element={<PrivateRoute><EbayIntegration /></PrivateRoute>}
+/>
 
         <Route path="/signup" element={<Signup />} />
       </Routes>
-      <FloatingChat />
+      {isLoggedIn && <FloatingChat />}
 
     </BrowserRouter>
   );

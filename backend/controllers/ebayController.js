@@ -104,7 +104,7 @@ exports.callback = async (
 
     await store.save();
       return res.redirect(
-  "https://YOUR-FRONTEND-DOMAIN/ebay-integration?success=true"
+  `${process.env.FRONTEND_URL}/ebay-integration?success=true`
 );
   } catch (err) {
     console.log(
@@ -112,7 +112,7 @@ exports.callback = async (
     );
 
    return res.redirect(
-  "https://YOUR-FRONTEND-DOMAIN/ebay-integration?success=false"
+  `${process.env.FRONTEND_URL}/ebay-integration?success=false`
 );
   }
 };

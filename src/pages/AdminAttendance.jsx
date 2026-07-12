@@ -5,6 +5,7 @@ import {
   LogIn, LogOut as LogOutIcon, Timer, CalendarDays,
   ArrowUpRight, ArrowDownRight, TrendingUp, Menu, X,
 } from "lucide-react";
+import { apiFetch } from "../api";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -86,7 +87,7 @@ export default function AdminAttendance() {
   }, []);
 
   useEffect(() => {
-    fetch("https://ebay-dashboard-z7h2.onrender.com/api/attendance")
+    apiFetch("/api/attendance")
       .then((res) => res.json())
       .then((data) => setAttendance(data))
       .catch((err) => console.log(err));

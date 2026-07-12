@@ -3,6 +3,9 @@ const router = express.Router();
 
 const Purchase = require("../models/Purchase");
 const Stock = require("../models/Stock");
+const { protect } = require("../middleware/auth");
+
+router.use(protect);
 
 // GET ALL PURCHASES
 router.get("/", async (req, res) => {

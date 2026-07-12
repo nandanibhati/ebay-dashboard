@@ -17,6 +17,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { apiFetch } from "../api";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -55,8 +56,8 @@ export default function Employees() {
 
   const fetchEmployees = async () => {
     try {
-      const res = await fetch(
-        "https://ebay-dashboard-z7h2.onrender.com/api/auth/employees"
+      const res = await apiFetch(
+        "/api/auth/employees"
       );
       const data = await res.json();
       if (data.success) {
@@ -76,16 +77,13 @@ export default function Employees() {
 
     try {
       const url = editingId
-        ? `https://ebay-dashboard-z7h2.onrender.com/api/auth/employee/${editingId}`
-        : "https://ebay-dashboard-z7h2.onrender.com/api/auth/signup";
+        ? `/api/auth/employee/${editingId}`
+        : "/api/auth/signup";
 
       const method = editingId ? "PUT" : "POST";
 
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           ...form,
           role: "employee",
@@ -120,8 +118,8 @@ export default function Employees() {
     if (!window.confirm("Delete Employee?")) return;
 
     try {
-      const res = await fetch(
-        `https://ebay-dashboard-z7h2.onrender.com/api/auth/employee/${id}`,
+      const res = await apiFetch(
+        `/api/auth/employee/${id}`,
         {
           method: "DELETE",
         }
@@ -188,11 +186,10 @@ export default function Employees() {
             <Menu size={18} />
           </button>
           <span className="text-sm font-semibold text-slate-500" style={{ fontFamily: "Sora, sans-serif" }}>
-            Workforce
+            Employees
           </span>
         </div>
 
-        {/* Module Hero Banner */}
         <div
           className="rounded-2xl p-8 text-white shadow-xl relative overflow-hidden"
           style={{ background: "linear-gradient(150deg, #0F172A, #1E293B)", boxShadow: "0 20px 45px -12px rgba(15,23,42,0.35)" }}
@@ -209,15 +206,14 @@ export default function Employees() {
               className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full mb-2"
               style={{ background: "rgba(244,180,0,0.14)", border: "1px solid rgba(244,180,0,0.3)", color: "#F4B400" }}
             >
-              <Users size={11} /> Workforce Directory
+              <Users size={11} /> Employee Directory
             </span>
             <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3" style={{ fontFamily: "Sora, sans-serif" }}>
-              Employees Management
+              Employees
             </h1>
           </div>
         </div>
 
-        {/* Aggregate Financial Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
           <div
@@ -225,7 +221,7 @@ export default function Employees() {
             style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.06), rgba(255,255,255,0.9))" }}
           >
             <div>
-              <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">Active Directory</p>
+              <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">Total Employees</p>
               <h2
                 className="text-3xl font-bold mt-2 text-slate-900 tracking-tight tabular-nums"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
@@ -243,7 +239,7 @@ export default function Employees() {
             style={{ background: "linear-gradient(160deg, rgba(244,180,0,0.08), rgba(255,255,255,0.9))" }}
           >
             <div>
-              <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">Mean Hourly Rate</p>
+              <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">Average Hourly Rate</p>
               <h2
                 className="text-3xl font-bold mt-2 tracking-tight tabular-nums"
                 style={{ color: "#B45F06", fontFamily: "'JetBrains Mono', monospace" }}
@@ -261,7 +257,7 @@ export default function Employees() {
             style={{ background: "linear-gradient(160deg, rgba(34,197,94,0.06), rgba(255,255,255,0.9))" }}
           >
             <div>
-              <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">Base Payroll Committed</p>
+              <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">Total Base Salary</p>
               <h2
                 className="text-3xl font-bold mt-2 text-emerald-600 tracking-tight tabular-nums"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
@@ -276,7 +272,6 @@ export default function Employees() {
 
         </div>
 
-        {/* Enrollment Form */}
         <motion.form
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -289,9 +284,9 @@ export default function Employees() {
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-800" style={{ fontFamily: "Sora, sans-serif" }}>
-                {editingId ? "Modify Employee" : "Add New Employee"}
+                {editingId ? "Edit Employee" : "Add New Employee"}
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">Configure access, ID, and base compensation.</p>
+              <p className="text-xs text-slate-400 mt-0.5">Set their login, ID, and salary details.</p>
             </div>
           </div>
 
@@ -405,13 +400,12 @@ export default function Employees() {
           </div>
         </motion.form>
 
-        {/* Master Registry Table */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xl shadow-slate-200/20 overflow-hidden w-full flex flex-col">
 
           <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-slate-800" style={{ fontFamily: "Sora, sans-serif" }}>Workforce Registry</h2>
-              <p className="text-xs text-slate-400 mt-0.5">Tracks active employee keys, compensation baselines, and dates.</p>
+              <h2 className="text-lg font-bold text-slate-800" style={{ fontFamily: "Sora, sans-serif" }}>All Employees</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Employee details, salaries, and joining dates.</p>
             </div>
           </div>
 

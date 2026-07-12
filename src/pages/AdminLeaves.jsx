@@ -5,6 +5,7 @@ import {
   CheckCircle2, XCircle, Clock, AlertCircle,
   CalendarCheck, CalendarX, Loader2, Filter, Menu, X,
 } from "lucide-react";
+import { apiFetch } from "../api";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -82,7 +83,7 @@ export default function AdminLeaves() {
 
   const fetchLeaves = async () => {
     try {
-      const response = await fetch("https://ebay-dashboard-z7h2.onrender.com/api/leaves");
+      const response = await apiFetch("/api/leaves");
       const data = await response.json();
       if (data.success) setLeaves(data.leaves);
     } catch (error) {
@@ -94,14 +95,14 @@ export default function AdminLeaves() {
 
   const approveLeave = async (id) => {
     try {
-      await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/leaves/approve/${id}`, { method: "PUT" });
+      await apiFetch(`/api/leaves/approve/${id}`, { method: "PUT" });
       fetchLeaves();
     } catch (error) { console.log(error); }
   };
 
   const rejectLeave = async (id) => {
     try {
-      await fetch(`https://ebay-dashboard-z7h2.onrender.com/api/leaves/reject/${id}`, { method: "PUT" });
+      await apiFetch(`/api/leaves/reject/${id}`, { method: "PUT" });
       fetchLeaves();
     } catch (error) { console.log(error); }
   };
