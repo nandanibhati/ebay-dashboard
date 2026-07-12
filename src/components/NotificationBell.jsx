@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, MessageCircle, ClipboardList } from "lucide-react";
+import { Bell, MessageCircle, ClipboardList, Wallet } from "lucide-react";
 import socket from "../socket";
+import { apiFetch } from "../api";
+import { isSalaryDueToday } from "../utils/salary";
 
 const MAX_NOTIFICATIONS = 20;
 
@@ -81,6 +83,36 @@ export default function NotificationBell() {
     };
   }, [currentUser.email, currentUser.name, currentUser.role]);
 
+  // Admin-only: flag any employee whose recurring payday (joining date +
+  // 15 days, every month) is today and hasn't been marked paid yet.
+  useEffect(() => {
+    if (currentUser.role !== "admin") return;
+
+    apiFetch("/api/auth/employees")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.success) return;
+
+        data.employees.filter((e) => isSalaryDueToday(e)).forEach((e) => {
+          setNotifications((prev) =>
+            [
+              {
+                id: `salary-${e._id}`,
+                read: false,
+                time: Date.now(),
+                type: "salary",
+                title: "Salary due today",
+                subtitle: `${e.name} — payday`,
+                link: "/admin-salary",
+              },
+              ...prev,
+            ].slice(0, MAX_NOTIFICATIONS)
+          );
+        });
+      })
+      .catch(() => {});
+  }, [currentUser.role]);
+
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const openNotification = (n) => {
@@ -134,10 +166,20 @@ export default function NotificationBell() {
                 >
                   <div
                     className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      n.type === "chat" ? "bg-violet-100 text-violet-600" : "bg-blue-100 text-blue-600"
+                      n.type === "chat"
+                        ? "bg-amber-100 text-[#B45F06]"
+                        : n.type === "salary"
+                        ? "bg-emerald-100 text-emerald-600"
+                        : "bg-blue-100 text-blue-600"
                     }`}
                   >
-                    {n.type === "chat" ? <MessageCircle size={14} /> : <ClipboardList size={14} />}
+                    {n.type === "chat" ? (
+                      <MessageCircle size={14} />
+                    ) : n.type === "salary" ? (
+                      <Wallet size={14} />
+                    ) : (
+                      <ClipboardList size={14} />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-semibold text-slate-800 truncate">{n.title}</p>

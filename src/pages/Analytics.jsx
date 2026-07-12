@@ -118,6 +118,8 @@ function StatCard({ label, value, icon: Icon, color, trend, spark, idx = 0 }) {
 
 export default function Analytics() {
   const [orders, setOrders] = useState([]);
+  const [purchases, setPurchases] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false); // UI-only drawer state
 
   useEffect(() => {
@@ -128,6 +130,20 @@ export default function Analytics() {
     apiFetch("/api/orders")
       .then((res) => res.json())
       .then((data) => setOrders(data))
+      .catch((err) => console.log(err));
+
+    apiFetch("/api/purchases")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setPurchases(data.purchases);
+      })
+      .catch((err) => console.log(err));
+
+    apiFetch("/api/subscriptions")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setSubscriptions(data.subscriptions);
+      })
       .catch((err) => console.log(err));
   }, []);
 
@@ -142,10 +158,24 @@ export default function Analytics() {
     0
   );
 
-  const totalProfit = billableOrders.reduce(
+  const totalOrderProfit = billableOrders.reduce(
     (sum, order) => sum + Number(order.profit || 0),
     0
   );
+
+  const totalPurchases = purchases.reduce(
+    (sum, item) => sum + Number(item.cost || 0),
+    0
+  );
+
+  const totalSubscriptions = subscriptions.reduce(
+    (sum, item) => sum + Number(item.amount || 0),
+    0
+  );
+
+  // Bottom-line profit — order profit minus inventory purchases and tool
+  // subscriptions, same formula used on the Dashboard's "Net Profit".
+  const totalProfit = totalOrderProfit - totalPurchases - totalSubscriptions;
 
   const highestMargin =
     billableOrders.length > 0
@@ -173,26 +203,48 @@ export default function Analytics() {
         )
       : "-";
 
-  /* ── UI-only: bucket real orders by month for trend chart + sparklines ── */
+  /* ── UI-only: bucket real orders (+ purchases) by month for trend chart ── */
   const monthlyData = useMemo(() => {
     if (billableOrders.length === 0) return [];
     const buckets = {};
-    billableOrders.forEach((o) => {
-      if (!o.date) return;
-      const d = new Date(o.date);
-      if (isNaN(d)) return;
+    const getBucket = (dateStr) => {
+      const d = new Date(dateStr);
+      if (isNaN(d)) return null;
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       if (!buckets[key]) {
         buckets[key] = { key, label: d.toLocaleDateString("en-GB", { month: "short" }), revenue: 0, profit: 0, count: 0, sortDate: new Date(d.getFullYear(), d.getMonth(), 1) };
       }
-      buckets[key].revenue += Number(o.revenue || 0);
-      buckets[key].profit += Number(o.profit || 0);
-      buckets[key].count += 1;
+      return buckets[key];
+    };
+
+    billableOrders.forEach((o) => {
+      if (!o.date) return;
+      const bucket = getBucket(o.date);
+      if (!bucket) return;
+      bucket.revenue += Number(o.revenue || 0);
+      bucket.profit += Number(o.profit || 0);
+      bucket.count += 1;
     });
+
+    // Purchases eat into the profit of the month they were bought in.
+    purchases.forEach((p) => {
+      if (!p.purchaseDate) return;
+      const bucket = getBucket(p.purchaseDate);
+      if (!bucket) return;
+      bucket.profit -= Number(p.cost || 0);
+    });
+
+    // Subscriptions aren't dated per-transaction, so the flat monthly total
+    // (same figure as the "Subscriptions" stat) is deducted from every month
+    // shown, matching the bottom-line totalProfit calculation above.
+    Object.values(buckets).forEach((bucket) => {
+      bucket.profit -= totalSubscriptions;
+    });
+
     return Object.values(buckets)
       .sort((a, b) => a.sortDate - b.sortDate)
       .slice(-12);
-  }, [orders]);
+  }, [orders, purchases, totalSubscriptions]);
 
   const revenueSpark = monthlyData.map((m) => m.revenue);
   const profitSpark = monthlyData.map((m) => m.profit);

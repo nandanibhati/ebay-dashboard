@@ -1,6 +1,19 @@
 import { Search, Hash, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 
+function Avatar({ name = "?", size = "w-9 h-9 text-sm" }) {
+  const initials = (name || "?").charAt(0).toUpperCase();
+  const hue = (name.charCodeAt(0) * 47) % 360;
+  return (
+    <div
+      className={`${size} rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0`}
+      style={{ background: `linear-gradient(135deg, hsl(${hue},70%,55%), hsl(${hue},70%,40%))` }}
+    >
+      {initials}
+    </div>
+  );
+}
+
 export default function ChatSidebarWidget({
   users,
   currentUser,
@@ -40,7 +53,7 @@ export default function ChatSidebarWidget({
             placeholder="Search..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-slate-800/60 text-white placeholder-slate-500 text-[11px] pl-6 pr-2 py-1.5 rounded-lg outline-none border border-white/5 focus:ring-1 focus:ring-violet-500"
+            className="w-full bg-slate-800/60 text-white placeholder-slate-500 text-[11px] pl-6 pr-2 py-1.5 rounded-lg outline-none border border-white/5 focus:ring-1 focus:ring-[#F4B400]"
           />
         </div>
       </div>
@@ -57,14 +70,14 @@ export default function ChatSidebarWidget({
           }
           className={`w-full flex flex-col items-center gap-1 p-2 rounded-xl transition ${
             selectedChat?.type === "group"
-              ? "bg-violet-600/30 ring-1 ring-violet-500/40"
+              ? "bg-[#F4B400]/20 ring-1 ring-[#F4B400]/50"
               : "hover:bg-white/5"
           }`}
         >
-          <div className="w-9 h-9 rounded-xl bg-violet-600/30 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl bg-[#F4B400]/20 flex items-center justify-center">
             <Hash
               size={16}
-              className="text-violet-400"
+              style={{ color: "#F4B400" }}
             />
           </div>
 
@@ -96,15 +109,13 @@ export default function ChatSidebarWidget({
               }
               className={`w-full flex flex-col items-center gap-1 p-2 rounded-xl transition ${
                 selectedChat?.id === user.email
-                  ? "bg-violet-600/30 ring-1 ring-violet-500/40"
+                  ? "bg-[#F4B400]/20 ring-1 ring-[#F4B400]/50"
                   : "hover:bg-white/5"
               }`}
             >
               <div className="relative">
 
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold">
-                  {user.name?.charAt(0)?.toUpperCase()}
-                </div>
+                <Avatar name={user.name} />
 
                 <span
                   className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${
@@ -149,9 +160,7 @@ export default function ChatSidebarWidget({
 
           <div className="relative">
 
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center text-white text-xs font-bold">
-              {currentUser?.name?.charAt(0)?.toUpperCase()}
-            </div>
+            <Avatar name={currentUser?.name} size="w-8 h-8 text-xs" />
 
             <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-900" />
 

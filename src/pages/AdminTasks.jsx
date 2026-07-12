@@ -373,10 +373,10 @@ export default function Tasks() {
                   className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-3"
                   style={{ fontFamily: "Sora, sans-serif" }}
                 >
-                  Task Management Matrix
+                  Task Management
                 </h1>
                 <p className="mt-1.5 text-slate-500 text-sm max-w-xl font-medium">
-                  Organize core operations, provision sprint targets, assign tasks across system operators, and track completion progress loops in real-time.
+                  Assign tasks to your team, set deadlines, and track progress in real time.
                 </p>
               </div>
             </GlassPanel>

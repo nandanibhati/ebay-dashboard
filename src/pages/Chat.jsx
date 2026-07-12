@@ -15,6 +15,38 @@ import {
   Pencil, Trash2, Download, MessageCircle, Clock,
 } from "lucide-react";
 
+/* Design tokens - matches Dashboard.jsx
+   Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
+   Amber: #F59E0B  Dark navy: #0F172A
+*/
+
+const FONT_LINK_ID = "ebay-dash-fonts";
+function ensureFonts() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(FONT_LINK_ID)) return;
+  const link = document.createElement("link");
+  link.id = FONT_LINK_ID;
+  link.rel = "stylesheet";
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap";
+  document.head.appendChild(link);
+}
+
+// Same hash-based per-person color used on the Dashboard's Recent Orders
+// table, reused here so a person's identity color matches across the app.
+function Avatar({ name = "?", size = "w-10 h-10 text-sm" }) {
+  const initials = (name || "?").charAt(0).toUpperCase();
+  const hue = (name.charCodeAt(0) * 47) % 360;
+  return (
+    <div
+      className={`${size} rounded-full flex items-center justify-center text-white font-bold flex-shrink-0`}
+      style={{ background: `linear-gradient(135deg, hsl(${hue},70%,55%), hsl(${hue},70%,40%))` }}
+    >
+      {initials}
+    </div>
+  );
+}
+
 // Phone photos are often several MB at 3000px+ — shrink to a sane max
 // dimension client-side before upload so sending feels instant, not stuck.
 function compressImage(file, maxDim = 1280, quality = 0.75) {
@@ -110,24 +142,20 @@ function MessageBubble({ message, currentUser, onlineUsers, onReply, onEdit, onD
   return (
     <div className={`flex mb-4 items-end gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
       {/* Other user avatar */}
-      {!isMine && (
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mb-1">
-          {message.senderName?.charAt(0)}
-        </div>
-      )}
+      {!isMine && <Avatar name={message.senderName} size="w-8 h-8 text-xs" />}
 
       <div className={`max-w-[65%] relative group ${isMine ? "items-end" : ""}`}>
         {!isMine && (
-          <p className="text-[11px] font-semibold text-violet-600 mb-1 ml-1">
+          <p className="text-[11px] font-semibold mb-1 ml-1" style={{ color: "#B45F06" }}>
             {message.senderName}
           </p>
         )}
 
         {/* Reply preview */}
         {message.replyTo && (
-          <div className={`rounded-xl px-3 py-2 mb-1.5 border-l-4 border-violet-400 text-xs ${isMine ? "bg-violet-700/40" : "bg-slate-100"}`}>
-            <p className={`font-semibold mb-0.5 ${isMine ? "text-violet-200" : "text-violet-600"}`}>Reply</p>
-            <p className={`truncate ${isMine ? "text-violet-100" : "text-slate-500"}`}>
+          <div className={`rounded-xl px-3 py-2 mb-1.5 border-l-4 text-xs ${isMine ? "bg-black/20 border-[#F4B400]" : "bg-slate-100 border-[#F4B400]"}`}>
+            <p className={`font-semibold mb-0.5 ${isMine ? "text-amber-300" : ""}`} style={!isMine ? { color: "#B45F06" } : {}}>Reply</p>
+            <p className={`truncate ${isMine ? "text-slate-300" : "text-slate-500"}`}>
               {message.replyTo.message}
             </p>
           </div>
@@ -136,9 +164,11 @@ function MessageBubble({ message, currentUser, onlineUsers, onReply, onEdit, onD
         {/* Bubble */}
         <div className={`rounded-2xl px-4 py-3 shadow-sm ${
           isMine
-            ? "bg-gradient-to-br from-violet-600 to-indigo-600 text-white rounded-br-sm"
+            ? "text-white rounded-br-sm"
             : "bg-white border border-slate-100 text-slate-800 rounded-bl-sm"
-        }`}>
+        }`}
+          style={isMine ? { background: "linear-gradient(160deg, #1E293B, #0F172A)" } : {}}
+        >
           {message.message && (
             <p className="whitespace-pre-wrap break-words leading-relaxed text-sm">
               {message.message}
@@ -158,7 +188,8 @@ function MessageBubble({ message, currentUser, onlineUsers, onReply, onEdit, onD
               href={message.file}
               target="_blank"
               rel="noreferrer"
-              className={`mt-2 flex items-center gap-2 text-xs font-medium ${isMine ? "text-violet-100 hover:text-white" : "text-violet-600 hover:text-violet-700"}`}
+              className={`mt-2 flex items-center gap-2 text-xs font-medium ${isMine ? "text-slate-300 hover:text-white" : ""}`}
+              style={!isMine ? { color: "#B45F06" } : {}}
             >
               <Download size={14} />
               Download Attachment
@@ -166,7 +197,7 @@ function MessageBubble({ message, currentUser, onlineUsers, onReply, onEdit, onD
           )}
 
           {/* Timestamp */}
-          <div className={`mt-2 flex items-center gap-1.5 text-[10px] ${isMine ? "justify-end text-violet-200" : "text-slate-400"}`}>
+          <div className={`mt-2 flex items-center gap-1.5 text-[10px] ${isMine ? "justify-end text-slate-400" : "text-slate-400"}`}>
             <span>
               {new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </span>
@@ -228,11 +259,7 @@ function MessageBubble({ message, currentUser, onlineUsers, onReply, onEdit, onD
       </div>
 
       {/* My avatar */}
-      {isMine && (
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mb-1">
-          {currentUser?.name?.charAt(0)}
-        </div>
-      )}
+      {isMine && <Avatar name={currentUser?.name} size="w-8 h-8 text-xs" />}
     </div>
   );
 }
@@ -250,10 +277,10 @@ function MessageList({ messages = [], currentUser, onlineUsers, onReply, onEdit,
   if (messages.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-slate-50">
-        <div className="w-20 h-20 rounded-full bg-violet-100 flex items-center justify-center mb-4">
-          <MessageCircle size={36} className="text-violet-500" />
+        <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+          <MessageCircle size={36} style={{ color: "#B45F06" }} />
         </div>
-        <h2 className="text-lg font-bold text-slate-700">No Messages Yet</h2>
+        <h2 className="text-lg font-bold text-slate-700" style={{ fontFamily: "Sora, sans-serif" }}>No Messages Yet</h2>
         <p className="mt-1 text-sm text-slate-400">Start the conversation 🚀</p>
       </div>
     );
@@ -298,9 +325,7 @@ function OnlineUsers({ users = [], selectedChat, setSelectedChat }) {
           className={`flex flex-col items-center flex-shrink-0 transition-transform duration-150 ${selectedChat?.id === user.email ? "scale-110" : "hover:scale-105"}`}
         >
           <div className="relative">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold">
-              {user.name?.charAt(0)}
-            </div>
+            <Avatar name={user.name} size="w-9 h-9 text-sm" />
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white" />
           </div>
           <p className="text-[10px] mt-1 text-slate-500 truncate w-12 text-center">{user.name?.split(" ")[0]}</p>
@@ -317,30 +342,31 @@ function ChatHeader({ selectedChat, typingUser }) {
   const isGroup = selectedChat?.type === "group";
 
   return (
-    <div className="h-16 bg-white border-b border-slate-100 px-5 flex items-center justify-between flex-shrink-0 shadow-sm">
+    <div className="h-16 bg-white border-b border-slate-900/[0.06] px-5 flex items-center justify-between flex-shrink-0 shadow-sm">
       <div className="flex items-center gap-3">
         {isGroup ? (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white font-bold text-base">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-base"
+            style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", color: "#0F172A" }}
+          >
             #
           </div>
         ) : (
           <div className="relative">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white font-bold text-base">
-              {selectedChat?.user?.name?.charAt(0)}
-            </div>
+            <Avatar name={selectedChat?.user?.name} size="w-10 h-10 text-base" />
             <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${selectedChat?.user?.online ? "bg-emerald-400" : "bg-slate-300"}`} />
           </div>
         )}
 
         <div>
-          <h2 className="text-sm font-bold text-slate-800 leading-tight">
+          <h2 className="text-sm font-bold text-slate-800 leading-tight" style={{ fontFamily: "Sora, sans-serif" }}>
             {isGroup ? "General Team Chat" : selectedChat?.user?.name}
           </h2>
           <p className="text-xs leading-tight mt-0.5">
             {isGroup ? (
               <span className="text-slate-400">Everyone can chat here</span>
             ) : typingUser ? (
-              <span className="text-violet-500 font-medium animate-pulse">Typing…</span>
+              <span className="font-medium animate-pulse" style={{ color: "#B45F06" }}>Typing…</span>
             ) : selectedChat?.user?.online ? (
               <span className="text-emerald-500 font-medium">● Online</span>
             ) : (
@@ -379,7 +405,7 @@ function ChatSidebar({ users = [], currentUser, selectedChat, setSelectedChat })
     <div className="w-72 h-full bg-white border-r border-slate-100 flex flex-col flex-shrink-0">
       {/* Header */}
       <div className="px-5 pt-5 pb-4 border-b border-slate-100">
-        <h1 className="text-lg font-extrabold text-slate-800 tracking-tight">Team Chat</h1>
+        <h1 className="text-lg font-extrabold text-slate-800 tracking-tight" style={{ fontFamily: "Sora, sans-serif" }}>Team Chat</h1>
         <p className="text-xs text-slate-400 mt-0.5">Internal communication</p>
 
         <div className="relative mt-4">
@@ -389,7 +415,7 @@ function ChatSidebar({ users = [], currentUser, selectedChat, setSelectedChat })
             placeholder="Search employee…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 py-2.5 text-sm outline-none focus:border-[#F4B400] focus:ring-2 focus:ring-[#F4B400]/15 transition-all"
           />
         </div>
       </div>
@@ -401,18 +427,23 @@ function ChatSidebar({ users = [], currentUser, selectedChat, setSelectedChat })
           onClick={() => setSelectedChat({ type: "group", id: "general" })}
           className={`w-full flex items-center gap-3 px-4 py-3 transition-colors duration-150 ${
             selectedChat?.id === "general"
-              ? "bg-violet-50 border-r-[3px] border-violet-600"
+              ? "bg-amber-50 border-r-[3px] border-[#F4B400]"
               : "hover:bg-slate-50"
           }`}
         >
-          <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-            <Hash size={18} className="text-violet-600" />
+          <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <Hash size={18} style={{ color: "#B45F06" }} />
           </div>
           <div className="flex-1 text-left min-w-0">
             <h3 className="text-sm font-semibold text-slate-800">General</h3>
             <p className="text-xs text-slate-400 truncate">Team Discussion</p>
           </div>
-          <span className="text-[10px] font-bold bg-violet-600 text-white rounded-full px-2 py-0.5 flex-shrink-0">ALL</span>
+          <span
+            className="text-[10px] font-bold rounded-full px-2 py-0.5 flex-shrink-0"
+            style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", color: "#0F172A" }}
+          >
+            ALL
+          </span>
         </button>
 
         {/* Section label */}
@@ -426,14 +457,12 @@ function ChatSidebar({ users = [], currentUser, selectedChat, setSelectedChat })
             onClick={() => setSelectedChat({ type: "private", id: user.email, user })}
             className={`w-full flex items-center gap-3 px-4 py-3 transition-colors duration-150 ${
               selectedChat?.id === user.email
-                ? "bg-violet-50 border-r-[3px] border-violet-600"
+                ? "bg-amber-50 border-r-[3px] border-[#F4B400]"
                 : "hover:bg-slate-50"
             }`}
           >
             <div className="relative flex-shrink-0">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold">
-                {user.name?.charAt(0)}
-              </div>
+              <Avatar name={user.name} size="w-10 h-10 text-sm" />
               <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${user.online ? "bg-emerald-400" : "bg-slate-300"}`} />
             </div>
 
@@ -445,7 +474,7 @@ function ChatSidebar({ users = [], currentUser, selectedChat, setSelectedChat })
             </div>
 
             {user.unread > 0 && (
-              <span className="flex-shrink-0 bg-violet-600 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
+              <span className="flex-shrink-0 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
                 {user.unread}
               </span>
             )}
@@ -466,9 +495,7 @@ function ChatSidebar({ users = [], currentUser, selectedChat, setSelectedChat })
       {/* Footer — current user */}
       <div className="border-t border-slate-100 p-4 bg-slate-50/80">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-            {currentUser?.name?.charAt(0)}
-          </div>
+          <Avatar name={currentUser?.name} size="w-9 h-9 text-sm" />
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold text-slate-800 truncate">{currentUser?.name}</h3>
             <p className="text-xs text-emerald-500 font-medium">● Online</p>
@@ -512,12 +539,12 @@ function ChatInput({ onSend, replyMessage, setReplyMessage, onTyping, onStopTypi
     <div className="bg-white border-t border-slate-100 flex-shrink-0">
       {/* Reply preview */}
       {replyMessage && (
-        <div className="mx-4 mt-3 rounded-xl border-l-4 border-violet-500 bg-violet-50 px-4 py-2.5 flex items-center justify-between gap-3">
+        <div className="mx-4 mt-3 rounded-xl border-l-4 border-[#F4B400] bg-amber-50 px-4 py-2.5 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[11px] font-bold text-violet-600 uppercase tracking-wide">Replying to</p>
+            <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "#B45F06" }}>Replying to</p>
             <p className="text-sm text-slate-600 truncate mt-0.5">{replyMessage.message}</p>
           </div>
-          <button onClick={() => setReplyMessage(null)} className="flex-shrink-0 w-6 h-6 rounded-full hover:bg-violet-100 flex items-center justify-center transition">
+          <button onClick={() => setReplyMessage(null)} className="flex-shrink-0 w-6 h-6 rounded-full hover:bg-amber-100 flex items-center justify-center transition">
             <X size={14} className="text-slate-500" />
           </button>
         </div>
@@ -557,7 +584,7 @@ function ChatInput({ onSend, replyMessage, setReplyMessage, onTyping, onStopTypi
         <div className="relative">
           <button
             onClick={() => setShowEmoji(!showEmoji)}
-            className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-slate-500 hover:text-violet-600"
+            className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-slate-500 hover:text-[#B45F06]"
           >
             <Smile size={20} />
           </button>
@@ -568,14 +595,14 @@ function ChatInput({ onSend, replyMessage, setReplyMessage, onTyping, onStopTypi
 
         <button
           onClick={() => imageRef.current.click()}
-          className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-slate-500 hover:text-violet-600"
+          className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-slate-500 hover:text-[#B45F06]"
         >
           <Image size={20} />
         </button>
 
         <button
           onClick={() => fileRef.current.click()}
-          className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-slate-500 hover:text-violet-600"
+          className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-slate-500 hover:text-[#B45F06]"
         >
           <Paperclip size={20} />
         </button>
@@ -588,23 +615,24 @@ function ChatInput({ onSend, replyMessage, setReplyMessage, onTyping, onStopTypi
           onChange={handleTyping}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
           placeholder="Type a message…"
-          className="flex-1 rounded-full border border-slate-200 bg-slate-50 focus:bg-white px-5 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all"
+          className="flex-1 rounded-full border border-slate-200 bg-slate-50 focus:bg-white px-5 py-2.5 text-sm outline-none focus:border-[#F4B400] focus:ring-2 focus:ring-[#F4B400]/15 transition-all"
         />
 
-        <button className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-slate-500 hover:text-violet-600">
+        <button className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-slate-500 hover:text-[#B45F06]">
           <Mic size={20} />
         </button>
 
         <button
           onClick={sendMessage}
-          className="w-10 h-10 rounded-full bg-violet-600 hover:bg-violet-700 active:scale-95 text-white flex items-center justify-center shadow-md shadow-violet-200 transition-all duration-150"
+          className="w-10 h-10 rounded-full active:scale-95 flex items-center justify-center shadow-md transition-all duration-150"
+          style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", color: "#0F172A", boxShadow: "0 6px 16px -4px rgba(244,180,0,0.5)" }}
         >
           <Send size={17} />
         </button>
       </div>
 
       {text.trim() && (
-        <p className="px-5 pb-2 text-[11px] text-violet-400 font-medium animate-pulse">Typing…</p>
+        <p className="px-5 pb-2 text-[11px] font-medium animate-pulse" style={{ color: "#B45F06" }}>Typing…</p>
       )}
     </div>
   );
@@ -627,6 +655,10 @@ export default function Chat() {
   };
 
   const [selectedChat, setSelectedChat] = useState({ type: "group", id: "general" });
+
+  useEffect(() => {
+    ensureFonts();
+  }, []);
 
   // Socket handlers close over stale state if we don't track the
   // current selection in a ref, since the subscription effect below
@@ -766,7 +798,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="h-screen flex bg-slate-100 overflow-hidden">
+    <div className="h-screen flex overflow-hidden" style={{ background: "#F8FAFC", fontFamily: "Inter, ui-sans-serif, system-ui" }}>
       {/* Fixed nav sidebar — renders at left:0, width ~280px */}
       {currentUser.role === "admin" ? <Sidebar /> : <EmployeeSidebar />}
 

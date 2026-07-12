@@ -8,6 +8,19 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+function Avatar({ name = "?" }) {
+  const initials = (name || "?").charAt(0).toUpperCase();
+  const hue = (name.charCodeAt(0) * 47) % 360;
+  return (
+    <div
+      className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 mb-1"
+      style={{ background: `linear-gradient(135deg, hsl(${hue},70%,55%), hsl(${hue},70%,40%))` }}
+    >
+      {initials}
+    </div>
+  );
+}
+
 export default function MessageBubbleWidget({
   message,
   currentUser,
@@ -29,13 +42,7 @@ export default function MessageBubbleWidget({
     >
       {/* Sender Avatar */}
 
-      {!isMine && (
-        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 mb-1">
-          {message.senderName
-            ?.charAt(0)
-            ?.toUpperCase()}
-        </div>
-      )}
+      {!isMine && <Avatar name={message.senderName} />}
 
       <div
         className={`relative flex flex-col max-w-[78%] group ${
@@ -47,7 +54,7 @@ export default function MessageBubbleWidget({
         {/* Sender Name */}
 
         {!isMine && (
-          <span className="text-[10px] font-semibold text-violet-400 mb-1 ml-1">
+          <span className="text-[10px] font-semibold mb-1 ml-1" style={{ color: "#F4B400" }}>
             {message.senderName}
           </span>
         )}
@@ -56,13 +63,14 @@ export default function MessageBubbleWidget({
 
         {message.replyTo && (
           <div
-            className={`rounded-lg px-2.5 py-1.5 mb-1 border-l-[3px] border-violet-400 text-[10px] ${
+            className={`rounded-lg px-2.5 py-1.5 mb-1 border-l-[3px] text-[10px] ${
               isMine
-                ? "bg-indigo-700/40"
+                ? "bg-black/20"
                 : "bg-slate-700/60"
             }`}
+            style={{ borderColor: "#F4B400" }}
           >
-            <p className="font-semibold text-violet-300">
+            <p className="font-semibold" style={{ color: "#F4B400" }}>
               Reply
             </p>
 
@@ -77,9 +85,10 @@ export default function MessageBubbleWidget({
         <div
           className={`rounded-2xl px-3 py-2 shadow-sm relative ${
             isMine
-              ? "bg-gradient-to-br from-violet-600 to-indigo-600 text-white rounded-br-sm"
+              ? "text-white rounded-br-sm"
               : "bg-slate-700/80 text-slate-100 rounded-bl-sm"
           }`}
+          style={isMine ? { background: "linear-gradient(160deg, #1E293B, #0F172A)" } : {}}
         >
           {/* Text */}
 
@@ -106,11 +115,8 @@ export default function MessageBubbleWidget({
               href={message.file}
               target="_blank"
               rel="noreferrer"
-              className={`mt-2 flex items-center gap-1.5 text-[11px] font-medium ${
-                isMine
-                  ? "text-violet-200"
-                  : "text-violet-400"
-              }`}
+              className="mt-2 flex items-center gap-1.5 text-[11px] font-medium"
+              style={{ color: isMine ? "#FCD34D" : "#F4B400" }}
             >
               <Download size={12} />
               Download File
@@ -122,7 +128,7 @@ export default function MessageBubbleWidget({
           <div
             className={`mt-1.5 flex items-center gap-1 text-[10px] ${
               isMine
-                ? "justify-end text-violet-200/70"
+                ? "justify-end text-slate-400"
                 : "text-slate-500"
             }`}
           >
@@ -143,7 +149,7 @@ export default function MessageBubbleWidget({
 
             {isMine &&
               (message.seenBy?.length ? (
-                <CheckCheck size={11} />
+                <CheckCheck size={11} className="text-sky-400" />
               ) : (
                 <Check size={11} />
               ))}
@@ -226,13 +232,7 @@ export default function MessageBubbleWidget({
       </div>
 
       {/* My Avatar */}
-      {isMine && (
-        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 mb-1">
-          {currentUser?.name
-            ?.charAt(0)
-            ?.toUpperCase()}
-        </div>
-      )}
+      {isMine && <Avatar name={currentUser?.name} />}
     </div>
   );
 }

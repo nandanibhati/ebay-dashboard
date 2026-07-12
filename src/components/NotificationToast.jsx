@@ -22,10 +22,15 @@ export default function NotificationToast({
     <div className="fixed bottom-24 right-6 z-[9998] animate-slide-up">
       <div
         onClick={onClick}
-        className="cursor-pointer bg-white/90 backdrop-blur-xl border border-slate-100 rounded-2xl shadow-2xl px-4 py-3.5 flex items-start gap-3 w-[300px] hover:shadow-violet-300/20 transition-all"
+        className="cursor-pointer bg-white/90 backdrop-blur-xl border border-slate-100 rounded-2xl shadow-2xl px-4 py-3.5 flex items-start gap-3 w-[300px] hover:shadow-[#F4B400]/20 transition-all"
       >
         {/* Avatar */}
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow">
+        <div
+          className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 shadow"
+          style={{
+            background: `linear-gradient(135deg, hsl(${(toast.senderName?.charCodeAt(0) || 0) * 47 % 360},70%,55%), hsl(${(toast.senderName?.charCodeAt(0) || 0) * 47 % 360},70%,40%))`,
+          }}
+        >
           <span className="text-white text-sm font-bold">
             {toast.senderName?.charAt(0)?.toUpperCase()}
           </span>

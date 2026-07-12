@@ -91,18 +91,18 @@ export default function MessageInput({
       {/* Reply Preview */}
 
       {replyMessage && (
-        <div className="mx-3 mt-2.5 px-3 py-2 rounded-xl bg-violet-600/20 border-l-[3px] border-violet-500 flex items-center justify-between gap-2">
+        <div className="mx-3 mt-2.5 px-3 py-2 rounded-xl bg-[#F4B400]/15 border-l-[3px] border-[#F4B400] flex items-center justify-between gap-2">
 
           <div className="min-w-0">
 
-            <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wide">
+            <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "#F4B400" }}>
               Replying
             </p>
 
             <p className="text-[11px] text-slate-400 truncate mt-0.5">
-              {replyMessage.message
-               (replyMessage.image && "🖼️ Photo") ||
-    (replyMessage.file && "📎 File")}
+              {replyMessage.message ||
+                (replyMessage.image && "🖼️ Photo") ||
+                (replyMessage.file && "📎 File")}
             </p>
 
           </div>
@@ -189,8 +189,8 @@ export default function MessageInput({
           onClick={() => setShowEmoji(!showEmoji)}
           className={`w-8 h-8 rounded-full flex items-center justify-center transition ${
             showEmoji
-              ? "bg-violet-600/30 text-violet-400"
-              : "hover:bg-white/10 text-slate-400 hover:text-violet-400"
+              ? "bg-[#F4B400]/20 text-[#F4B400]"
+              : "hover:bg-white/10 text-slate-400 hover:text-[#F4B400]"
           }`}
         >
           <Smile size={17} />
@@ -199,7 +199,7 @@ export default function MessageInput({
         {/* Image */}
         <button
           onClick={() => imageRef.current?.click()}
-          className="w-8 h-8 rounded-full hover:bg-white/10 text-slate-400 hover:text-violet-400 flex items-center justify-center transition"
+          className="w-8 h-8 rounded-full hover:bg-white/10 text-slate-400 hover:text-[#F4B400] flex items-center justify-center transition"
         >
           <Image size={17} />
         </button>
@@ -207,7 +207,7 @@ export default function MessageInput({
         {/* File */}
         <button
           onClick={() => fileRef.current?.click()}
-          className="w-8 h-8 rounded-full hover:bg-white/10 text-slate-400 hover:text-violet-400 flex items-center justify-center transition"
+          className="w-8 h-8 rounded-full hover:bg-white/10 text-slate-400 hover:text-[#F4B400] flex items-center justify-center transition"
         >
           <Paperclip size={17} />
         </button>
@@ -233,12 +233,12 @@ export default function MessageInput({
           onChange={handleTyping}
           onKeyDown={handleKeyDown}
           placeholder="Type a message..."
-          className="flex-1 bg-slate-800/60 border border-white/10 text-slate-100 placeholder-slate-500 text-[13px] rounded-xl px-3.5 py-2 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30"
+          className="flex-1 bg-slate-800/60 border border-white/10 text-slate-100 placeholder-slate-500 text-[13px] rounded-xl px-3.5 py-2 outline-none focus:border-[#F4B400] focus:ring-1 focus:ring-[#F4B400]/30"
         />
 
         {/* Voice (UI only for now) */}
         <button
-          className="w-8 h-8 rounded-full hover:bg-white/10 text-slate-400 hover:text-violet-400 flex items-center justify-center transition"
+          className="w-8 h-8 rounded-full hover:bg-white/10 text-slate-400 hover:text-[#F4B400] flex items-center justify-center transition"
         >
           <Mic size={17} />
         </button>
@@ -246,7 +246,8 @@ export default function MessageInput({
         {/* Send */}
         <button
           onClick={send}
-          className="w-9 h-9 rounded-xl bg-violet-600 hover:bg-violet-500 active:scale-95 text-white flex items-center justify-center shadow-lg transition"
+          className="w-9 h-9 rounded-xl active:scale-95 flex items-center justify-center shadow-lg transition"
+          style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", color: "#0F172A" }}
         >
           <Send size={16} />
         </button>
@@ -254,7 +255,7 @@ export default function MessageInput({
 
       {/* Typing Text */}
       {text.trim() && (
-        <p className="px-4 pb-2 text-[10px] text-violet-400/70 animate-pulse">
+        <p className="px-4 pb-2 text-[10px] animate-pulse" style={{ color: "#F4B400" }}>
           Typing...
         </p>
       )}

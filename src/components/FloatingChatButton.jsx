@@ -1,17 +1,34 @@
 import { MessageCircle, X } from "lucide-react";
+import useDraggablePosition from "../hooks/useDraggablePosition";
+
+const BUTTON_SIZE = { width: 56, height: 56 };
 
 export default function FloatingChatButton({
   isOpen,
   onClick,
   unreadCount,
 }) {
+  const { position, handlePointerDown, handlePointerMove, handlePointerUp } = useDraggablePosition(
+    "chatBubblePosition",
+    () => ({ left: window.innerWidth - 56 - 24, top: window.innerHeight - 56 - 24 }),
+    BUTTON_SIZE
+  );
+
+  if (!position) return null;
+
   return (
-    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-2">
+    <div
+      className="fixed z-[9999] flex flex-col items-end gap-2"
+      style={{ left: position.left, top: position.top }}
+    >
       {/* Toast Preview */}
       {!isOpen && unreadCount > 0 && (
         <div className="animate-slide-up bg-white border border-slate-100 rounded-2xl shadow-xl px-4 py-3 flex items-center gap-3 max-w-[240px]">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-            <MessageCircle size={15} className="text-white" />
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)" }}
+          >
+            <MessageCircle size={15} style={{ color: "#0F172A" }} />
           </div>
 
           <div className="min-w-0">
@@ -26,21 +43,22 @@ export default function FloatingChatButton({
         </div>
       )}
 
-      {/* Floating Button */}
+      {/* Floating Button — drag anywhere on screen, click (no drag) to open */}
       <button
-        onClick={onClick}
-        className={`relative w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 active:scale-95 ${
-          isOpen
-            ? "bg-slate-800 hover:bg-slate-700"
-            : "bg-gradient-to-br from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={() => handlePointerUp(onClick)}
+        className={`relative w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-colors duration-300 active:scale-95 touch-none cursor-grab active:cursor-grabbing ${
+          isOpen ? "bg-slate-800 hover:bg-slate-700" : ""
         }`}
+        style={!isOpen ? { background: "linear-gradient(135deg, #F4B400, #F59E0B)" } : {}}
       >
         {/* Pulse */}
         {!isOpen && unreadCount > 0 && (
           <>
-            <span className="absolute inset-0 rounded-full bg-violet-500 opacity-30 animate-ping" />
+            <span className="absolute inset-0 rounded-full bg-[#F4B400] opacity-30 animate-ping" />
             <span
-              className="absolute inset-0 rounded-full bg-violet-400 opacity-20 animate-ping"
+              className="absolute inset-0 rounded-full bg-[#F59E0B] opacity-20 animate-ping"
               style={{ animationDelay: "0.3s" }}
             />
           </>
@@ -49,7 +67,7 @@ export default function FloatingChatButton({
         {isOpen ? (
           <X size={22} className="text-white" />
         ) : (
-          <MessageCircle size={22} className="text-white" />
+          <MessageCircle size={22} style={{ color: "#0F172A" }} />
         )}
 
         {/* Badge */}

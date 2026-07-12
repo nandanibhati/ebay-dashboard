@@ -6,6 +6,24 @@ const { protect } = require("../middleware/auth");
 
 router.use(protect);
 
+// The server (Render) runs in UTC regardless of where the team actually is,
+// so "today" and "now" must be pinned to the business's real timezone
+// (India) or punch times end up hours off from the employee's wall clock.
+const BUSINESS_TIMEZONE = "Asia/Kolkata";
+
+function getTodayIST() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: BUSINESS_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function getTimeIST() {
+  return new Date().toLocaleTimeString("en-US", { timeZone: BUSINESS_TIMEZONE });
+}
+
 // Punch In
 router.post("/punch-in", async (req, res) => {
   try {
@@ -15,9 +33,7 @@ router.post("/punch-in", async (req, res) => {
       employeeEmail,
     } = req.body;
 
-    const today = new Date()
-      .toISOString()
-      .split("T")[0];
+    const today = getTodayIST();
 
     const existingAttendance =
       await Attendance.findOne({
@@ -37,7 +53,8 @@ router.post("/punch-in", async (req, res) => {
       employeeName,
       employeeEmail,
       date: today,
-      punchIn: new Date().toLocaleTimeString(),
+      punchIn: getTimeIST(),
+      punchInAt: new Date(),
     });
 
     await attendance.save();
@@ -60,9 +77,7 @@ router.post("/punch-out", async (req, res) => {
   try {
     const { employeeEmail } = req.body;
 
-    const today = new Date()
-      .toISOString()
-      .split("T")[0];
+    const today = getTodayIST();
 
     const attendance =
       await Attendance.findOne({
@@ -83,18 +98,16 @@ router.post("/punch-out", async (req, res) => {
   });
 }
 
-    attendance.punchOut =
-      new Date().toLocaleTimeString();
-
-    const punchInDate = new Date(
-      `${today} ${attendance.punchIn}`
-    );
-
     const punchOutDate = new Date();
 
+    attendance.punchOut = getTimeIST();
+    attendance.punchOutAt = punchOutDate;
+
+    const punchInDate = attendance.punchInAt || new Date(`${today} ${attendance.punchIn}`);
+
     const breakMs = (attendance.breaks || []).reduce((sum, b) => {
-      if (!b.start || !b.end) return sum;
-      return sum + (new Date(`${today} ${b.end}`) - new Date(`${today} ${b.start}`));
+      if (!b.startAt || !b.endAt) return sum;
+      return sum + (b.endAt - b.startAt);
     }, 0);
 
     const totalHours =
@@ -123,7 +136,7 @@ router.post("/punch-out", async (req, res) => {
 router.post("/break-start", async (req, res) => {
   try {
     const { employeeEmail } = req.body;
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayIST();
 
     const attendance = await Attendance.findOne({
       employeeEmail,
@@ -151,7 +164,7 @@ router.post("/break-start", async (req, res) => {
       });
     }
 
-    attendance.breaks.push({ start: new Date().toLocaleTimeString() });
+    attendance.breaks.push({ start: getTimeIST(), startAt: new Date() });
     attendance.onBreak = true;
 
     await attendance.save();
@@ -173,7 +186,7 @@ router.post("/break-start", async (req, res) => {
 router.post("/break-end", async (req, res) => {
   try {
     const { employeeEmail } = req.body;
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayIST();
 
     const attendance = await Attendance.findOne({
       employeeEmail,
@@ -189,7 +202,8 @@ router.post("/break-end", async (req, res) => {
 
     const openBreak = [...attendance.breaks].reverse().find((b) => !b.end);
     if (openBreak) {
-      openBreak.end = new Date().toLocaleTimeString();
+      openBreak.end = getTimeIST();
+      openBreak.endAt = new Date();
     }
     attendance.onBreak = false;
 
@@ -211,7 +225,7 @@ router.post("/break-end", async (req, res) => {
 // Today's attendance status for one employee (drives the punch/break buttons)
 router.get("/today/:email", async (req, res) => {
   try {
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayIST();
 
     const attendance = await Attendance.findOne({
       employeeEmail: req.params.email,

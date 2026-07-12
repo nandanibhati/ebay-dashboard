@@ -416,7 +416,7 @@ export default function Orders() {
             <table className="min-w-[1400px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/60">
-                  {["Site", "Date", "Order ID", "SKU", "Qty", "Unit Price", "Cost", "Revenue", "Tracking", "Notes", "Status", "Courier", "Employee", "Actions"].map((h) => (
+                  {["Site", "Date", "Order ID", "SKU", "Qty", "Unit Price", "Cost", "Revenue", "Profit", "Tracking", "Notes", "Status", "Courier", "Employee", "Actions"].map((h) => (
                     <th key={h} className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
@@ -427,7 +427,7 @@ export default function Orders() {
               <tbody className="divide-y divide-slate-50">
                 {filteredOrders.length === 0 && (
                   <tr>
-                    <td colSpan="14" className="py-20 text-center">
+                    <td colSpan="15" className="py-20 text-center">
                       <div className="flex flex-col items-center gap-3 text-slate-400">
                         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         <p className="text-sm font-medium">No orders match your filters</p>
@@ -461,6 +461,9 @@ export default function Orders() {
                       <td className="px-4 py-3 text-sm text-slate-600" style={{ fontFamily: "'JetBrains Mono', monospace" }}>£{Number(order.sellingPrice || 0).toFixed(2)}</td>
                       <td className="px-4 py-3 text-sm text-slate-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>£{Number(order.costPrice || 0).toFixed(2)}</td>
                       <td className="px-4 py-3 text-sm font-bold text-slate-800" style={{ fontFamily: "'JetBrains Mono', monospace" }}>£{Number(order.revenue || 0).toFixed(2)}</td>
+                      <td className={`px-4 py-3 text-sm font-bold ${Number(order.profit || 0) >= 0 ? "text-emerald-600" : "text-red-500"}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        £{order.status === "Hold" ? "0.00" : Number(order.profit || 0).toFixed(2)}
+                      </td>
                       <td className="px-4 py-3 max-w-[160px] truncate text-xs text-slate-400" style={{ fontFamily: "'JetBrains Mono', monospace" }} title={order.trackingNo}>
                         {order.trackingNo || <span className="opacity-30">—</span>}
                       </td>

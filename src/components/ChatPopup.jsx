@@ -3,6 +3,9 @@ import { Minus, X, Hash } from "lucide-react";
 import ChatSidebarWidget from "./ChatSidebarWidget";
 import ChatMessages from "./ChatMessages";
 import MessageInput from "./MessageInput";
+import useDraggablePosition from "../hooks/useDraggablePosition";
+
+const PANEL_SIZE = { width: 380, height: 620 };
 
 export default function ChatPopup({
   isOpen,
@@ -27,20 +30,24 @@ export default function ChatPopup({
   onStopTyping,
   onDelete,
 }) {
-  if (!isOpen) return null;
+  const { position, handlePointerDown, handlePointerMove, handlePointerUp } = useDraggablePosition(
+    "chatPopupPosition",
+    () => ({
+      left: window.innerWidth - PANEL_SIZE.width - 24,
+      top: window.innerHeight - PANEL_SIZE.height - 96,
+    }),
+    PANEL_SIZE
+  );
+
+  if (!isOpen || !position) return null;
 
   const isGroup =
     selectedChat?.type === "group";
 
   return (
     <div
-      className={`fixed bottom-24 right-6 z-[9998] transition-all duration-300 origin-bottom-right
-      ${
-        isOpen
-          ? "opacity-100 scale-100"
-          : "opacity-0 scale-95 pointer-events-none"
-      }`}
-      style={{ width: 380 }}
+      className="fixed z-[9998] transition-opacity duration-300"
+      style={{ width: PANEL_SIZE.width, left: position.left, top: position.top }}
     >
       <div
         className="rounded-2xl overflow-hidden flex flex-col border border-white/10"
@@ -61,19 +68,22 @@ export default function ChatPopup({
           className="flex items-center justify-between px-4 py-3 border-b border-white/10"
           style={{
             background:
-              "rgba(109,40,217,.15)",
+              "rgba(244,180,0,.12)",
           }}
         >
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center">
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)" }}
+            >
 
               {isGroup ? (
                 <Hash
                   size={15}
-                  className="text-white"
+                  style={{ color: "#0F172A" }}
                 />
               ) : (
-                <span className="text-white text-sm font-bold">
+                <span className="text-sm font-bold" style={{ color: "#0F172A" }}>
                   {selectedChat?.user?.name
                     ?.charAt(0)
                     ?.toUpperCase()}

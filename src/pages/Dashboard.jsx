@@ -4,10 +4,11 @@ import { useNavigate } from "react-router-dom";
 import {
   TrendingUp, ShoppingBag, DollarSign, BarChart2,
   ArrowUpRight, ArrowDownRight, Clock, Search, ChevronDown,
-  Menu, X, Plus, PieChart, Boxes, Layers, User,
+  Menu, X, Plus, PieChart, Boxes, Layers, User, Wallet,
 } from "lucide-react";
 import { apiFetch } from "../api";
 import NotificationBell from "../components/NotificationBell";
+import { isSalaryDueToday } from "../utils/salary";
 
 /* Design tokens - BuildMaster reference palette
    Display face: Sora  Body face: Inter  Numeral face: JetBrains Mono
@@ -353,13 +354,6 @@ export default function Dashboard() {
     0
   );
 
-  // Overall margin has to be revenue-weighted (totalProfit / totalRevenue).
-  // Averaging each order's own margin % gives every order equal weight
-  // regardless of size, so a handful of tiny loss-making orders can drag
-  // the "average" deep negative even while the store is solidly profitable.
-  const avgMargin =
-    totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(2) : "0.00";
-
   const totalPurchases = purchases.reduce(
     (sum, item) => sum + Number(item.cost || 0),
     0
@@ -370,7 +364,15 @@ export default function Dashboard() {
     0
   );
 
+  // Bottom-line profit after inventory purchases and tool subscriptions
+  // are deducted too, not just per-order costs.
   const netProfit = totalProfit - totalPurchases - totalSubscriptions;
+
+  // Margin is revenue-weighted and based on the same bottom-line profit
+  // (after purchases/subscriptions) so it matches what "Net Profit" shows,
+  // not just the pre-overhead order-level number.
+  const avgMargin =
+    totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(2) : "0.00";
 
   // Real month-over-month trends (this calendar month vs the previous one),
   // computed from each order's own date instead of hardcoded placeholder %s.
@@ -418,6 +420,8 @@ export default function Dashboard() {
     { title: "Subscriptions", value: `£${totalSubscriptions.toFixed(2)}`, icon: DollarSign, trend: 0, trendLabel: "monthly tools cost", color: "#2563EB" },
     { title: "Net Profit", value: `£${netProfit.toFixed(2)}`, icon: TrendingUp, trend: 0, trendLabel: "after expenses", color: "#22C55E" },
   ];
+
+  const employeesSalaryDueToday = employees.filter((e) => isSalaryDueToday(e));
 
   const query = searchQuery.trim().toLowerCase();
   const matchedOrders = query
@@ -627,6 +631,37 @@ export default function Dashboard() {
               <HeroScene revenue={totalRevenue} margin={avgMargin} />
             </div>
           </Card>
+
+          {/* ── Salary due today ── */}
+          {employeesSalaryDueToday.length > 0 && (
+            <Card
+              hover={false}
+              className="p-5 flex items-center gap-4"
+              style={{ background: "linear-gradient(160deg, rgba(244,180,0,0.10), rgba(255,255,255,0.9))" }}
+            >
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)" }}
+              >
+                <Wallet size={20} style={{ color: "#0F172A" }} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-slate-800" style={{ fontFamily: "Sora, sans-serif" }}>
+                  Today is salary day for {employeesSalaryDueToday.length === 1 ? employeesSalaryDueToday[0].name : `${employeesSalaryDueToday.length} employees`}
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5 truncate">
+                  {employeesSalaryDueToday.map((e) => e.name).join(", ")} — not yet marked as paid this month
+                </p>
+              </div>
+              <button
+                onClick={() => navigate("/admin-salary")}
+                className="ml-auto flex-shrink-0 text-xs font-bold px-4 py-2.5 rounded-xl transition-all"
+                style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", color: "#0F172A" }}
+              >
+                Go to Salary
+              </button>
+            </Card>
+          )}
 
           {/* ── Stat cards ── */}
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-4">

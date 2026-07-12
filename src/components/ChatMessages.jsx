@@ -33,10 +33,10 @@ export default function ChatMessages({
   if (uniqueMessages.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-3">
-        <div className="w-14 h-14 rounded-2xl bg-violet-600/20 flex items-center justify-center">
+        <div className="w-14 h-14 rounded-2xl bg-[#F4B400]/20 flex items-center justify-center">
           <MessageCircle
             size={26}
-            className="text-violet-400"
+            style={{ color: "#F4B400" }}
           />
         </div>
 
@@ -78,7 +78,7 @@ export default function ChatMessages({
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
-                  className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce"
+                  className="w-1.5 h-1.5 rounded-full bg-[#F4B400] animate-bounce"
                   style={{
                     animationDelay: `${i * 0.15}s`,
                   }}

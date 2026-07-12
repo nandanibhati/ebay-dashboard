@@ -11,10 +11,19 @@ const attendanceSchema = new mongoose.Schema(
     punchIn: String,
     punchOut: String,
 
+    // Real timestamps (unambiguous instants) used for duration math.
+    // punchIn/punchOut above are pretty display strings only — re-parsing
+    // a formatted time string is timezone-fragile, so hours worked must be
+    // computed from these instead.
+    punchInAt: Date,
+    punchOutAt: Date,
+
     breaks: [
       {
         start: String,
         end: String,
+        startAt: Date,
+        endAt: Date,
       },
     ],
     onBreak: {
