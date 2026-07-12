@@ -11,6 +11,17 @@ const attendanceSchema = new mongoose.Schema(
     punchIn: String,
     punchOut: String,
 
+    breaks: [
+      {
+        start: String,
+        end: String,
+      },
+    ],
+    onBreak: {
+      type: Boolean,
+      default: false,
+    },
+
     totalHours: {
       type: Number,
       default: 0,

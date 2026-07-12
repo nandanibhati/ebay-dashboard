@@ -238,6 +238,12 @@ export default function FloatingChat() {
       handleNewMessage
     );
 
+    const handleMessageDeleted = ({ messageId }) => {
+      setMessages((prev) => prev.filter((m) => m._id !== messageId));
+    };
+
+    socket.on("messageDeleted", handleMessageDeleted);
+
     return () => {
       socket.off(
         "onlineUsers",
@@ -258,6 +264,8 @@ export default function FloatingChat() {
         "newMessage",
         handleNewMessage
       );
+
+      socket.off("messageDeleted", handleMessageDeleted);
     };
   }, [currentUser]);
     // Load Messages
@@ -367,14 +375,16 @@ const handleSend = useCallback(
   // Delete
   const handleDelete = useCallback(
     async (msg) => {
+      setMessages((prev) =>
+        prev.filter((m) => m._id !== msg._id)
+      );
+
       try {
         await apiFetch(`/api/chat/${msg._id}`, {
           method: "DELETE",
         });
 
-        setMessages((prev) =>
-          prev.filter((m) => m._id !== msg._id)
-        );
+        socket.emit("deleteMessage", { messageId: msg._id });
       } catch (err) {
         console.error(err);
       }

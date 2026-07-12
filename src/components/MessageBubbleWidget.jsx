@@ -194,7 +194,7 @@ export default function MessageBubbleWidget({
               <div
                 className={`absolute bottom-full mb-1 ${
                   isMine ? "right-0" : "left-0"
-                } w-28 bg-slate-800 border border-white/10 rounded-xl shadow-xl overflow-hidden z-50`}
+                } w-36 bg-slate-800 border border-white/10 rounded-xl shadow-xl overflow-hidden z-50`}
               >
                 <button
                   onClick={() => {
@@ -216,7 +216,7 @@ export default function MessageBubbleWidget({
                     className="w-full flex items-center gap-2 px-3 py-2 text-[11px] text-red-400 hover:bg-red-500/20 transition"
                   >
                     <Trash2 size={11} />
-                    Delete
+                    Delete for Everyone
                   </button>
                 )}
               </div>

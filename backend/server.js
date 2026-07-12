@@ -113,6 +113,17 @@ socket.on("sendMessage", (message) => {
     socket.broadcast.emit("taskAssigned", data);
   });
 
+  // A message was deleted (for everyone) — tell other open chat windows
+  // to drop it live instead of waiting for their next reload.
+  socket.on("deleteMessage", (data) => {
+    socket.broadcast.emit("messageDeleted", data);
+  });
+
+  // A message was marked seen — relay so the sender's ticks update live.
+  socket.on("messageSeen", (data) => {
+    socket.broadcast.emit("messageSeenUpdate", data);
+  });
+
   // Seen
   socket.on("seen", (data) => {
     io.emit("messageSeen", data);

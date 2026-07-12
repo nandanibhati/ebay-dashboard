@@ -39,4 +39,8 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Matches the sort used by GET /api/orders — without it, Mongo has to load
+// and sort every document in memory on every request.
+orderSchema.index({ date: -1, createdAt: -1 });
+
 module.exports = mongoose.model("Order", orderSchema);

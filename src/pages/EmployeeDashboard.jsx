@@ -1,6 +1,6 @@
 import EmployeeSidebar from "../components/EmployeeSidebar";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "../api";
 import NotificationBell from "../components/NotificationBell";
 import {
@@ -8,6 +8,7 @@ import {
   Wallet, Search, ChevronDown, ArrowUpRight, Sparkles,
   Clock, CheckCircle2, XCircle, AlertCircle, Menu, X,
   ClipboardList, CalendarDays, AlertTriangle, TrendingUp, BarChart3, PieChart,
+  Coffee, Play,
 } from "lucide-react";
 
 /* Design tokens - BuildMaster reference palette
@@ -271,13 +272,25 @@ export default function EmployeeDashboard() {
   const [leaveBalance, setLeaveBalance] = useState(2);
   const [tasks, setTasks] = useState([]);
   const [salary, setSalary] = useState({ basicSalary: 0, totalHours: "0.00", salary: "0.00" });
+  const [todayAttendance, setTodayAttendance] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false); // UI-only drawer state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef(null);
 
   const employeeName = localStorage.getItem("employeeName") || "Employee";
   const navigate = useNavigate();
 
   useEffect(() => {
     ensureFonts();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) setSearchOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -320,7 +333,20 @@ export default function EmployeeDashboard() {
         }
       })
       .catch((err) => console.log(err));
+
+    fetchTodayAttendance();
   }, []);
+
+  const fetchTodayAttendance = async () => {
+    try {
+      const email = localStorage.getItem("employeeEmail");
+      const res = await apiFetch(`/api/attendance/today/${email}`);
+      const data = await res.json();
+      if (data.success) setTodayAttendance(data.attendance);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   const handlePunchIn = async () => {
     try {
@@ -334,6 +360,7 @@ export default function EmployeeDashboard() {
       });
       const data = await response.json();
       alert(data.message);
+      fetchTodayAttendance();
     } catch (error) {
       console.log(error);
       alert("Punch In Failed");
@@ -350,9 +377,40 @@ export default function EmployeeDashboard() {
       });
       const data = await response.json();
       alert(data.message);
+      fetchTodayAttendance();
     } catch (error) {
       console.log(error);
       alert("Punch Out Failed");
+    }
+  };
+
+  const handleBreakStart = async () => {
+    try {
+      const response = await apiFetch("/api/attendance/break-start", {
+        method: "POST",
+        body: { employeeEmail: localStorage.getItem("employeeEmail") },
+      });
+      const data = await response.json();
+      if (!data.success) alert(data.message);
+      fetchTodayAttendance();
+    } catch (error) {
+      console.log(error);
+      alert("Failed to start break");
+    }
+  };
+
+  const handleBreakEnd = async () => {
+    try {
+      const response = await apiFetch("/api/attendance/break-end", {
+        method: "POST",
+        body: { employeeEmail: localStorage.getItem("employeeEmail") },
+      });
+      const data = await response.json();
+      if (!data.success) alert(data.message);
+      fetchTodayAttendance();
+    } catch (error) {
+      console.log(error);
+      alert("Failed to end break");
     }
   };
 
@@ -378,6 +436,21 @@ export default function EmployeeDashboard() {
   const overdueCount = openTasks.filter(
     (t) => t.dueDate && String(t.dueDate).slice(0, 10) < todayStr
   ).length;
+
+  const searchQueryLower = searchQuery.trim().toLowerCase();
+  const matchedTasks = searchQueryLower
+    ? tasks.filter((t) => t.title?.toLowerCase().includes(searchQueryLower)).slice(0, 5)
+    : [];
+  const matchedLeaves = searchQueryLower
+    ? leaves
+        .filter(
+          (l) =>
+            l.leaveType?.toLowerCase().includes(searchQueryLower) ||
+            l.reason?.toLowerCase().includes(searchQueryLower)
+        )
+        .slice(0, 5)
+    : [];
+  const hasSearchResults = matchedTasks.length > 0 || matchedLeaves.length > 0;
 
   /* ── UI only ─────────────────────────────────────────────────────────── */
   const initials = employeeName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
@@ -424,13 +497,71 @@ export default function EmployeeDashboard() {
             <Menu size={18} />
           </button>
 
-          <div className="hidden md:flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-900/[0.03] border border-slate-900/[0.07] w-80 text-slate-400 focus-within:ring-1 focus-within:ring-[#F4B400]/50 focus-within:border-[#F4B400]/40 transition-all">
-            <Search size={15} />
-            <input
-              className="bg-transparent outline-none text-sm placeholder:text-slate-400 text-slate-700 w-full"
-              placeholder="Search…"
-              readOnly
-            />
+          <div className="relative hidden md:block w-80" ref={searchRef}>
+            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-900/[0.03] border border-slate-900/[0.07] text-slate-400 focus-within:ring-1 focus-within:ring-[#F4B400]/50 focus-within:border-[#F4B400]/40 transition-all">
+              <Search size={15} />
+              <input
+                className="bg-transparent outline-none text-sm placeholder:text-slate-400 text-slate-700 w-full"
+                placeholder="Search your tasks, leaves…"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setSearchOpen(true);
+                }}
+                onFocus={() => setSearchOpen(true)}
+              />
+            </div>
+
+            {searchOpen && searchQueryLower && (
+              <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/40 z-50 max-h-96 overflow-y-auto">
+                {!hasSearchResults ? (
+                  <div className="py-8 text-center text-sm text-slate-400">No matches for "{searchQuery}"</div>
+                ) : (
+                  <>
+                    {matchedTasks.length > 0 && (
+                      <div className="py-2">
+                        <p className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Tasks</p>
+                        {matchedTasks.map((t) => (
+                          <button
+                            key={t._id}
+                            onClick={() => {
+                              setSearchOpen(false);
+                              setSearchQuery("");
+                              navigate("/employee-tasks");
+                            }}
+                            className="w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors"
+                          >
+                            <ClipboardList size={14} className="text-blue-500 flex-shrink-0" />
+                            <span className="text-sm text-slate-700 truncate">{t.title}</span>
+                            <span className="text-xs text-slate-400 ml-auto flex-shrink-0">{t.status}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {matchedLeaves.length > 0 && (
+                      <div className="py-2 border-t border-slate-100">
+                        <p className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Leaves</p>
+                        {matchedLeaves.map((l) => (
+                          <button
+                            key={l._id}
+                            onClick={() => {
+                              setSearchOpen(false);
+                              setSearchQuery("");
+                              navigate("/leaves");
+                            }}
+                            className="w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors"
+                          >
+                            <CalendarDays size={14} className="text-amber-500 flex-shrink-0" />
+                            <span className="text-sm text-slate-700 truncate">{l.leaveType}</span>
+                            <span className="text-xs text-slate-400 ml-auto flex-shrink-0">{l.status}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="ml-auto flex items-center gap-2">
@@ -563,15 +694,30 @@ export default function EmployeeDashboard() {
                 <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-emerald-50/70 border border-emerald-900/[0.06] relative overflow-hidden">
                   <span className="relative w-8 h-8 shrink-0 flex items-center justify-center">
                     <span className="absolute inset-0 rounded-full anim-halo-spin" />
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 relative z-10" style={{ boxShadow: "0 0 8px rgba(34,197,94,0.6)" }} />
+                    <span
+                      className="w-2 h-2 rounded-full relative z-10"
+                      style={{
+                        background: todayAttendance?.onBreak ? "#F59E0B" : "#22C55E",
+                        boxShadow: `0 0 8px ${todayAttendance?.onBreak ? "rgba(245,158,11,0.6)" : "rgba(34,197,94,0.6)"}`,
+                      }}
+                    />
                   </span>
-                  <span className="text-sm text-slate-600">Session active</span>
+                  <span className="text-sm text-slate-600">
+                    {!todayAttendance
+                      ? "Not punched in yet"
+                      : todayAttendance.punchOut
+                      ? `Punched out at ${todayAttendance.punchOut}`
+                      : todayAttendance.onBreak
+                      ? "On break"
+                      : `Punched in at ${todayAttendance.punchIn}`}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={handlePunchIn}
-                    className="flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3 rounded-xl text-white active:scale-[0.97] transition-all duration-200"
+                    disabled={!!todayAttendance && !todayAttendance.punchOut}
+                    className="flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3 rounded-xl text-white active:scale-[0.97] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
                       background: "linear-gradient(135deg, #22C55E, #16A34A)",
                       boxShadow: "0 8px 22px -4px rgba(34,197,94,0.4)",
@@ -584,7 +730,8 @@ export default function EmployeeDashboard() {
                   </button>
                   <button
                     onClick={handlePunchOut}
-                    className="flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3 rounded-xl text-white active:scale-[0.97] transition-all duration-200"
+                    disabled={!todayAttendance || !!todayAttendance.punchOut}
+                    className="flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3 rounded-xl text-white active:scale-[0.97] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
                       background: "linear-gradient(135deg, #EF4444, #DC2626)",
                       boxShadow: "0 8px 22px -4px rgba(239,68,68,0.4)",
@@ -596,6 +743,21 @@ export default function EmployeeDashboard() {
                     Punch Out
                   </button>
                 </div>
+
+                <button
+                  onClick={todayAttendance?.onBreak ? handleBreakEnd : handleBreakStart}
+                  disabled={!todayAttendance || !!todayAttendance.punchOut}
+                  className="w-full flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3 rounded-xl text-white active:scale-[0.97] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{
+                    background: todayAttendance?.onBreak
+                      ? "linear-gradient(135deg, #2563EB, #1D4ED8)"
+                      : "linear-gradient(135deg, #F59E0B, #D97706)",
+                    boxShadow: "0 8px 22px -4px rgba(15,23,42,0.25)",
+                  }}
+                >
+                  {todayAttendance?.onBreak ? <Play size={15} /> : <Coffee size={15} />}
+                  {todayAttendance?.onBreak ? "End Break" : "Start Break"}
+                </button>
               </div>
             </GlassPanel>
 

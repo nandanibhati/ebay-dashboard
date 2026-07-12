@@ -12,8 +12,47 @@ import EmployeeSidebar from "../components/EmployeeSidebar";
 import {
   Send, Smile, Paperclip, Image, Mic, X, Search, Users, Hash,
   Circle, Phone, Video, MoreVertical, Check, CheckCheck, Reply,
-  Pencil, Trash2, Download, MessageCircle,
+  Pencil, Trash2, Download, MessageCircle, Clock,
 } from "lucide-react";
+
+// Phone photos are often several MB at 3000px+ — shrink to a sane max
+// dimension client-side before upload so sending feels instant, not stuck.
+function compressImage(file, maxDim = 1280, quality = 0.75) {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith("image/")) return resolve(file);
+
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+
+      let { width, height } = img;
+      if (width <= maxDim && height <= maxDim) return resolve(file);
+
+      const scale = maxDim / Math.max(width, height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return resolve(file);
+          resolve(new File([blob], file.name, { type: "image/jpeg" }));
+        },
+        "image/jpeg",
+        quality
+      );
+    };
+
+    img.onerror = () => resolve(file);
+    img.src = url;
+  });
+}
 
 // ─────────────────────────────────────────────
 // EmojiPicker
@@ -46,9 +85,27 @@ function EmojiPicker({ onSelect }) {
 // ─────────────────────────────────────────────
 // MessageBubble
 // ─────────────────────────────────────────────
-function MessageBubble({ message, currentUser, onReply, onEdit, onDelete, onReaction }) {
+function TickStatus({ status }) {
+  if (status === "pending") return <Clock size={12} className="opacity-70" />;
+  if (status === "seen") return <CheckCheck size={13} className="text-sky-300" />;
+  if (status === "delivered") return <CheckCheck size={13} />;
+  return <Check size={13} />;
+}
+
+function MessageBubble({ message, currentUser, onlineUsers, onReply, onEdit, onDelete, onReaction }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const isMine = message.senderEmail === currentUser?.email;
+
+  let tickStatus = "sent";
+  if (message.pending) {
+    tickStatus = "pending";
+  } else if (message.chatType === "group") {
+    tickStatus = message.seenBy?.length > 0 ? "seen" : "sent";
+  } else if (message.seenBy?.includes(message.receiverEmail)) {
+    tickStatus = "seen";
+  } else if (onlineUsers?.includes(message.receiverEmail)) {
+    tickStatus = "delivered";
+  }
 
   return (
     <div className={`flex mb-4 items-end gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
@@ -114,7 +171,8 @@ function MessageBubble({ message, currentUser, onReply, onEdit, onDelete, onReac
               {new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </span>
             {message.edited && <span className="italic">(edited)</span>}
-            {isMine && (message.seenBy?.length ? <CheckCheck size={13} /> : <Check size={13} />)}
+            {message.failed && <span className="text-red-300">Failed to send</span>}
+            {isMine && !message.failed && <TickStatus status={tickStatus} />}
           </div>
         </div>
 
@@ -131,6 +189,7 @@ function MessageBubble({ message, currentUser, onReply, onEdit, onDelete, onReac
         )}
 
         {/* Hover action button */}
+        {!message.pending && (
         <div className={`absolute top-1 ${isMine ? "-left-10" : "-right-10"} opacity-0 group-hover:opacity-100 transition-opacity duration-150`}>
           <div className="relative">
             <button
@@ -142,14 +201,14 @@ function MessageBubble({ message, currentUser, onReply, onEdit, onDelete, onReac
 
             {menuOpen && (
               <div
-                className={`absolute z-50 mt-1 w-40 rounded-xl border border-slate-100 bg-white shadow-xl overflow-hidden ${isMine ? "left-0" : "right-0"}`}
+                className={`absolute z-50 mt-1 w-44 rounded-xl border border-slate-100 bg-white shadow-xl overflow-hidden ${isMine ? "left-0" : "right-0"}`}
               >
                 {[
                   { icon: Reply, label: "Reply", action: () => { onReply(message); setMenuOpen(false); } },
                   { icon: Smile, label: "React", action: () => { onReaction(message); setMenuOpen(false); } },
                   ...(isMine ? [
                     { icon: Pencil, label: "Edit", action: () => { onEdit(message); setMenuOpen(false); } },
-                    { icon: Trash2, label: "Delete", action: () => { onDelete(message); setMenuOpen(false); }, danger: true },
+                    { icon: Trash2, label: "Delete for Everyone", action: () => { onDelete(message); setMenuOpen(false); }, danger: true },
                   ] : []),
                 ].map(({ icon: Icon, label, action, danger }) => (
                   <button
@@ -165,6 +224,7 @@ function MessageBubble({ message, currentUser, onReply, onEdit, onDelete, onReac
             )}
           </div>
         </div>
+        )}
       </div>
 
       {/* My avatar */}
@@ -180,7 +240,7 @@ function MessageBubble({ message, currentUser, onReply, onEdit, onDelete, onReac
 // ─────────────────────────────────────────────
 // MessageList
 // ─────────────────────────────────────────────
-function MessageList({ messages = [], currentUser, onReply, onEdit, onDelete, onReaction }) {
+function MessageList({ messages = [], currentUser, onlineUsers, onReply, onEdit, onDelete, onReaction }) {
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -206,6 +266,7 @@ function MessageList({ messages = [], currentUser, onReply, onEdit, onDelete, on
           key={message._id}
           message={message}
           currentUser={currentUser}
+          onlineUsers={onlineUsers}
           onReply={onReply}
           onEdit={onEdit}
           onDelete={onDelete}
@@ -606,7 +667,13 @@ export default function Chat() {
                 message.receiverEmail === currentUser.email));
 
       if (belongsToCurrentChat) {
-        setMessages((prev) => [...prev, message]);
+        setMessages((prev) => {
+          // Group messages broadcast to everyone including the sender, who
+          // already has this message via the optimistic-send reconciliation
+          // — skip re-appending anything we're already showing.
+          if (prev.some((m) => m._id === message._id)) return prev;
+          return [...prev, message];
+        });
       }
     });
 
@@ -618,13 +685,65 @@ export default function Chat() {
     socket.on("typing", (data) => setTypingUser(data.senderName));
     socket.on("stopTyping", () => setTypingUser(""));
 
+    // Someone deleted a message "for everyone" — drop it from whatever
+    // chat window is currently open, live, instead of waiting for reload.
+    socket.on("messageDeleted", ({ messageId }) => {
+      setMessages((prev) => prev.filter((m) => m._id !== messageId));
+    });
+
+    // The other side just read one of my messages — flip its ticks to
+    // "seen" without needing to refetch the whole conversation.
+    socket.on("messageSeenUpdate", ({ messageId, seenByEmail }) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === messageId && !m.seenBy?.includes(seenByEmail)
+            ? { ...m, seenBy: [...(m.seenBy || []), seenByEmail] }
+            : m
+        )
+      );
+    });
+
     return () => {
       socket.off("newMessage");
       socket.off("onlineUsers");
       socket.off("typing");
       socket.off("stopTyping");
+      socket.off("messageDeleted");
+      socket.off("messageSeenUpdate");
     };
   }, []);
+
+  // Mark incoming messages in the open conversation as seen, and tell the
+  // sender live so their ticks flip without them needing to reopen the chat.
+  useEffect(() => {
+    const unseen = messages.filter(
+      (m) =>
+        !m.pending &&
+        m.senderEmail !== currentUser.email &&
+        !m.seenBy?.includes(currentUser.email)
+    );
+    if (unseen.length === 0) return;
+
+    unseen.forEach((m) => {
+      apiFetch(`/api/chat/seen/${m._id}`, {
+        method: "PUT",
+        body: { email: currentUser.email },
+      }).catch(() => {});
+
+      socket.emit("messageSeen", {
+        messageId: m._id,
+        seenByEmail: currentUser.email,
+      });
+    });
+
+    setMessages((prev) =>
+      prev.map((m) =>
+        unseen.some((u) => u._id === m._id)
+          ? { ...m, seenBy: [...(m.seenBy || []), currentUser.email] }
+          : m
+      )
+    );
+  }, [messages, currentUser.email]);
 
   // Load messages
   useEffect(() => {
@@ -674,11 +793,13 @@ export default function Chat() {
         <MessageList
           messages={messages}
           currentUser={currentUser}
+          onlineUsers={onlineUsers}
           onReply={(msg) => setReplyMessage(msg)}
           onEdit={(msg) => console.log("Edit", msg)}
           onDelete={async (msg) => {
-            await apiFetch(`/api/chat/${msg._id}`, { method: "DELETE" });
             setMessages((prev) => prev.filter((m) => m._id !== msg._id));
+            await apiFetch(`/api/chat/${msg._id}`, { method: "DELETE" });
+            socket.emit("deleteMessage", { messageId: msg._id });
           }}
           onReaction={(msg) => console.log("Reaction", msg)}
         />
@@ -693,10 +814,39 @@ export default function Chat() {
             const receiverName = isPrivate ? selectedChat.user.name : "";
             const receiverEmail = isPrivate ? selectedChat.user.email : "";
 
-            // An image/file needs multipart/form-data so multer + Cloudinary
-            // can actually receive it — a JSON body can't carry a real File.
+            // Show the message immediately instead of waiting on the full
+            // upload + save + socket round-trip — that wait is what made
+            // sending feel sluggish, especially with an image attached.
+            const tempId = `temp-${Date.now()}-${Math.random()}`;
+            const optimisticImage = data.image ? URL.createObjectURL(data.image) : "";
+            const optimisticFile = data.file ? URL.createObjectURL(data.file) : "";
+
+            setMessages((prev) => [
+              ...prev,
+              {
+                _id: tempId,
+                senderName: currentUser.name,
+                senderEmail: currentUser.email,
+                senderRole: currentUser.role,
+                receiverName,
+                receiverEmail,
+                chatType: selectedChat.type,
+                message: data.message || "",
+                image: optimisticImage,
+                file: optimisticFile,
+                replyTo: data.replyTo || null,
+                reactions: [],
+                seenBy: [],
+                createdAt: new Date().toISOString(),
+                pending: true,
+              },
+            ]);
+            setReplyMessage(null);
+
+            const imageToSend = data.image ? await compressImage(data.image) : null;
+
             let body;
-            if (data.image || data.file) {
+            if (imageToSend || data.file) {
               body = new FormData();
               body.append("senderName", currentUser.name);
               body.append("senderEmail", currentUser.email);
@@ -707,7 +857,7 @@ export default function Chat() {
               body.append("message", data.message || "");
               body.append("voice", "");
               if (data.replyTo) body.append("replyTo", data.replyTo._id);
-              if (data.image) body.append("image", data.image);
+              if (imageToSend) body.append("image", imageToSend);
               if (data.file) body.append("file", data.file);
             } else {
               body = {
@@ -731,12 +881,22 @@ export default function Chat() {
                 body,
               });
               const result = await res.json();
+
               if (result.success) {
+                setMessages((prev) =>
+                  prev.map((m) => (m._id === tempId ? result.chat : m))
+                );
                 socket.emit("sendMessage", result.chat);
+              } else {
+                setMessages((prev) =>
+                  prev.map((m) => (m._id === tempId ? { ...m, failed: true, pending: false } : m))
+                );
               }
-              setReplyMessage(null);
             } catch (err) {
               console.error(err);
+              setMessages((prev) =>
+                prev.map((m) => (m._id === tempId ? { ...m, failed: true, pending: false } : m))
+              );
             }
           }}
         />
