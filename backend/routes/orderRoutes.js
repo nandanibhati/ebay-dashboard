@@ -125,10 +125,12 @@ router.post("/bulk", async (req, res) => {
 
 router.get("/", async (req, res) => {
   try {
-    const orders = await Order.find().sort({
-      date: -1,
-      createdAt: -1,
-    });
+    const orders = await Order.find()
+      .sort({
+        date: -1,
+        createdAt: -1,
+      })
+      .lean();
 
     res.json(orders);
   } catch (error) {

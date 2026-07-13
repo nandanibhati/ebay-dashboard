@@ -3,6 +3,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const http = require("http");
+const compression = require("compression");
 const { Server } = require("socket.io");
 
 dotenv.config();
@@ -27,6 +28,7 @@ app.use(
     origin: allowedOrigins,
   })
 );
+app.use(compression());
 app.use(express.json({ limit: "2mb" }));
 
 // =========================
