@@ -509,7 +509,7 @@ function ChatSidebar({ users = [], currentUser, selectedChat, setSelectedChat })
 // ─────────────────────────────────────────────
 // ChatInput
 // ─────────────────────────────────────────────
-function ChatInput({ onSend, replyMessage, setReplyMessage, onTyping, onStopTyping }) {
+function ChatInput({ onSend, replyMessage, setReplyMessage, onTyping, onStopTyping, editingMessage, onCancelEdit, onSaveEdit }) {
   const [text, setText] = useState("");
   const [image, setImage] = useState(null);
   const [file, setFile] = useState(null);
@@ -518,7 +518,19 @@ function ChatInput({ onSend, replyMessage, setReplyMessage, onTyping, onStopTypi
   const imageRef = useRef(null);
   const fileRef = useRef(null);
 
+  // Editing an existing message reuses this same input — prefill it with
+  // the message's current text instead of starting from a blank box.
+  useEffect(() => {
+    if (editingMessage) setText(editingMessage.message || "");
+  }, [editingMessage]);
+
   const sendMessage = () => {
+    if (editingMessage) {
+      if (!text.trim()) return;
+      onSaveEdit(editingMessage._id, text.trim());
+      setText("");
+      return;
+    }
     if (!text.trim() && !image && !file) return;
     onSend({ message: text, image, file, replyTo: replyMessage });
     setText("");
@@ -537,8 +549,18 @@ function ChatInput({ onSend, replyMessage, setReplyMessage, onTyping, onStopTypi
 
   return (
     <div className="bg-white border-t border-slate-100 flex-shrink-0">
-      {/* Reply preview */}
-      {replyMessage && (
+      {/* Edit preview (takes priority over reply) */}
+      {editingMessage ? (
+        <div className="mx-4 mt-3 rounded-xl border-l-4 border-[#F4B400] bg-amber-50 px-4 py-2.5 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "#B45F06" }}>Editing message</p>
+            <p className="text-sm text-slate-600 truncate mt-0.5">{editingMessage.message}</p>
+          </div>
+          <button onClick={() => { onCancelEdit(); setText(""); }} className="flex-shrink-0 w-6 h-6 rounded-full hover:bg-amber-100 flex items-center justify-center transition">
+            <X size={14} className="text-slate-500" />
+          </button>
+        </div>
+      ) : replyMessage && (
         <div className="mx-4 mt-3 rounded-xl border-l-4 border-[#F4B400] bg-amber-50 px-4 py-2.5 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "#B45F06" }}>Replying to</p>
@@ -593,19 +615,23 @@ function ChatInput({ onSend, replyMessage, setReplyMessage, onTyping, onStopTypi
           )}
         </div>
 
-        <button
-          onClick={() => imageRef.current.click()}
-          className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-slate-500 hover:text-[#B45F06]"
-        >
-          <Image size={20} />
-        </button>
+        {!editingMessage && (
+          <>
+            <button
+              onClick={() => imageRef.current.click()}
+              className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-slate-500 hover:text-[#B45F06]"
+            >
+              <Image size={20} />
+            </button>
 
-        <button
-          onClick={() => fileRef.current.click()}
-          className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-slate-500 hover:text-[#B45F06]"
-        >
-          <Paperclip size={20} />
-        </button>
+            <button
+              onClick={() => fileRef.current.click()}
+              className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-slate-500 hover:text-[#B45F06]"
+            >
+              <Paperclip size={20} />
+            </button>
+          </>
+        )}
 
         <input hidden ref={imageRef} type="file" accept="image/*" onChange={(e) => setImage(e.target.files[0])} />
         <input hidden ref={fileRef} type="file" onChange={(e) => setFile(e.target.files[0])} />
@@ -613,14 +639,19 @@ function ChatInput({ onSend, replyMessage, setReplyMessage, onTyping, onStopTypi
         <input
           value={text}
           onChange={handleTyping}
-          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-          placeholder="Type a message…"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+            if (e.key === "Escape" && editingMessage) { onCancelEdit(); setText(""); }
+          }}
+          placeholder={editingMessage ? "Edit your message…" : "Type a message…"}
           className="flex-1 rounded-full border border-slate-200 bg-slate-50 focus:bg-white px-5 py-2.5 text-sm outline-none focus:border-[#F4B400] focus:ring-2 focus:ring-[#F4B400]/15 transition-all"
         />
 
-        <button className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-slate-500 hover:text-[#B45F06]">
-          <Mic size={20} />
-        </button>
+        {!editingMessage && (
+          <button className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-slate-500 hover:text-[#B45F06]">
+            <Mic size={20} />
+          </button>
+        )}
 
         <button
           onClick={sendMessage}
@@ -631,7 +662,7 @@ function ChatInput({ onSend, replyMessage, setReplyMessage, onTyping, onStopTypi
         </button>
       </div>
 
-      {text.trim() && (
+      {!editingMessage && text.trim() && (
         <p className="px-5 pb-2 text-[11px] font-medium animate-pulse" style={{ color: "#B45F06" }}>Typing…</p>
       )}
     </div>
@@ -645,6 +676,7 @@ export default function Chat() {
   const [users, setUsers] = useState([]);
   const [messages, setMessages] = useState([]);
   const [replyMessage, setReplyMessage] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typingUser, setTypingUser] = useState("");
 
@@ -735,6 +767,14 @@ export default function Chat() {
       );
     });
 
+    // Someone edited a message — update it live in whatever chat window
+    // is open, instead of waiting for a reload.
+    socket.on("messageEdited", ({ messageId, message }) => {
+      setMessages((prev) =>
+        prev.map((m) => (m._id === messageId ? { ...m, message, edited: true } : m))
+      );
+    });
+
     return () => {
       socket.off("newMessage");
       socket.off("onlineUsers");
@@ -742,6 +782,7 @@ export default function Chat() {
       socket.off("stopTyping");
       socket.off("messageDeleted");
       socket.off("messageSeenUpdate");
+      socket.off("messageEdited");
     };
   }, []);
 
@@ -827,7 +868,7 @@ export default function Chat() {
           currentUser={currentUser}
           onlineUsers={onlineUsers}
           onReply={(msg) => setReplyMessage(msg)}
-          onEdit={(msg) => console.log("Edit", msg)}
+          onEdit={(msg) => setEditingMessage(msg)}
           onDelete={async (msg) => {
             setMessages((prev) => prev.filter((m) => m._id !== msg._id));
             await apiFetch(`/api/chat/${msg._id}`, { method: "DELETE" });
@@ -839,6 +880,31 @@ export default function Chat() {
         <ChatInput
           replyMessage={replyMessage}
           setReplyMessage={setReplyMessage}
+          editingMessage={editingMessage}
+          onCancelEdit={() => setEditingMessage(null)}
+          onSaveEdit={async (messageId, newText) => {
+            const previous = messages;
+            setMessages((prev) =>
+              prev.map((m) => (m._id === messageId ? { ...m, message: newText, edited: true } : m))
+            );
+            setEditingMessage(null);
+
+            try {
+              const res = await apiFetch(`/api/chat/${messageId}`, {
+                method: "PUT",
+                body: { message: newText },
+              });
+              const result = await res.json();
+              if (result.success) {
+                socket.emit("editMessage", { messageId, message: newText });
+              } else {
+                setMessages(previous);
+              }
+            } catch (err) {
+              console.error(err);
+              setMessages(previous);
+            }
+          }}
           onTyping={() => socket.emit("typing", { senderName: currentUser.name })}
           onStopTyping={() => socket.emit("stopTyping")}
           onSend={async (data) => {

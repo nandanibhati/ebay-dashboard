@@ -124,6 +124,11 @@ socket.on("sendMessage", (message) => {
     socket.broadcast.emit("messageSeenUpdate", data);
   });
 
+  // A message was edited — relay so other open chat windows update live.
+  socket.on("editMessage", (data) => {
+    socket.broadcast.emit("messageEdited", data);
+  });
+
   // Seen
   socket.on("seen", (data) => {
     io.emit("messageSeen", data);
