@@ -1,4 +1,5 @@
 const Order = require("../models/Order");
+const Stock = require("../models/Stock");
 const { fetchEbayOrders } = require("./ebayOrderService");
 const {
   adjustStockForOrder,
@@ -49,7 +50,7 @@ function computeFinancials({
 
 // New line items become new Order rows; existing ones only have their
 // status refreshed so manually-entered cost/fee data is never overwritten.
-async function upsertLineItem(store, ebayOrder, lineItem, orderId, status, deliveryCost) {
+async function upsertLineItem(store, ebayOrder, lineItem, orderId, status, deliveryCost, ebayFee) {
   const existing = await Order.findOne({ orderId });
 
   if (!existing) {
@@ -57,8 +58,13 @@ async function upsertLineItem(store, ebayOrder, lineItem, orderId, status, deliv
     const sellingPrice = Number(
       lineItem.total?.value ?? lineItem.lineItemCost?.value ?? 0
     );
-    const costPrice = 0;
-    const ebayFee = 0;
+
+    // eBay doesn't tell us our purchase cost, but if this SKU is already in
+    // Stock we know what we paid for it - use that instead of leaving 0.
+    const sku = (lineItem.sku || "").trim();
+    const stockItem = sku ? await Stock.findOne({ sku }) : null;
+    const costPrice = Number(stockItem?.price || 0);
+
     const adFee = 0;
 
     const { revenue, profit, margin } = computeFinancials({
@@ -74,7 +80,7 @@ async function upsertLineItem(store, ebayOrder, lineItem, orderId, status, deliv
       site: store.storeName,
       date: ebayOrder.creationDate,
       orderId,
-      sku: lineItem.sku || "",
+      sku,
       product: lineItem.title || "",
       employeeName: "Automated",
       quantity,
@@ -92,7 +98,7 @@ async function upsertLineItem(store, ebayOrder, lineItem, orderId, status, deliv
         : "",
     });
 
-    await adjustStockForOrder(lineItem.sku, quantity, -1);
+    await adjustStockForOrder(sku, quantity, -1);
 
     return "created";
   }
@@ -137,11 +143,24 @@ async function syncStoreOrders(store) {
       ? Number((deliveryCostTotal / lineItems.length).toFixed(2))
       : 0;
 
+    // eBay's marketplace fee is a % of item price, so split it by each line
+    // item's share of the order total rather than splitting it evenly.
+    const totalFee = Number(ebayOrder.totalMarketplaceFee?.value || 0);
+    const orderTotal = Number(ebayOrder.pricingSummary?.total?.value || 0);
+
     for (let i = 0; i < lineItems.length; i++) {
       const orderId =
         lineItems.length > 1
           ? `${ebayOrder.orderId}-${i + 1}`
           : ebayOrder.orderId;
+
+      const itemValue = Number(
+        lineItems[i].total?.value ?? lineItems[i].lineItemCost?.value ?? 0
+      );
+      const perItemFee =
+        totalFee > 0 && orderTotal > 0
+          ? Number(((itemValue / orderTotal) * totalFee).toFixed(2))
+          : 0;
 
       const result = await upsertLineItem(
         store,
@@ -149,7 +168,8 @@ async function syncStoreOrders(store) {
         lineItems[i],
         orderId,
         status,
-        perItemDelivery
+        perItemDelivery,
+        perItemFee
       );
 
       if (result === "created") created++;
