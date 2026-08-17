@@ -27,10 +27,32 @@ export default function EbayIntegration() {
       marketplace: "eBay UK",
     },
   ]);
+  const [syncingStore, setSyncingStore] = useState(null);
 
   useEffect(() => {
     loadStores();
   }, []);
+
+  async function syncOrders(storeName) {
+    setSyncingStore(storeName);
+    try {
+      const res = await apiFetch("/api/ebay/sync", {
+        method: "POST",
+        body: JSON.stringify({ storeName }),
+      });
+
+      const data = await res.json();
+
+      alert(data.message || (data.success ? "Sync complete." : "Sync failed."));
+
+      await loadStores();
+    } catch (err) {
+      console.log(err);
+      alert("Failed to sync orders. Please try again.");
+    } finally {
+      setSyncingStore(null);
+    }
+  }
 
   async function loadStores() {
     try {
@@ -233,13 +255,12 @@ export default function EbayIntegration() {
                 ) : (
                   <>
                    <button
-  onClick={() => {
-    alert("Sync Orders Coming Soon");
-  }}
-  className="flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 font-semibold transition"
+  onClick={() => syncOrders(store.storeName)}
+  disabled={syncingStore === store.storeName}
+  className="flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-6 py-3 font-semibold transition"
 >
-  <RefreshCw size={18} />
-  Sync Orders
+  <RefreshCw size={18} className={syncingStore === store.storeName ? "animate-spin" : ""} />
+  {syncingStore === store.storeName ? "Syncing..." : "Sync Orders"}
 </button>
 
                     <button

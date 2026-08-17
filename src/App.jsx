@@ -28,6 +28,7 @@ import EbayIntegration from "./pages/EbayIntegration";
 import Purchases from "./pages/Purchases";
 import Subscriptions from "./pages/Subscriptions";
 import Chat from "./pages/Chat";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import FloatingChat from "./components/FloatingChat";
 import PrivateRoute from "./components/PrivateRoute";
 
@@ -140,6 +141,8 @@ function App() {
 />
 
         <Route path="/signup" element={<Signup />} />
+
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       </Routes>
       <GlobalFloatingChat />
 

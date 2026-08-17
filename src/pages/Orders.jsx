@@ -344,7 +344,7 @@ export default function Orders() {
           >
             <option value="">All Sites</option>
             <option value="TPS">TPS</option>
-            <option value="Smartzone">Smartzone</option>
+            <option value="SmartZone">SmartZone</option>
             <option value="Veluntra">Veluntra</option>
             <option value="Amazon">Amazon</option>
             <option value="TikTok">TikTok penkraft</option>

@@ -2,31 +2,10 @@ const express = require("express");
 const router = express.Router();
 
 const Order = require("../models/Order");
-const Stock = require("../models/Stock");
 const { protect } = require("../middleware/auth");
+const { adjustStockForOrder, RESTOCKED_STATUSES } = require("../utils/stockAdjustment");
 
 router.use(protect);
-
-// direction -1 deducts stock (order sold), +1 restocks it (order cancelled/returned)
-async function adjustStockForOrder(sku, quantity, direction = -1) {
-  const item = await Stock.findOne({ sku });
-
-  if (!item) return;
-
-  const masterStock = await Stock.findOne({
-    sku: item.masterSku,
-  });
-
-  if (!masterStock) return;
-
-  const amount = Number(item.packQty) * Number(quantity);
-
-  masterStock.quantity = Number(masterStock.quantity) + amount * direction;
-
-  await masterStock.save();
-}
-
-const RESTOCKED_STATUSES = ["Cancelled", "Returned"];
 
 router.post("/", async (req, res) => {
   try {

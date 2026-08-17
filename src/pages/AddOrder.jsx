@@ -342,7 +342,7 @@ export default function AddOrder() {
                 <SelectField name="site" value={form.site} onChange={handleChange}>
                   <option value="">Select Site</option>
                   <option value="TPS">TPS</option>
-                  <option value="Smartzone">Smartzone</option>
+                  <option value="SmartZone">SmartZone</option>
                   <option value="Veluntra">Veluntra</option>
                   <option value="Amazon">Amazon</option>
                   <option value="TikTok">TikTok penkraft</option>

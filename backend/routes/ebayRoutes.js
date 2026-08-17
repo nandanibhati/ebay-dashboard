@@ -11,6 +11,7 @@ const {
   verification,
   receiveNotification,
 } = require("../controllers/ebayNotificationController");
+const { syncStoreOrders } = require("../services/ebayOrderSyncService");
 
 const HIDDEN_FIELDS = "-accessToken -refreshToken -tokenType";
 
@@ -152,13 +153,13 @@ router.post("/disconnect", protect, adminOnly, async (req, res) => {
 });
 
 // =========================================
-// SYNC STORE (Temporary)
+// SYNC STORE ORDERS (pulls orders from eBay's Fulfillment API)
 // =========================================
 
 router.post("/sync", protect, adminOnly, async (req, res) => {
-  try {
-    const { storeName } = req.body;
+  const { storeName } = req.body;
 
+  try {
     const store = await EbayStore.findOne({
       storeName,
     });
@@ -170,19 +171,46 @@ router.post("/sync", protect, adminOnly, async (req, res) => {
       });
     }
 
-    store.lastSync = new Date();
+    if (!store.connected) {
+      return res.status(400).json({
+        success: false,
+        message: "Store is not connected to eBay.",
+      });
+    }
 
-    await store.save();
+    const result = await syncStoreOrders(store);
 
     res.json({
       success: true,
-      message: `${storeName} synced successfully.`,
+      message: `${storeName}: ${result.created} new order(s), ${result.updated} updated.`,
       lastSync: store.lastSync,
+      ...result,
     });
   } catch (err) {
+    const message =
+      err.response?.data?.errors?.[0]?.message || err.message;
+
+    console.log("eBay sync failed:", message);
+
+    try {
+      const store = await EbayStore.findOne({ storeName });
+
+      if (store) {
+        store.lastError = message;
+
+        if (err.response?.status === 401) {
+          store.connectionStatus = "Expired";
+        }
+
+        await store.save();
+      }
+    } catch (saveErr) {
+      console.log(saveErr);
+    }
+
     res.status(500).json({
       success: false,
-      message: err.message,
+      message,
     });
   }
 });
