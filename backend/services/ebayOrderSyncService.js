@@ -76,7 +76,7 @@ async function upsertLineItem(store, ebayOrder, lineItem, orderId, status, deliv
       orderId,
       sku: lineItem.sku || "",
       product: lineItem.title || "",
-      employeeName: "Automated (eBay Sync)",
+      employeeName: "Automated",
       quantity,
       costPrice,
       sellingPrice,

@@ -147,7 +147,7 @@ export default function Orders() {
     const matchesSite = !siteFilter || order.site === siteFilter;
     const matchesStatus = !statusFilter || order.status === statusFilter;
 
-    const isAutomated = order.employeeName === "Automated (eBay Sync)";
+    const isAutomated = order.employeeName === "Automated";
     const matchesSource =
       !sourceFilter ||
       (sourceFilter === "Automated" ? isAutomated : !isAutomated);
@@ -382,7 +382,7 @@ export default function Orders() {
           >
             <option value="">All Sources</option>
             <option value="Manual">Manual Entry</option>
-            <option value="Automated">Automated (eBay Sync)</option>
+            <option value="Automated">Automated</option>
           </select>
 
           <input
