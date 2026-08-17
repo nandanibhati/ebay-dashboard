@@ -98,8 +98,10 @@ exports.callback = async (
         token.expires_in * 1000
     );
 
-    store.lastSync = new Date();
-
+    // lastSync marks when orders were last pulled, not when the store was
+    // connected - syncStoreOrders() uses it as the "fetch orders created
+    // after this date" cutoff, so setting it here would make the first
+    // sync miss every pre-existing order.
     store.lastError = "";
 
     await store.save();
