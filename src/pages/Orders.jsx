@@ -431,10 +431,10 @@ export default function Orders() {
             </span>
           </div>
 
-          <div className="overflow-x-auto overflow-y-visible">
+          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
             <table className="min-w-[1400px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/60">
+              <thead className="sticky top-0 z-10">
+                <tr className="border-b border-slate-200 bg-slate-50 shadow-sm">
                   {["Site", "Date", "Order ID", "SKU", "Qty", "Unit Price", "Cost", "Revenue", "Profit", "Tracking", "Notes", "Status", "Courier", "Employee", "Actions"].map((h) => (
                     <th key={h} className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
                       {h}
