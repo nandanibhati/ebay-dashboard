@@ -10,6 +10,7 @@ import {
   CalendarDays,
   Sparkles,
   FileText,
+  Store,
 } from "lucide-react";
 
 import { Link, useLocation } from "react-router-dom";
@@ -78,6 +79,11 @@ export default function EmployeeSidebar() {
       name: "Templates",
       icon: FileText,
       path: "/templates",
+    },
+    {
+      name: "eBay Integration",
+      icon: Store,
+      path: "/ebay-integration",
     },
   ];
 

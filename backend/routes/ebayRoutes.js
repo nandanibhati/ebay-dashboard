@@ -19,15 +19,11 @@ const HIDDEN_FIELDS = "-accessToken -refreshToken -tokenType";
 // GET ALL STORES
 // =========================================
 
-router.get("/stores", protect, adminOnly, async (req, res) => {
+router.get("/stores", protect, async (req, res) => {
   try {
-    let stores = await EbayStore.find()
-      .select(HIDDEN_FIELDS)
-      .sort({
-        createdAt: 1,
-      });
+    const allStoresCount = await EbayStore.countDocuments();
 
-    if (stores.length === 0) {
+    if (allStoresCount === 0) {
       await EbayStore.insertMany([
         {
           storeName: "TPS",
@@ -38,13 +34,13 @@ router.get("/stores", protect, adminOnly, async (req, res) => {
           marketplace: "eBay UK",
         },
       ]);
-
-      stores = await EbayStore.find()
-        .select(HIDDEN_FIELDS)
-        .sort({
-          createdAt: 1,
-        });
     }
+
+    const stores = await EbayStore.find({ isActive: true })
+      .select(HIDDEN_FIELDS)
+      .sort({
+        createdAt: 1,
+      });
 
     res.json({
       success: true,
@@ -62,7 +58,7 @@ router.get("/stores", protect, adminOnly, async (req, res) => {
 // GET SINGLE STORE
 // =========================================
 
-router.get("/store/:name", protect, adminOnly, async (req, res) => {
+router.get("/store/:name", protect, async (req, res) => {
   try {
     const store = await EbayStore.findOne({
       storeName: req.params.name,
@@ -218,10 +214,10 @@ router.post("/sync", protect, adminOnly, async (req, res) => {
 // GET CONNECTION STATUS
 // =========================================
 
-router.get("/status", protect, adminOnly, async (req, res) => {
+router.get("/status", protect, async (req, res) => {
   try {
     const stores = await EbayStore.find(
-      {},
+      { isActive: true },
       {
         storeName: 1,
         connected: 1,

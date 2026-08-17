@@ -28,6 +28,7 @@ export default function EbayIntegration() {
     },
   ]);
   const [syncingStore, setSyncingStore] = useState(null);
+  const isAdmin = localStorage.getItem("role") === "admin";
 
   useEffect(() => {
     loadStores();
@@ -237,8 +238,9 @@ export default function EbayIntegration() {
 
               </div>
 
-              {/* Buttons */}
+              {/* Buttons (admin only - connecting/syncing/disconnecting stores is an admin action) */}
 
+              {isAdmin ? (
               <div className="flex gap-4 mt-8">
 
                 {!store.connected ? (
@@ -286,6 +288,11 @@ export default function EbayIntegration() {
                 )}
 
               </div>
+              ) : (
+                <p className="mt-8 text-sm text-slate-400 italic">
+                  View only — ask an admin to connect, sync, or disconnect this store.
+                </p>
+              )}
 
             </div>
 
