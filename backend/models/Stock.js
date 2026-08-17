@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const stockSchema = new mongoose.Schema(
   {
-    sku: String,
+    sku: { type: String, trim: true },
 
     product: String,
 
@@ -16,6 +16,7 @@ const stockSchema = new mongoose.Schema(
     masterSku: {
       type: String,
       default: "",
+      trim: true,
     },
 
     packQty: {

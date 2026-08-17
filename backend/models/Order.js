@@ -9,13 +9,14 @@ const orderSchema = new mongoose.Schema(
   type: String,
   unique: true,
   required: true,
+  trim: true,
 },
     employeeId: String,
 
     employeeName: String,
     employeeEmail: String,
 
-    sku: String,
+    sku: { type: String, trim: true },
     product: String,
 
     quantity: Number,

@@ -9,9 +9,9 @@ router.use(protect);
 
 router.post("/", async (req, res) => {
   try {
-    const existingOrder = await Order.findOne({
-      orderId: req.body.orderId,
-    });
+    const orderId = (req.body.orderId || "").trim();
+
+    const existingOrder = await Order.findOne({ orderId });
 
     if (existingOrder) {
       return res.status(400).json({
@@ -40,6 +40,7 @@ router.post("/", async (req, res) => {
 
     const order = new Order({
       ...req.body,
+      orderId,
       revenue,
       profit,
       margin,
@@ -64,7 +65,9 @@ router.post("/", async (req, res) => {
 
 router.post("/bulk", async (req, res) => {
   try {
-    const incomingOrders = Array.isArray(req.body) ? req.body : [];
+    const incomingOrders = (Array.isArray(req.body) ? req.body : []).map(
+      (o) => ({ ...o, orderId: (o.orderId || "").trim() })
+    );
 
     const existingIds = new Set(
       (
@@ -170,6 +173,9 @@ router.put("/:id", async (req, res) => {
       req.params.id,
       {
         ...req.body,
+        ...(req.body.orderId !== undefined && {
+          orderId: req.body.orderId.trim(),
+        }),
         revenue,
         profit,
         margin,

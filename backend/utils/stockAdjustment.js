@@ -7,12 +7,12 @@ const RESTOCKED_STATUSES = ["Cancelled", "Returned"];
 async function adjustStockForOrder(sku, quantity, direction = -1) {
   if (!sku) return;
 
-  const item = await Stock.findOne({ sku });
+  const item = await Stock.findOne({ sku: sku.trim() });
 
   if (!item) return;
 
   const masterStock = await Stock.findOne({
-    sku: item.masterSku,
+    sku: (item.masterSku || "").trim(),
   });
 
   if (!masterStock) return;
