@@ -29,6 +29,7 @@ export default function Orders() {
   const [search, setSearch] = useState("");
   const [siteFilter, setSiteFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [editingOrder, setEditingOrder] = useState(null);
@@ -146,6 +147,11 @@ export default function Orders() {
     const matchesSite = !siteFilter || order.site === siteFilter;
     const matchesStatus = !statusFilter || order.status === statusFilter;
 
+    const isAutomated = order.employeeName === "Automated (eBay Sync)";
+    const matchesSource =
+      !sourceFilter ||
+      (sourceFilter === "Automated" ? isAutomated : !isAutomated);
+
     const orderDate = order.date ? new Date(order.date) : null;
 
     const matchesFrom =
@@ -162,6 +168,7 @@ export default function Orders() {
       matchesSearch &&
       matchesSite &&
       matchesStatus &&
+      matchesSource &&
       matchesFrom &&
       matchesTo
     );
@@ -367,6 +374,17 @@ export default function Orders() {
             <option value="Cancelled">Cancelled</option>
             <option value="Partial Refund">Partial Refund</option>
           </select>
+
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
+            className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#F4B400] focus:ring-2 focus:ring-[#F4B400]/25 transition-all text-slate-700 font-medium cursor-pointer"
+          >
+            <option value="">All Sources</option>
+            <option value="Manual">Manual Entry</option>
+            <option value="Automated">Automated (eBay Sync)</option>
+          </select>
+
           <input
             type="date"
             value={fromDate}
@@ -381,12 +399,13 @@ export default function Orders() {
             className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#F4B400] focus:ring-2 focus:ring-[#F4B400]/25"
           />
 
-          {(search || siteFilter || statusFilter || fromDate || toDate) && (
+          {(search || siteFilter || statusFilter || sourceFilter || fromDate || toDate) && (
             <button
               onClick={() => {
                 setSearch("");
                 setSiteFilter("");
                 setStatusFilter("");
+                setSourceFilter("");
                 setFromDate("");
                 setToDate("");
               }}
