@@ -10,8 +10,12 @@ import {
   ShieldCheck,
   Activity,
   Package,
+  Menu,
+  X,
 } from "lucide-react";
 import { apiFetch, API_BASE_URL, getToken } from "../api";
+import Sidebar from "../components/Sidebar";
+import EmployeeSidebar from "../components/EmployeeSidebar";
 
 export default function EbayIntegration() {
   const [stores, setStores] = useState([
@@ -31,7 +35,9 @@ export default function EbayIntegration() {
   const [syncingStore, setSyncingStore] = useState(null);
   const [backmarket, setBackmarket] = useState({ lastSync: null, totalOrders: 0 });
   const [syncingBackmarket, setSyncingBackmarket] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const isAdmin = localStorage.getItem("role") === "admin";
+  const role = localStorage.getItem("role");
 
   useEffect(() => {
     loadStores();
@@ -105,21 +111,51 @@ export default function EbayIntegration() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 p-8">
+    <div className="min-h-screen bg-slate-100 p-8 relative">
+
+      {/* Sidebar drawer (hamburger-triggered, not sticky) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div className="absolute left-0 top-0 h-full w-72 shadow-2xl">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="absolute top-4 right-3 z-10 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X size={17} />
+            </button>
+            {role === "admin" ? <Sidebar /> : <EmployeeSidebar />}
+          </div>
+        </div>
+      )}
 
       {/* Header */}
 
       <div className="flex items-center justify-between mb-8">
 
-        <div>
+        <div className="flex items-center gap-3">
 
-          <h1 className="text-3xl font-bold text-slate-800">
-            Integrations
-          </h1>
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.08] bg-white shrink-0"
+          >
+            <Menu size={18} />
+          </button>
 
-          <p className="text-slate-500 mt-1">
-            Connect and manage your eBay and Backmarket seller accounts.
-          </p>
+          <div>
+
+            <h1 className="text-3xl font-bold text-slate-800">
+              Integrations
+            </h1>
+
+            <p className="text-slate-500 mt-1">
+              Connect and manage your eBay and Backmarket seller accounts.
+            </p>
+
+          </div>
 
         </div>
 
