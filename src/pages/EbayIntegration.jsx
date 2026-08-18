@@ -9,6 +9,7 @@ import {
   Clock3,
   ShieldCheck,
   Activity,
+  Package,
 } from "lucide-react";
 import { apiFetch, API_BASE_URL, getToken } from "../api";
 
@@ -28,10 +29,13 @@ export default function EbayIntegration() {
     },
   ]);
   const [syncingStore, setSyncingStore] = useState(null);
+  const [backmarket, setBackmarket] = useState({ lastSync: null, totalOrders: 0 });
+  const [syncingBackmarket, setSyncingBackmarket] = useState(false);
   const isAdmin = localStorage.getItem("role") === "admin";
 
   useEffect(() => {
     loadStores();
+    loadBackmarketStatus();
   }, []);
 
   async function syncOrders(storeName) {
@@ -71,6 +75,35 @@ export default function EbayIntegration() {
     }
   }
 
+  async function loadBackmarketStatus() {
+    try {
+      const res = await apiFetch("/api/backmarket/status");
+      const data = await res.json();
+      if (data.success) {
+        setBackmarket(data.sync);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async function syncBackmarket() {
+    setSyncingBackmarket(true);
+    try {
+      const res = await apiFetch("/api/backmarket/sync", { method: "POST" });
+      const data = await res.json();
+
+      alert(data.message || (data.success ? "Sync complete." : "Sync failed."));
+
+      await loadBackmarketStatus();
+    } catch (err) {
+      console.log(err);
+      alert("Failed to sync Backmarket orders.");
+    } finally {
+      setSyncingBackmarket(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 p-8">
 
@@ -81,11 +114,11 @@ export default function EbayIntegration() {
         <div>
 
           <h1 className="text-3xl font-bold text-slate-800">
-            eBay Integration
+            Integrations
           </h1>
 
           <p className="text-slate-500 mt-1">
-            Connect and manage your eBay UK seller accounts.
+            Connect and manage your eBay and Backmarket seller accounts.
           </p>
 
         </div>
@@ -298,6 +331,71 @@ export default function EbayIntegration() {
 
           </div>
         ))}
+
+        {/* Backmarket - direct API token, no OAuth connect flow needed */}
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-between px-7 py-6 border-b border-slate-100">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 flex items-center justify-center">
+                <Package className="text-white" size={30} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800">Backmarket</h2>
+                <p className="text-slate-500">UK Marketplace</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-full bg-emerald-100 text-emerald-700 px-4 py-2">
+              <CheckCircle2 size={18} />
+              Connected
+            </div>
+          </div>
+
+          <div className="p-7">
+            <div className="grid grid-cols-3 gap-6">
+              <div className="rounded-2xl bg-slate-50 p-5">
+                <Activity className="text-violet-600 mb-3" size={24} />
+                <p className="text-xs uppercase text-slate-400">Status</p>
+                <h3 className="mt-2 font-bold text-slate-800">Connected</h3>
+              </div>
+
+              <div className="rounded-2xl bg-slate-50 p-5">
+                <Clock3 className="text-indigo-600 mb-3" size={24} />
+                <p className="text-xs uppercase text-slate-400">Last Sync</p>
+                <h3 className="mt-2 font-bold text-slate-800">
+                  {backmarket.lastSync
+                    ? new Date(backmarket.lastSync).toLocaleString()
+                    : "Never"}
+                </h3>
+              </div>
+
+              <div className="rounded-2xl bg-slate-50 p-5">
+                <ShieldCheck className="text-emerald-600 mb-3" size={24} />
+                <p className="text-xs uppercase text-slate-400">Total Orders</p>
+                <h3 className="mt-2 font-bold text-slate-800">
+                  {backmarket.totalOrders ?? 0}
+                </h3>
+              </div>
+            </div>
+
+            {isAdmin ? (
+              <div className="flex gap-4 mt-8">
+                <button
+                  onClick={syncBackmarket}
+                  disabled={syncingBackmarket}
+                  className="flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-6 py-3 font-semibold transition"
+                >
+                  <RefreshCw size={18} className={syncingBackmarket ? "animate-spin" : ""} />
+                  {syncingBackmarket ? "Syncing..." : "Sync Orders"}
+                </button>
+              </div>
+            ) : (
+              <p className="mt-8 text-sm text-slate-400 italic">
+                View only — ask an admin to sync this store.
+              </p>
+            )}
+          </div>
+        </div>
 
       </div>
 

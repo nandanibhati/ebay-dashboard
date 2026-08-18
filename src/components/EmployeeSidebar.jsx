@@ -81,7 +81,7 @@ export default function EmployeeSidebar() {
       path: "/templates",
     },
     {
-      name: "eBay Integration",
+      name: "Integrations",
       icon: Store,
       path: "/ebay-integration",
     },

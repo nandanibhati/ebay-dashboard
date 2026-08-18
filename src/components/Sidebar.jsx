@@ -104,7 +104,7 @@ export default function Sidebar() {
       path: "/templates",
     },
     {
-      name: "eBay Integration",
+      name: "Integrations",
       icon: Store,
       path: "/ebay-integration",
     },
