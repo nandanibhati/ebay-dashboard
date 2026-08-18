@@ -48,6 +48,7 @@ const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const ebayRoutes = require("./routes/ebayRoutes");
 const templateRoutes = require("./routes/templateRoutes");
+const backmarketRoutes = require("./routes/backmarketRoutes");
 // =========================
 // MongoDB
 // =========================
@@ -171,6 +172,7 @@ app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/ebay", ebayRoutes);
 app.use("/api/templates", templateRoutes);
+app.use("/api/backmarket", backmarketRoutes);
 
 // =========================
 // Root

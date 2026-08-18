@@ -3,7 +3,7 @@ import Sidebar from "../components/Sidebar";
 import { useEffect, useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import * as XLSX from "xlsx";
-import { Menu, X } from "lucide-react";
+import { Menu, X, RefreshCw } from "lucide-react";
 import { apiFetch } from "../api";
 
 /* Design tokens - matched to BuildMaster reference palette
@@ -34,6 +34,7 @@ export default function Orders() {
   const [toDate, setToDate] = useState("");
   const [editingOrder, setEditingOrder] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false); // UI-only drawer state
+  const [syncingBackmarket, setSyncingBackmarket] = useState(false);
 
   useEffect(() => {
     ensureFonts();
@@ -135,6 +136,25 @@ export default function Orders() {
       }
     } catch (error) {
       console.log(error);
+    }
+  };
+
+  const syncBackmarket = async () => {
+    setSyncingBackmarket(true);
+    try {
+      const res = await apiFetch("/api/backmarket/sync", { method: "POST" });
+      const data = await res.json();
+      alert(data.message || (data.success ? "Sync complete." : "Sync failed."));
+
+      if (data.success) {
+        const ordersRes = await apiFetch("/api/orders");
+        setOrders(await ordersRes.json());
+      }
+    } catch (error) {
+      console.log(error);
+      alert("Failed to sync Backmarket orders.");
+    } finally {
+      setSyncingBackmarket(false);
     }
   };
 
@@ -265,6 +285,17 @@ export default function Orders() {
             Import Excel
             <input type="file" accept=".xlsx,.xls" onChange={handleExcelUpload} className="hidden" />
           </label>
+
+          {role === "admin" && (
+            <button
+              onClick={syncBackmarket}
+              disabled={syncingBackmarket}
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              <RefreshCw size={15} className={syncingBackmarket ? "animate-spin" : ""} />
+              {syncingBackmarket ? "Syncing…" : "Sync Backmarket"}
+            </button>
+          )}
         </div>
 
         {/* ── Summary Metrics ── */}
