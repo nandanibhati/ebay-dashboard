@@ -51,6 +51,7 @@ export default function Signup() {
       const data = await response.json();
 
       if (data.success) {
+        alert(data.message);
         navigate("/");
       } else {
         alert(data.message);
@@ -253,7 +254,7 @@ export default function Signup() {
               </div>
 
               <div className="bg-slate-50 border border-slate-100 rounded-xl px-3.5 py-3 text-[11px] text-slate-500 font-medium leading-normal">
-                New accounts get regular employee access by default.
+                New accounts need admin or manager approval before you can log in.
               </div>
 
               {/* Submit */}

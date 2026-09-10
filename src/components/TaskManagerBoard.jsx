@@ -42,6 +42,7 @@ const EMPTY_TASK_FORM = {
   dueDate: "",
   progress: 0,
   etcMinutes: "",
+  atcMinutes: "",
   l1: "",
   l2: "",
   trainingLink: "",
@@ -168,6 +169,8 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
 
   const [form, setForm] = useState(EMPTY_TASK_FORM);
   const [automatedForm, setAutomatedForm] = useState(EMPTY_AUTOMATED_FORM);
+  const [doneTask, setDoneTask] = useState(null);
+  const [atcInput, setAtcInput] = useState("");
 
   const todayStr = new Date().toISOString().split("T")[0];
 
@@ -197,6 +200,9 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
         tasks.reduce((sum, t) => sum + Number(t.progress || 0), 0) / tasks.length
       ).toFixed(0)
     : 0;
+  const totalAtcHrs = (
+    tasks.reduce((sum, t) => sum + Number(t.atcMinutes || 0), 0) / 60
+  ).toFixed(1);
 
   const filteredTasks = tasks.filter((t) => {
     if (search) {
@@ -261,6 +267,7 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
       dueDate: task.dueDate ? task.dueDate.split("T")[0] : "",
       progress: task.progress || 0,
       etcMinutes: task.etcMinutes || "",
+      atcMinutes: task.atcMinutes || "",
       l1: task.l1 || "",
       l2: task.l2 || "",
       trainingLink: task.trainingLink || "",
@@ -325,6 +332,55 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
       }
     } catch (error) {
       console.log(error);
+    }
+  };
+
+  const openDonePrompt = (task) => {
+    setDoneTask(task);
+    setAtcInput(task.atcMinutes || "");
+  };
+
+  const confirmDone = async (e) => {
+    e.preventDefault();
+    if (!doneTask) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("title", doneTask.title);
+      formData.append("description", doneTask.description || "");
+      formData.append("group", doneTask.group || "");
+      formData.append("assignedTo", doneTask.assignedTo);
+      formData.append("assignedBy", doneTask.assignedBy);
+      formData.append("priority", doneTask.priority);
+      formData.append("status", "Done");
+      formData.append("startDate", doneTask.startDate || "");
+      formData.append("dueDate", doneTask.dueDate || "");
+      formData.append("progress", 100);
+      formData.append("etcMinutes", doneTask.etcMinutes || 0);
+      formData.append("atcMinutes", atcInput || 0);
+      formData.append("l1", doneTask.l1 || "");
+      formData.append("l2", doneTask.l2 || "");
+      formData.append("trainingLink", doneTask.trainingLink || "");
+      formData.append("videoLink", doneTask.videoLink || "");
+      formData.append("formLink", doneTask.formLink || "");
+      formData.append("formReportLink", doneTask.formReportLink || "");
+      formData.append("checklistLink", doneTask.checklistLink || "");
+
+      const res = await apiFetch(`/api/tasks/${doneTask._id}`, {
+        method: "PUT",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success("Task marked Done");
+        setDoneTask(null);
+        setAtcInput("");
+        onTasksChanged();
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Something went wrong");
     }
   };
 
@@ -482,56 +538,59 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
         </GlassPanel>
       </motion.div>
 
-      {/* Stat pills */}
-      <div className="flex gap-3 overflow-x-auto pb-1">
-        <StatPill label="Pending" value={pendingCount} color="#2563EB" icon={ListTodo} />
-        <StatPill label="Overdue" value={overdueCount} color="#EF4444" icon={AlertTriangle} />
-        <StatPill label="Open ETC" value={`${totalEtcHrs}h`} color="#F59E0B" icon={Clock} />
-        <StatPill label="Avg Progress" value={`${avgProgress}%`} color="#F4B400" icon={BarChart3} />
-        <StatPill label="Completed" value={tasks.filter((t) => t.status === "Done" || t.status === "Closed").length} color="#22C55E" icon={CheckCircle2} />
-      </div>
-
-      {/* Toolbar */}
+      {/* Stat pills + filter toolbar share one row so the filters fill the
+          leftover space next to the pills instead of stacking below them. */}
       <GlassPanel className="p-4 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[180px]">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search tasks..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className={`${inputCls} pl-9 !py-2.5`}
-          />
+        <div className="flex gap-3 overflow-x-auto pb-0.5 shrink-0">
+          <StatPill label="Pending" value={pendingCount} color="#2563EB" icon={ListTodo} />
+          <StatPill label="Overdue" value={overdueCount} color="#EF4444" icon={AlertTriangle} />
+          <StatPill label="Open ETC" value={`${totalEtcHrs}h`} color="#F59E0B" icon={Clock} />
+          <StatPill label="Actual (ATC)" value={`${totalAtcHrs}h`} color="#8B5CF6" icon={Clock} />
+          <StatPill label="Avg Progress" value={`${avgProgress}%`} color="#F4B400" icon={BarChart3} />
+          <StatPill label="Completed" value={tasks.filter((t) => t.status === "Done" || t.status === "Closed").length} color="#22C55E" icon={CheckCircle2} />
         </div>
 
-        <select value={groupFilter} onChange={(e) => setGroupFilter(e.target.value)} className={`${inputCls} !py-2.5 w-auto`}>
-          <option value="All">All Groups</option>
-          {groups.map((g) => (
-            <option key={g} value={g}>{g}</option>
-          ))}
-        </select>
+        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[240px] lg:justify-end">
+          <div className="relative flex-1 min-w-[160px] max-w-[220px]">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search tasks..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className={`${inputCls} pl-8 !py-2 !w-full text-xs`}
+            />
+          </div>
 
-        <select value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)} className={`${inputCls} !py-2.5 w-auto`}>
-          <option value="All">All Assignees</option>
-          {employees.map((emp) => (
-            <option key={emp._id} value={emp.name}>{emp.name}</option>
-          ))}
-        </select>
+          <select value={groupFilter} onChange={(e) => setGroupFilter(e.target.value)} className={`${inputCls} !py-2 !w-auto text-xs`}>
+            <option value="All">All Groups</option>
+            {groups.map((g) => (
+              <option key={g} value={g}>{g}</option>
+            ))}
+          </select>
 
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`${inputCls} !py-2.5 w-auto`}>
-          <option value="All">Status: All</option>
-          <option value="Todo">Todo</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Done">Done</option>
-          <option value="Closed">Closed</option>
-        </select>
+          <select value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)} className={`${inputCls} !py-2 !w-auto text-xs`}>
+            <option value="All">All Assignees</option>
+            {employees.map((emp) => (
+              <option key={emp._id} value={emp.name}>{emp.name}</option>
+            ))}
+          </select>
 
-        <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className={`${inputCls} !py-2.5 w-auto`}>
-          <option value="All">Priority: All</option>
-          <option value="High">High</option>
-          <option value="Medium">Medium</option>
-          <option value="Low">Low</option>
-        </select>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`${inputCls} !py-2 !w-auto text-xs`}>
+            <option value="All">Status: All</option>
+            <option value="Todo">Todo</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Done">Done</option>
+            <option value="Closed">Closed</option>
+          </select>
+
+          <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className={`${inputCls} !py-2 !w-auto text-xs`}>
+            <option value="All">Priority: All</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
       </GlassPanel>
 
       {/* Table */}
@@ -553,7 +612,7 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
                   <th className="px-4 py-4">Assignor</th>
                   <th className="px-4 py-4">Assignee</th>
                   <th className="px-4 py-4">Due</th>
-                  <th className="px-4 py-4">ETC</th>
+                  <th className="px-4 py-4">ETC / ATC</th>
                   <th className="px-4 py-4">Priority</th>
                   <th className="px-4 py-4">Status</th>
                   <th className="px-4 py-4">Progress</th>
@@ -618,7 +677,12 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
                       </td>
 
                       <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-500 tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                        {task.etcMinutes ? `${task.etcMinutes}m` : "-"}
+                        <div className="flex flex-col leading-tight">
+                          <span>ETC {task.etcMinutes ? `${task.etcMinutes}m` : "-"}</span>
+                          <span className="text-violet-500">
+                            ATC {task.atcMinutes ? `${task.atcMinutes}m` : "-"}
+                          </span>
+                        </div>
                       </td>
 
                       <td className="px-4 py-4 whitespace-nowrap">
@@ -657,6 +721,15 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
 
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex justify-center items-center gap-2">
+                          {task.status !== "Done" && task.status !== "Closed" && (
+                            <button
+                              onClick={() => openDonePrompt(task)}
+                              className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-all active:scale-95 shadow-sm"
+                              title="Mark Done"
+                            >
+                              <CheckCircle2 size={14} className="stroke-[2.5]" />
+                            </button>
+                          )}
                           <button
                             onClick={() => openEditTask(task)}
                             className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 transition-all active:scale-95 shadow-sm"
@@ -800,6 +873,18 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
                     className={inputCls}
                     value={form.etcMinutes}
                     onChange={(e) => setForm({ ...form, etcMinutes: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelCls}>ATC (Actual Minutes)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Set on completion"
+                    className={inputCls}
+                    value={form.atcMinutes}
+                    onChange={(e) => setForm({ ...form, atcMinutes: e.target.value })}
                   />
                 </div>
 
@@ -1031,6 +1116,55 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
                 >
                   <CheckCircle2 size={15} className="stroke-[2.5]" />
                   Create
+                </button>
+              </div>
+            </form>
+          </Modal>
+        )}
+      </AnimatePresence>
+
+      {/* Mark Done — ATC entry popup */}
+      <AnimatePresence>
+        {doneTask && (
+          <Modal
+            title="Mark Task as Done"
+            icon={<CheckCircle2 size={18} className="stroke-[2.5]" />}
+            onClose={() => setDoneTask(null)}
+            wide={false}
+          >
+            <form onSubmit={confirmDone} className="flex flex-col gap-5">
+              <p className="text-sm text-slate-500">
+                <span className="font-bold text-slate-800">{doneTask.title}</span> — enter the actual time
+                taken (ATC) to complete this task.
+              </p>
+              <div>
+                <label className={labelCls}>Actual Time Taken (Minutes) *</label>
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  autoFocus
+                  placeholder="e.g. 15"
+                  className={inputCls}
+                  value={atcInput}
+                  onChange={(e) => setAtcInput(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-3 justify-end pt-2 border-t border-slate-900/[0.06]">
+                <button
+                  type="button"
+                  onClick={() => setDoneTask(null)}
+                  className="bg-slate-100 border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-200 active:scale-[0.98] transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-xl text-sm font-bold active:scale-[0.98] transition-all duration-200 text-[#0F172A] flex items-center justify-center gap-1.5"
+                  style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", boxShadow: "0 8px 22px -4px rgba(244,180,0,0.4)" }}
+                >
+                  <CheckCircle2 size={15} className="stroke-[2.5]" />
+                  Confirm Done
                 </button>
               </div>
             </form>

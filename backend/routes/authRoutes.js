@@ -4,7 +4,22 @@ const jwt = require("jsonwebtoken");
 
 const router = express.Router();
 const User = require("../models/User");
-const { protect, adminOnly } = require("../middleware/auth");
+const { protect, adminOnly, managerOrAdmin } = require("../middleware/auth");
+
+// Best-effort: if a valid admin/manager token is attached, treat this as a
+// staff-created account (Employees.jsx) rather than a public signup request.
+function getRequesterRole(req) {
+  const header = req.headers.authorization;
+  const token = header && header.startsWith("Bearer ") ? header.split(" ")[1] : null;
+
+  if (!token) return null;
+
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET).role;
+  } catch {
+    return null;
+  }
+}
 
 // SIGNUP
 router.post("/signup", async (req, res) => {
@@ -20,9 +35,12 @@ router.post("/signup", async (req, res) => {
   employeeId,
 } = req.body;
 
-    const existingUser = await User.findOne({
-      $or: [{ email }, { employeeId }],
-    });
+    const orConditions = [{ email }];
+    if (employeeId) orConditions.push({ employeeId });
+
+    const existingUser = await User.findOne(
+      orConditions.length > 1 ? { $or: orConditions } : orConditions[0]
+    );
 
     if (existingUser) {
       return res.status(400).json({
@@ -41,11 +59,23 @@ router.post("/signup", async (req, res) => {
     ? Number((monthlySalary / (8 * 6 * 4.33)).toFixed(2))
     : 0;
 
+    const requesterRole = getRequesterRole(req);
+    const isStaffCreated = requesterRole === "admin" || requesterRole === "manager";
+
+    // Public signups can never self-assign a role, and a manager can only
+    // create regular employees — only an admin can grant the manager role.
+    const finalRole = isStaffCreated
+      ? requesterRole === "admin"
+        ? role || "employee"
+        : "employee"
+      : "employee";
+
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
-      role: role || "employee",
+      role: finalRole,
+      status: isStaffCreated ? "approved" : "pending",
       joiningDate,
       monthlySalary,
 monthlyHours,
@@ -57,7 +87,92 @@ lastSalaryPaidYear: 0,
 
     res.status(201).json({
       success: true,
-      message: "Account Created Successfully",
+      message: isStaffCreated
+        ? "Account Created Successfully"
+        : "Signup request submitted. An admin or manager needs to approve your account before you can log in.",
+      user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// PENDING SIGNUPS (admin/manager review queue)
+router.get("/pending", protect, managerOrAdmin, async (req, res) => {
+  try {
+    const pendingUsers = await User.find({ status: "pending" })
+      .select("name email createdAt")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      pendingUsers,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// APPROVE SIGNUP
+router.put("/approve/:id", protect, managerOrAdmin, async (req, res) => {
+  try {
+    // A manager may only approve regular employees; only an admin can grant
+    // the manager role at approval time.
+    const requestedRole = req.body.role;
+    const role =
+      req.user.role === "admin" && requestedRole ? requestedRole : "employee";
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { status: "approved", role },
+      { new: true }
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Signup request not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Account Approved",
+      user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// REJECT SIGNUP
+router.put("/reject/:id", protect, managerOrAdmin, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { status: "rejected" },
+      { new: true }
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Signup request not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Signup Request Rejected",
       user,
     });
   } catch (error) {
@@ -98,6 +213,20 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Invalid Password",
+      });
+    }
+
+    if (user.status === "pending") {
+      return res.status(403).json({
+        success: false,
+        message: "Your account is awaiting admin/manager approval.",
+      });
+    }
+
+    if (user.status === "rejected") {
+      return res.status(403).json({
+        success: false,
+        message: "Your signup request was rejected. Contact an admin.",
       });
     }
 

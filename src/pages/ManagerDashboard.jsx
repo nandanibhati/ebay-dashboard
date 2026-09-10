@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import ManagerSidebar from "../components/ManagerSidebar";
 import TaskManagerBoard from "../components/TaskManagerBoard";
+import PendingSignups from "../components/PendingSignups";
 import { Toaster } from "react-hot-toast";
 import { Menu, X, Package, Clock3, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
@@ -205,6 +206,8 @@ export default function ManagerDashboard() {
               </GlassPanel>
             ))}
           </div>
+
+          <PendingSignups isAdmin={false} />
 
           <TaskManagerBoard
             tasks={tasks}

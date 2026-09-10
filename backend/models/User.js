@@ -23,6 +23,12 @@ const userSchema = new mongoose.Schema({
     default: "employee",
   },
 
+  status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "approved",
+  },
+
   employeeId: {
     type: String,
     unique: true,

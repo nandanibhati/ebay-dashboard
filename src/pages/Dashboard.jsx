@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "../api";
 import NotificationBell from "../components/NotificationBell";
+import PendingSignups from "../components/PendingSignups";
 import { isSalaryDueToday } from "../utils/salary";
 
 /* Design tokens - BuildMaster reference palette
@@ -662,6 +663,8 @@ export default function Dashboard() {
               </button>
             </Card>
           )}
+
+          <PendingSignups isAdmin />
 
           {/* ── Stat cards ── */}
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-4">

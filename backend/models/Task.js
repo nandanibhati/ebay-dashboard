@@ -61,6 +61,11 @@ const taskSchema = new mongoose.Schema(
       default: 0,
     },
 
+    atcMinutes: {
+      type: Number,
+      default: 0,
+    },
+
     l1: { type: String, default: "" },
     l2: { type: String, default: "" },
     trainingLink: { type: String, default: "" },

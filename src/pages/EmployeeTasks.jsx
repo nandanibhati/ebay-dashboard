@@ -92,6 +92,9 @@ export default function Tasks() {
   const [employees, setEmployees] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false); // UI-only drawer state
+  const [doneTaskId, setDoneTaskId] = useState(null);
+  const [pendingStatus, setPendingStatus] = useState(null);
+  const [atcInput, setAtcInput] = useState("");
 
   const [form, setForm] = useState({
     title: "",
@@ -230,7 +233,7 @@ export default function Tasks() {
     }
   };
 
-  const updateTaskStatus = async (id, status) => {
+  const updateTaskStatus = async (id, status, atcMinutes) => {
     try {
       const currentTask = tasks.find((task) => task._id === id);
 
@@ -255,6 +258,10 @@ export default function Tasks() {
       formData.append("startDate", currentTask.startDate || "");
       formData.append("dueDate", currentTask.dueDate || "");
       formData.append("progress", progress);
+      formData.append("etcMinutes", currentTask.etcMinutes || 0);
+      if (atcMinutes !== undefined) {
+        formData.append("atcMinutes", atcMinutes);
+      }
 
       const res = await apiFetch(
         `/api/tasks/${id}`,
@@ -274,6 +281,26 @@ export default function Tasks() {
       console.log(error);
       toast.error("Failed to update task");
     }
+  };
+
+  // Done/Closed needs the person completing it to report actual time spent
+  // (ATC) — everything else can update immediately.
+  const handleStatusChange = (task, status) => {
+    if (status === "Done" || status === "Closed") {
+      setDoneTaskId(task._id);
+      setPendingStatus(status);
+      setAtcInput(task.atcMinutes || "");
+    } else {
+      updateTaskStatus(task._id, status);
+    }
+  };
+
+  const confirmDone = (e) => {
+    e.preventDefault();
+    updateTaskStatus(doneTaskId, pendingStatus, atcInput || 0);
+    setDoneTaskId(null);
+    setPendingStatus(null);
+    setAtcInput("");
   };
 
   // Task stats
@@ -781,7 +808,7 @@ export default function Tasks() {
                           <select
                             value={task.status}
                             onChange={(e) =>
-                              updateTaskStatus(task._id, e.target.value)
+                              handleStatusChange(task, e.target.value)
                             }
                             className={`px-3 py-2 rounded-lg text-xs font-bold border outline-none cursor-pointer flex-1 ${statusBadgeCls(
                               task.status
@@ -850,6 +877,13 @@ export default function Tasks() {
                             />
                           </div>
                         </div>
+
+                        <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400 tabular-nums">
+                          <span>ETC {task.etcMinutes ? `${task.etcMinutes}m` : "-"}</span>
+                          <span className="text-violet-500">
+                            ATC {task.atcMinutes ? `${task.atcMinutes}m` : "-"}
+                          </span>
+                        </div>
                       </motion.div>
                     ))}
                   </AnimatePresence>
@@ -869,6 +903,7 @@ export default function Tasks() {
                         <th className="px-4 py-4">Status</th>
                         <th className="px-4 py-4">Due Date</th>
                         <th className="px-4 py-4">Progress</th>
+                        <th className="px-4 py-4">ETC / ATC</th>
                         <th className="px-4 py-4">Screenshot</th>
                         <th className="px-6 py-4 text-center">Actions</th>
                       </tr>
@@ -932,7 +967,7 @@ export default function Tasks() {
                             <select
                               value={task.status}
                               onChange={(e) =>
-                                updateTaskStatus(task._id, e.target.value)
+                                handleStatusChange(task, e.target.value)
                               }
                               className={`px-3 py-2 rounded-lg text-xs font-bold border outline-none cursor-pointer transition-colors hover:brightness-95 ${statusBadgeCls(
                                 task.status
@@ -982,6 +1017,14 @@ export default function Tasks() {
                                   transition={{ duration: 0.5, ease: "easeOut" }}
                                 />
                               </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-500 tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                            <div className="flex flex-col leading-tight">
+                              <span>ETC {task.etcMinutes ? `${task.etcMinutes}m` : "-"}</span>
+                              <span className="text-violet-500">
+                                ATC {task.atcMinutes ? `${task.atcMinutes}m` : "-"}
+                              </span>
                             </div>
                           </td>
                           <td className="px-4 py-4 text-center">
@@ -1047,6 +1090,69 @@ export default function Tasks() {
           </motion.div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {doneTaskId && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setDoneTaskId(null)} />
+            <motion.div
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.2 }}
+              className="relative w-full max-w-sm"
+            >
+              <GlassPanel hover={false} className="!bg-white/95 p-6 flex flex-col gap-5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg" style={{ background: "rgba(244,180,0,0.12)", color: "#B45F06" }}>
+                    <CheckCircle2 size={18} className="stroke-[2.5]" />
+                  </div>
+                  <h2 className="text-base font-semibold text-slate-800 flex-1" style={{ fontFamily: "Sora, sans-serif" }}>
+                    Mark Task as {pendingStatus}
+                  </h2>
+                  <button
+                    onClick={() => setDoneTaskId(null)}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <form onSubmit={confirmDone} className="flex flex-col gap-4">
+                  <div>
+                    <label className={labelCls}>Actual Time Taken (Minutes) *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      required
+                      autoFocus
+                      placeholder="e.g. 15"
+                      className={inputCls}
+                      value={atcInput}
+                      onChange={(e) => setAtcInput(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex gap-3 justify-end pt-2 border-t border-slate-900/[0.06]">
+                    <button
+                      type="button"
+                      onClick={() => setDoneTaskId(null)}
+                      className="bg-slate-100 border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-200 active:scale-[0.98] transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-2.5 rounded-xl text-sm font-bold active:scale-[0.98] transition-all duration-200 text-[#0F172A]"
+                      style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", boxShadow: "0 8px 22px -4px rgba(244,180,0,0.4)" }}
+                    >
+                      Confirm
+                    </button>
+                  </div>
+                </form>
+              </GlassPanel>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         @keyframes driftA { 0%,100% { transform: translate(0,0); } 50% { transform: translate(30px,20px); } }
