@@ -26,7 +26,7 @@ router.post("/", async (req, res) => {
     const adFee = Number(req.body.adFee || 0);
     const deliveryCost = Number(req.body.deliveryCost || 0);
 
-    const revenue = sellingPrice;
+    const revenue = quantity * sellingPrice;
 
     const totalCost =
       quantity * costPrice + ebayFee + adFee + deliveryCost;
@@ -157,7 +157,7 @@ router.put("/:id", async (req, res) => {
     const adFee = Number(req.body.adFee || 0);
     const deliveryCost = Number(req.body.deliveryCost || 0);
 
-    const revenue = sellingPrice;
+    const revenue = quantity * sellingPrice;
 
     const totalCost =
       quantity * costPrice + ebayFee + adFee + deliveryCost;

@@ -58,7 +58,7 @@ export default function Orders() {
       const ebayFee = Number(editingOrder.ebayFee || 0);
       const adFee = Number(editingOrder.adFee || 0);
       const deliveryCost = Number(editingOrder.deliveryCost || 0);
-      const revenue = sellingPrice;
+      const revenue = quantity * sellingPrice;
 
       const totalCost =
         quantity * costPrice +
