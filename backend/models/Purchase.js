@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 
 const purchaseSchema = new mongoose.Schema(
   {
+    // Not a fixed enum — supplier list is editable via Settings.
     supplier: {
       type: String,
-      enum: ["Temu", "AliExpress"],
       required: true,
     },
 

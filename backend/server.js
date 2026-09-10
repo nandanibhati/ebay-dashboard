@@ -50,6 +50,7 @@ const ebayRoutes = require("./routes/ebayRoutes");
 const templateRoutes = require("./routes/templateRoutes");
 const backmarketRoutes = require("./routes/backmarketRoutes");
 const automatedTaskRoutes = require("./routes/automatedTaskRoutes");
+const settingsRoutes = require("./routes/settingsRoutes");
 const { startTaskScheduler } = require("./utils/taskScheduler");
 // =========================
 // MongoDB
@@ -176,6 +177,7 @@ app.use("/api/ebay", ebayRoutes);
 app.use("/api/templates", templateRoutes);
 app.use("/api/backmarket", backmarketRoutes);
 app.use("/api/automated-tasks", automatedTaskRoutes);
+app.use("/api/settings", settingsRoutes);
 
 // =========================
 // Root

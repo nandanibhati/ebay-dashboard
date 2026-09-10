@@ -10,6 +10,7 @@ import {
   Package,
   CalendarDays,
   Archive,
+  Settings,
   LogOut,
   Sparkles,
   FileText,
@@ -113,6 +114,11 @@ export default function Sidebar() {
       name: "Integrations",
       icon: Store,
       path: "/ebay-integration",
+    },
+    {
+      name: "Settings",
+      icon: Settings,
+      path: "/settings",
     },
   ];
 

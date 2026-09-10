@@ -34,6 +34,8 @@ export default function Orders() {
   const [toDate, setToDate] = useState("");
   const [editingOrder, setEditingOrder] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false); // UI-only drawer state
+  const [orderSites, setOrderSites] = useState([]);
+  const [orderStatuses, setOrderStatuses] = useState([]);
 
   useEffect(() => {
     ensureFonts();
@@ -43,6 +45,18 @@ export default function Orders() {
     apiFetch("/api/orders")
       .then((res) => res.json())
       .then((data) => setOrders(data))
+      .catch((err) => console.log(err));
+  }, []);
+
+  useEffect(() => {
+    apiFetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setOrderSites(data.settings.orderSites || []);
+          setOrderStatuses(data.settings.orderStatuses || []);
+        }
+      })
       .catch((err) => console.log(err));
   }, []);
 
@@ -350,13 +364,9 @@ export default function Orders() {
             className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#F4B400] focus:ring-2 focus:ring-[#F4B400]/25 transition-all text-slate-700 font-medium cursor-pointer"
           >
             <option value="">All Sites</option>
-            <option value="TPS">TPS</option>
-            <option value="SmartZone">SmartZone</option>
-            <option value="Veluntra">Veluntra</option>
-            <option value="Amazon">Amazon</option>
-            <option value="TikTok">TikTok penkraft</option>
-            <option value="Shopify">Shopify</option>
-            <option value="Backmarket">Backmarket</option>
+            {orderSites.map((site) => (
+              <option key={site} value={site}>{site === "TikTok" ? "TikTok penkraft" : site}</option>
+            ))}
           </select>
 
           <select
@@ -365,14 +375,9 @@ export default function Orders() {
             className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#F4B400] focus:ring-2 focus:ring-[#F4B400]/25 transition-all text-slate-700 font-medium cursor-pointer"
           >
             <option value="">All Status</option>
-            <option value="Pending">Pending</option>
-            <option value="Hold">Hold</option>
-            <option value="Expecting">Expecting</option>
-            <option value="Shipped">Shipped</option>
-            <option value="Delivered">Delivered</option>
-            <option value="Returned">Returned</option>
-            <option value="Cancelled">Cancelled</option>
-            <option value="Partial Refund">Partial Refund</option>
+            {orderStatuses.map((status) => (
+              <option key={status} value={status}>{status}</option>
+            ))}
           </select>
 
           <select
@@ -512,14 +517,9 @@ export default function Orders() {
                           }}
                           className={`text-xs font-semibold px-2 py-1.5 rounded-lg border outline-none cursor-pointer ring-1 transition-all ${sc.badge} ${sc.dot.replace("bg-", "border-")}`}
                         >
-                          <option value="Pending">Pending</option>
-                          <option value="Hold">Hold</option>
-                          <option value="Expecting">Expecting</option>
-                          <option value="Shipped">Shipped</option>
-                          <option value="Delivered">Delivered</option>
-                          <option value="Returned">Returned</option>
-                          <option value="Cancelled">Cancelled</option>
-                          <option value="Partial Refund">Partial Refund</option>
+                          {orderStatuses.map((status) => (
+                            <option key={status} value={status}>{status}</option>
+                          ))}
                         </select>
                       </td>
 
@@ -633,13 +633,9 @@ export default function Orders() {
                   <div>
                     <label className={labelCls}>Status</label>
                     <select value={editingOrder.status} onChange={(e) => setEditingOrder({ ...editingOrder, status: e.target.value })} className={inputCls + " cursor-pointer"}>
-                      <option value="Pending">Pending</option>
-                      <option value="Hold">Hold</option>
-                      <option value="Expecting">Expecting</option>
-                      <option value="Shipped">Shipped</option>
-                      <option value="Delivered">Delivered</option>
-                      <option value="Returned">Returned</option>
-                      <option value="Cancelled">Cancelled</option>
+                      {orderStatuses.map((status) => (
+                        <option key={status} value={status}>{status}</option>
+                      ))}
                     </select>
                   </div>
                 </div>

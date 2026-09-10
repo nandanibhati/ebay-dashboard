@@ -22,6 +22,7 @@ import AdminSalary from "./pages/AdminSalary";
 import AdminLeaves from "./pages/AdminLeaves";
 import AdminTasks from "./pages/AdminTasks";
 import ManagerDashboard from "./pages/ManagerDashboard";
+import Settings from "./pages/Settings";
 import EmployeeTasks from "./pages/EmployeeTasks";
 import Notes from "./pages/Notes";
 import Templates from "./pages/Templates";
@@ -150,6 +151,17 @@ function App() {
 <Route
   path="/ebay-integration"
   element={<PrivateRoute><EbayIntegration /></PrivateRoute>}
+/>
+
+<Route
+  path="/settings"
+  element={
+    <PrivateRoute>
+      {localStorage.getItem("role") === "admin"
+        ? <Settings />
+        : <Navigate to="/dashboard" />}
+    </PrivateRoute>
+  }
 />
 
         <Route path="/signup" element={<Signup />} />

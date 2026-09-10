@@ -172,6 +172,8 @@ export default function TaskManagerBoard({
   const [showAutomatedList, setShowAutomatedList] = useState(false);
   const [automatedTasks, setAutomatedTasks] = useState([]);
   const [automatedLoaded, setAutomatedLoaded] = useState(false);
+  const [taskPriorities, setTaskPriorities] = useState(["High", "Medium", "Low"]);
+  const [taskGroups, setTaskGroups] = useState([]);
 
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState("All");
@@ -320,10 +322,18 @@ export default function TaskManagerBoard({
       ? "bg-red-50 border-red-100 text-red-700"
       : priority === "Medium"
       ? "bg-amber-50 border-amber-100 text-amber-700"
-      : "bg-emerald-50 border-emerald-100 text-emerald-700";
+      : priority === "Low"
+      ? "bg-emerald-50 border-emerald-100 text-emerald-700"
+      : "bg-slate-100 border-slate-200 text-slate-600";
 
   const priorityDot = (priority) =>
-    priority === "High" ? "bg-red-500" : priority === "Medium" ? "bg-amber-500" : "bg-emerald-500";
+    priority === "High"
+      ? "bg-red-500"
+      : priority === "Medium"
+      ? "bg-amber-500"
+      : priority === "Low"
+      ? "bg-emerald-500"
+      : "bg-slate-400";
 
   const statusBadge = (status) =>
     status === "Done" || status === "Closed"
@@ -469,6 +479,22 @@ export default function TaskManagerBoard({
     if (initialViewMode === "archived") loadArchivedTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialViewMode]);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await apiFetch("/api/settings");
+        const data = await res.json();
+        if (data.success) {
+          if (data.settings.taskPriorities?.length) setTaskPriorities(data.settings.taskPriorities);
+          setTaskGroups(data.settings.taskGroups || []);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const restoreTask = async (id) => {
     try {
@@ -699,6 +725,12 @@ export default function TaskManagerBoard({
 
   return (
     <div className="flex flex-col gap-6">
+      <datalist id="task-groups-list">
+        {taskGroups.map((g) => (
+          <option key={g} value={g} />
+        ))}
+      </datalist>
+
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <GlassPanel className="p-6 sm:p-8 overflow-hidden relative">
@@ -847,9 +879,9 @@ export default function TaskManagerBoard({
 
           <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className={`${inputCls} !py-2 !w-auto text-xs`}>
             <option value="All">Priority: All</option>
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
+            {taskPriorities.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
           </select>
 
           {viewMode === "archived" && (
@@ -1158,6 +1190,7 @@ export default function TaskManagerBoard({
                   <label className={labelCls}>Group</label>
                   <input
                     type="text"
+                    list="task-groups-list"
                     placeholder="e.g. New Item"
                     className={inputCls}
                     value={form.group}
@@ -1187,9 +1220,9 @@ export default function TaskManagerBoard({
                     value={form.priority}
                     onChange={(e) => setForm({ ...form, priority: e.target.value })}
                   >
-                    <option value="High">High Priority</option>
-                    <option value="Medium">Medium Priority</option>
-                    <option value="Low">Low Priority</option>
+                    {taskPriorities.map((p) => (
+                      <option key={p} value={p}>{p} Priority</option>
+                    ))}
                   </select>
                 </div>
 
@@ -1354,7 +1387,7 @@ export default function TaskManagerBoard({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className={labelCls}>Group</label>
-                  <input type="text" placeholder="Enter Group" className={inputCls} value={automatedForm.group} onChange={(e) => setAutomatedForm({ ...automatedForm, group: e.target.value })} />
+                  <input type="text" list="task-groups-list" placeholder="Enter Group" className={inputCls} value={automatedForm.group} onChange={(e) => setAutomatedForm({ ...automatedForm, group: e.target.value })} />
                 </div>
                 <div className="md:col-span-2 lg:col-span-1">
                   <label className={labelCls}>Task *</label>
@@ -1377,9 +1410,9 @@ export default function TaskManagerBoard({
                 <div>
                   <label className={labelCls}>Priority</label>
                   <select className={inputCls} value={automatedForm.priority} onChange={(e) => setAutomatedForm({ ...automatedForm, priority: e.target.value })}>
-                    <option value="High">High</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Low">Low</option>
+                    {taskPriorities.map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
                   </select>
                 </div>
                 <div>

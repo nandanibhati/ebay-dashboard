@@ -79,6 +79,8 @@ export default function AddOrder() {
   const role = localStorage.getItem("role");
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false); // UI-only drawer state
+  const [orderSites, setOrderSites] = useState([]);
+  const [orderStatuses, setOrderStatuses] = useState([]);
   const [form, setForm] = useState({
     site: "",
     date: localStorage.getItem("selectedDate") || new Date().toISOString().split("T")[0],
@@ -99,6 +101,22 @@ export default function AddOrder() {
 
   useEffect(() => {
     ensureFonts();
+  }, []);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await apiFetch("/api/settings");
+        const data = await res.json();
+        if (data.success) {
+          setOrderSites(data.settings.orderSites || []);
+          setOrderStatuses(data.settings.orderStatuses || []);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    fetchSettings();
   }, []);
 
   const handleSkuChange = async (e) => {
@@ -341,13 +359,11 @@ export default function AddOrder() {
               <Field label="Site *" icon={Store}>
                 <SelectField name="site" value={form.site} onChange={handleChange}>
                   <option value="">Select Site</option>
-                  <option value="TPS">TPS</option>
-                  <option value="SmartZone">SmartZone</option>
-                  <option value="Veluntra">Veluntra</option>
-                  <option value="Amazon">Amazon</option>
-                  <option value="TikTok">TikTok penkraft</option>
-                  <option value="Shopify">Shopify</option>
-                  <option value="Backmarket">Backmarket</option>
+                  {orderSites.map((site) => (
+                    <option key={site} value={site}>
+                      {site === "TikTok" ? "TikTok penkraft" : site}
+                    </option>
+                  ))}
                 </SelectField>
               </Field>
 
@@ -438,13 +454,9 @@ export default function AddOrder() {
 
               <Field label="Order Status" icon={CheckCircle2}>
                 <SelectField name="status" value={form.status} onChange={handleChange}>
-                  <option value="Pending">Pending</option>
-                  <option value="Hold">Hold</option>
-                  <option value="Packed">Packed</option>
-                  <option value="Shipped">Shipped</option>
-                  <option value="Delivered">Delivered</option>
-                  <option value="Returned">Returned</option>
-                  <option value="Cancelled">Cancelled</option>
+                  {orderStatuses.map((status) => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
                 </SelectField>
               </Field>
 

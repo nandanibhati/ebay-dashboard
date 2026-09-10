@@ -21,9 +21,9 @@ const taskSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Not a fixed enum — priority labels are editable via Settings.
     priority: {
       type: String,
-      enum: ["High", "Medium", "Low"],
       default: "Medium",
     },
 

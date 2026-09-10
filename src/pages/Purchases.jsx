@@ -53,6 +53,7 @@ export default function Purchases() {
   const [supplierFilter, setSupplierFilter] = useState("All");
   const [expandedNote, setExpandedNote] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false); // UI-only drawer state
+  const [purchaseSuppliers, setPurchaseSuppliers] = useState([]);
 
   const [form, setForm] = useState({
     supplier: "",
@@ -66,6 +67,17 @@ export default function Purchases() {
 
   useEffect(() => {
     ensureFonts();
+  }, []);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await apiFetch("/api/settings");
+        const data = await res.json();
+        if (data.success) setPurchaseSuppliers(data.settings.purchaseSuppliers || []);
+      } catch (err) { console.log(err); }
+    };
+    fetchSettings();
   }, []);
 
   const fetchPurchases = async () => {
@@ -245,7 +257,7 @@ export default function Purchases() {
           </div>
 
           <div className="flex gap-1.5">
-            {["All", "Temu", "AliExpress"].map((s) => (
+            {["All", ...purchaseSuppliers].map((s) => (
               <button
                 key={s}
                 onClick={() => setSupplierFilter(s)}
@@ -327,8 +339,9 @@ export default function Purchases() {
                     className="w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-700 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#F4B400]/40 focus:border-[#F4B400] transition-all duration-200 cursor-pointer"
                   >
                     <option value="">Select Supplier</option>
-                    <option value="Temu">Temu</option>
-                    <option value="AliExpress">AliExpress</option>
+                    {purchaseSuppliers.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
                   </select>
                 </div>
 
