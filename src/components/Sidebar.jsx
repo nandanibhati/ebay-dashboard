@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Package,
   CalendarDays,
+  Archive,
   LogOut,
   Sparkles,
   FileText,
@@ -51,6 +52,11 @@ export default function Sidebar() {
       name: "Tasks",
       icon: ClipboardList,
       path: "/tasks",
+    },
+    {
+      name: "Archived Tasks",
+      icon: Archive,
+      path: "/tasks?view=archived",
     },
     {
       name: "Stock",

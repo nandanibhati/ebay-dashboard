@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import TaskManagerBoard from "../components/TaskManagerBoard";
 import { Toaster } from "react-hot-toast";
@@ -50,6 +51,7 @@ export default function AdminTasks() {
   const [tasks, setTasks] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     ensureFonts();
@@ -122,6 +124,7 @@ export default function AdminTasks() {
             employees={employees}
             currentUserName={localStorage.getItem("employeeName") || "Admin"}
             onTasksChanged={fetchTasks}
+            initialViewMode={searchParams.get("view") === "archived" ? "archived" : "active"}
           />
         </div>
       </div>

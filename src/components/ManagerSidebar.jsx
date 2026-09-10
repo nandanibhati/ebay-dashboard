@@ -5,6 +5,7 @@ import {
   Sparkles,
   FileText,
   Store,
+  Archive,
 } from "lucide-react";
 
 import { Link, useLocation } from "react-router-dom";
@@ -28,6 +29,11 @@ export default function ManagerSidebar() {
       name: "Team Chat",
       icon: MessageCircle,
       path: "/chat",
+    },
+    {
+      name: "Archived Tasks",
+      icon: Archive,
+      path: "/manager?view=archived",
     },
     {
       name: "Notes",

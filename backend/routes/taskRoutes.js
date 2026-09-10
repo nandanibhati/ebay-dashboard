@@ -53,7 +53,16 @@ router.post(
 // GET ARCHIVED (SOFT-DELETED) TASKS
 router.get("/archived", async (req, res) => {
   try {
-    const tasks = await Task.find({ isDeleted: true }).sort({
+    const filter = { isDeleted: true };
+
+    if (req.query.name) {
+      filter.$or = [
+        { assignedTo: req.query.name },
+        { assignedBy: req.query.name },
+      ];
+    }
+
+    const tasks = await Task.find(filter).sort({
       deletedAt: -1,
     });
 

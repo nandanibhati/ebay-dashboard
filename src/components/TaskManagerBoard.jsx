@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import {
@@ -137,10 +137,12 @@ function Modal({ title, icon, onClose, children, wide = true }) {
   );
 }
 
-function StatPill({ label, value, color, icon: Icon, subtitle }) {
+function StatPill({ label, value, color, icon: Icon, subtitle, onClick }) {
+  const Tag = onClick ? "button" : "div";
   return (
-    <div
-      className="flex items-center gap-2 px-4 py-2 rounded-full shrink-0 text-white shadow-sm"
+    <Tag
+      onClick={onClick}
+      className={`flex items-center gap-2 px-4 py-2 rounded-full shrink-0 text-white shadow-sm ${onClick ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
       style={{ background: color }}
       title={subtitle}
     >
@@ -149,11 +151,19 @@ function StatPill({ label, value, color, icon: Icon, subtitle }) {
       <span className="text-sm font-extrabold tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
         {value}
       </span>
-    </div>
+    </Tag>
   );
 }
 
-export default function TaskManagerBoard({ tasks, employees, currentUserName, onTasksChanged }) {
+export default function TaskManagerBoard({
+  tasks,
+  employees,
+  currentUserName,
+  onTasksChanged,
+  canManageAutomation = true,
+  archivedScopeName = null,
+  initialViewMode = "active",
+}) {
   const [editingId, setEditingId] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showAutomatedModal, setShowAutomatedModal] = useState(false);
@@ -172,7 +182,7 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
   const [doneTask, setDoneTask] = useState(null);
   const [atcInput, setAtcInput] = useState("");
 
-  const [viewMode, setViewMode] = useState("active");
+  const [viewMode, setViewMode] = useState(initialViewMode);
   const [archivedTasks, setArchivedTasks] = useState([]);
   const [archivedLoaded, setArchivedLoaded] = useState(false);
   const [deletedByFilter, setDeletedByFilter] = useState("All");
@@ -411,7 +421,10 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
 
   const loadArchivedTasks = async () => {
     try {
-      const res = await apiFetch("/api/tasks/archived");
+      const url = archivedScopeName
+        ? `/api/tasks/archived?name=${encodeURIComponent(archivedScopeName)}`
+        : "/api/tasks/archived";
+      const res = await apiFetch(url);
       const data = await res.json();
       if (data.success) {
         setArchivedTasks(data.tasks);
@@ -426,6 +439,12 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
     if (!archivedLoaded) loadArchivedTasks();
     setViewMode("archived");
   };
+
+  useEffect(() => {
+    setViewMode(initialViewMode);
+    if (initialViewMode === "archived") loadArchivedTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialViewMode]);
 
   const restoreTask = async (id) => {
     try {
@@ -651,6 +670,8 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
                     <Archive size={15} className="stroke-[2.5]" />
                     Archived Tasks
                   </button>
+                  {canManageAutomation && (
+                    <>
                   <button
                     onClick={openAutomatedList}
                     className="px-4 py-2.5 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"
@@ -665,6 +686,8 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
                     <Clock size={15} className="stroke-[2.5]" />
                     New Automated Task
                   </button>
+                    </>
+                  )}
                   <button
                     onClick={openCreateTask}
                     className="px-5 py-2.5 rounded-xl text-sm font-bold active:scale-[0.98] transition-all duration-200 text-[#0F172A] flex items-center gap-1.5"
@@ -703,7 +726,14 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
           <StatPill label="TAT" value={`${avgTatDays}d`} color="#06B6D4" icon={Timer} subtitle="Avg turnaround time" />
           <StatPill label="Avg Score" value={`${avgProgress}%`} color="#8B5CF6" icon={BarChart3} />
           <StatPill label="Missed" value={overdueCount} color="#DC2626" icon={AlertTriangle} subtitle="Overdue tasks" />
-          <StatPill label="Completed" value={doneTasks.length} color="#22C55E" icon={CheckCircle2} />
+          <StatPill
+            label="Completed"
+            value={doneTasks.length}
+            color="#22C55E"
+            icon={CheckCircle2}
+            onClick={() => setStatusFilter(statusFilter === "Done" ? "All" : "Done")}
+            subtitle="Click to filter Done tasks"
+          />
         </div>
         )}
 
@@ -837,13 +867,15 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
                         >
                           <RotateCcw size={14} className="stroke-[2.5]" />
                         </button>
-                        <button
-                          onClick={() => permanentDeleteTask(task._id)}
-                          className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-95 shadow-sm"
-                          title="Delete Permanently"
-                        >
-                          <Trash2 size={14} className="stroke-[2.5]" />
-                        </button>
+                        {canManageAutomation && (
+                          <button
+                            onClick={() => permanentDeleteTask(task._id)}
+                            className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-95 shadow-sm"
+                            title="Delete Permanently"
+                          >
+                            <Trash2 size={14} className="stroke-[2.5]" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

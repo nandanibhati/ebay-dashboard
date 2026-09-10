@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
 import TaskManagerBoard from "../components/TaskManagerBoard";
 import PendingSignups from "../components/PendingSignups";
@@ -61,6 +62,7 @@ export default function ManagerDashboard() {
   const [lowStockCount, setLowStockCount] = useState(0);
   const [presentTodayCount, setPresentTodayCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     ensureFonts();
@@ -214,6 +216,7 @@ export default function ManagerDashboard() {
             employees={employees}
             currentUserName={localStorage.getItem("employeeName") || "Manager"}
             onTasksChanged={fetchTasks}
+            initialViewMode={searchParams.get("view") === "archived" ? "archived" : "active"}
           />
         </div>
       </div>

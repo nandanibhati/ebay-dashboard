@@ -11,6 +11,7 @@ import {
   Sparkles,
   FileText,
   Store,
+  Archive,
 } from "lucide-react";
 
 import { Link, useLocation } from "react-router-dom";
@@ -49,6 +50,11 @@ export default function EmployeeSidebar() {
       name: "Tasks",
       icon: ClipboardList,
       path: "/employee-tasks",
+    },
+    {
+      name: "Archived Tasks",
+      icon: Archive,
+      path: "/employee-tasks?view=archived",
     },
     {
       name: "Stock",
