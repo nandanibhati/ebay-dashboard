@@ -182,6 +182,7 @@ export default function TaskManagerBoard({
   const [form, setForm] = useState(EMPTY_TASK_FORM);
   const [automatedForm, setAutomatedForm] = useState(EMPTY_AUTOMATED_FORM);
   const [doneTask, setDoneTask] = useState(null);
+  const [pendingStatus, setPendingStatus] = useState("Done");
   const [atcInput, setAtcInput] = useState("");
 
   const [viewMode, setViewMode] = useState(initialViewMode);
@@ -498,8 +499,9 @@ export default function TaskManagerBoard({
     }
   };
 
-  const openDonePrompt = (task) => {
+  const openDonePrompt = (task, targetStatus = "Done") => {
     setDoneTask(task);
+    setPendingStatus(targetStatus);
     setAtcInput(task.atcMinutes || "");
   };
 
@@ -515,7 +517,7 @@ export default function TaskManagerBoard({
       formData.append("assignedTo", doneTask.assignedTo);
       formData.append("assignedBy", doneTask.assignedBy);
       formData.append("priority", doneTask.priority);
-      formData.append("status", "Done");
+      formData.append("status", pendingStatus);
       formData.append("startDate", doneTask.startDate || "");
       formData.append("dueDate", doneTask.dueDate || "");
       formData.append("progress", 100);
@@ -536,7 +538,7 @@ export default function TaskManagerBoard({
       const data = await res.json();
 
       if (data.success) {
-        toast.success("Task marked Done");
+        toast.success(`Task marked ${pendingStatus}`);
         setDoneTask(null);
         setAtcInput("");
         onTasksChanged();
@@ -544,6 +546,55 @@ export default function TaskManagerBoard({
     } catch (error) {
       console.log(error);
       toast.error("Something went wrong");
+    }
+  };
+
+  // Quick inline status change from the table dropdown. Done/Closed still
+  // require the ATC popup; other transitions apply immediately.
+  const quickStatusChange = async (task, newStatus) => {
+    if (newStatus === "Done" || newStatus === "Closed") {
+      openDonePrompt(task, newStatus);
+      return;
+    }
+
+    try {
+      let progress = task.progress || 0;
+      if (newStatus === "In Progress" && progress === 0) progress = 25;
+
+      const formData = new FormData();
+      formData.append("title", task.title);
+      formData.append("description", task.description || "");
+      formData.append("group", task.group || "");
+      formData.append("assignedTo", task.assignedTo);
+      formData.append("assignedBy", task.assignedBy);
+      formData.append("priority", task.priority);
+      formData.append("status", newStatus);
+      formData.append("startDate", task.startDate || "");
+      formData.append("dueDate", task.dueDate || "");
+      formData.append("progress", progress);
+      formData.append("etcMinutes", task.etcMinutes || 0);
+      formData.append("atcMinutes", task.atcMinutes || 0);
+      formData.append("l1", task.l1 || "");
+      formData.append("l2", task.l2 || "");
+      formData.append("trainingLink", task.trainingLink || "");
+      formData.append("videoLink", task.videoLink || "");
+      formData.append("formLink", task.formLink || "");
+      formData.append("formReportLink", task.formReportLink || "");
+      formData.append("checklistLink", task.checklistLink || "");
+
+      const res = await apiFetch(`/api/tasks/${task._id}`, {
+        method: "PUT",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success("Status Updated");
+        onTasksChanged();
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to update status");
     }
   };
 
@@ -1008,12 +1059,17 @@ export default function TaskManagerBoard({
                       </td>
 
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex px-2 py-0.5 rounded-md text-xs font-bold border ${statusBadge(task.status)}`}
+                        <select
+                          value={task.status}
+                          onChange={(e) => quickStatusChange(task, e.target.value)}
+                          className={`px-2 py-1 rounded-md text-xs font-bold border outline-none cursor-pointer transition-colors hover:brightness-95 ${statusBadge(task.status)}`}
                           style={{ fontFamily: "'JetBrains Mono', monospace" }}
                         >
-                          {task.status}
-                        </span>
+                          <option value="Todo">Todo</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Done">Done</option>
+                          <option value="Closed">Closed</option>
+                        </select>
                       </td>
 
                       <td className="px-4 py-4 whitespace-nowrap">
@@ -1445,7 +1501,7 @@ export default function TaskManagerBoard({
       <AnimatePresence>
         {doneTask && (
           <Modal
-            title="Mark Task as Done"
+            title={`Mark Task as ${pendingStatus}`}
             icon={<CheckCircle2 size={18} className="stroke-[2.5]" />}
             onClose={() => setDoneTask(null)}
             wide={false}
@@ -1482,7 +1538,7 @@ export default function TaskManagerBoard({
                   style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", boxShadow: "0 8px 22px -4px rgba(244,180,0,0.4)" }}
                 >
                   <CheckCircle2 size={15} className="stroke-[2.5]" />
-                  Confirm Done
+                  Confirm {pendingStatus}
                 </button>
               </div>
             </form>
