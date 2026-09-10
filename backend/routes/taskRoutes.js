@@ -24,6 +24,15 @@ router.post(
         dueDate: req.body.dueDate,
         progress: req.body.progress || 0,
         screenshot: req.file ? req.file.path : "",
+        group: req.body.group || "",
+        etcMinutes: req.body.etcMinutes || 0,
+        l1: req.body.l1 || "",
+        l2: req.body.l2 || "",
+        trainingLink: req.body.trainingLink || "",
+        videoLink: req.body.videoLink || "",
+        formLink: req.body.formLink || "",
+        formReportLink: req.body.formReportLink || "",
+        checklistLink: req.body.checklistLink || "",
       });
 
       res.status(201).json({
@@ -116,6 +125,15 @@ router.put(
         startDate: req.body.startDate,
         dueDate: req.body.dueDate,
         progress: req.body.progress,
+        group: req.body.group,
+        etcMinutes: req.body.etcMinutes,
+        l1: req.body.l1,
+        l2: req.body.l2,
+        trainingLink: req.body.trainingLink,
+        videoLink: req.body.videoLink,
+        formLink: req.body.formLink,
+        formReportLink: req.body.formReportLink,
+        checklistLink: req.body.checklistLink,
       };
 
       if (req.file) {

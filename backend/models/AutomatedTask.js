@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const taskSchema = new mongoose.Schema(
+const automatedTaskSchema = new mongoose.Schema(
   {
     title: {
       type: String,
@@ -9,7 +9,10 @@ const taskSchema = new mongoose.Schema(
 
     description: {
       type: String,
+      default: "",
     },
+
+    group: { type: String, default: "" },
 
     assignedBy: {
       type: String,
@@ -27,35 +30,6 @@ const taskSchema = new mongoose.Schema(
       default: "Medium",
     },
 
-    status: {
-      type: String,
-      enum: [
-        "Todo",
-        "In Progress",
-        "Done",
-        "Closed",
-      ],
-      default: "Todo",
-    },
-
-    startDate: String,
-
-    dueDate: String,
-    screenshot: {
-  type: String,
-  default: "",
-},
-
-    progress: {
-      type: Number,
-      default: 0,
-    },
-
-    group: {
-      type: String,
-      default: "",
-    },
-
     etcMinutes: {
       type: Number,
       default: 0,
@@ -69,16 +43,50 @@ const taskSchema = new mongoose.Schema(
     formReportLink: { type: String, default: "" },
     checklistLink: { type: String, default: "" },
 
-    sourceAutomatedTask: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "AutomatedTask",
+    image: {
+      type: String,
+      default: "",
+    },
+
+    time: {
+      type: String,
+      required: true,
+    },
+
+    frequency: {
+      type: String,
+      enum: ["Daily", "Weekly", "Monthly"],
+      required: true,
+    },
+
+    weekday: {
+      type: Number,
+      min: 0,
+      max: 6,
       default: null,
+    },
+
+    dayOfMonth: {
+      type: Number,
+      min: 1,
+      max: 31,
+      default: null,
+    },
+
+    active: {
+      type: Boolean,
+      default: true,
+    },
+
+    lastGeneratedDate: {
+      type: String,
+      default: "",
     },
   },
   { timestamps: true }
 );
 
 module.exports = mongoose.model(
-  "Task",
-  taskSchema
+  "AutomatedTask",
+  automatedTaskSchema
 );

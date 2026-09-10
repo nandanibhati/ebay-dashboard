@@ -52,6 +52,8 @@ export default function Login() {
 
         if (data.role === "admin") {
           navigate("/dashboard");
+        } else if (data.role === "manager") {
+          navigate("/manager");
         } else {
           navigate("/employee-dashboard");
         }

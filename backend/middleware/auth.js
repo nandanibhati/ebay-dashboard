@@ -46,3 +46,14 @@ exports.adminOnly = (req, res, next) => {
 
   next();
 };
+
+exports.managerOrAdmin = (req, res, next) => {
+  if (!req.user || (req.user.role !== "admin" && req.user.role !== "manager")) {
+    return res.status(403).json({
+      success: false,
+      message: "Manager or admin access required",
+    });
+  }
+
+  next();
+};

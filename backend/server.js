@@ -49,6 +49,8 @@ const chatRoutes = require("./routes/chatRoutes");
 const ebayRoutes = require("./routes/ebayRoutes");
 const templateRoutes = require("./routes/templateRoutes");
 const backmarketRoutes = require("./routes/backmarketRoutes");
+const automatedTaskRoutes = require("./routes/automatedTaskRoutes");
+const { startTaskScheduler } = require("./utils/taskScheduler");
 // =========================
 // MongoDB
 // =========================
@@ -173,6 +175,7 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/ebay", ebayRoutes);
 app.use("/api/templates", templateRoutes);
 app.use("/api/backmarket", backmarketRoutes);
+app.use("/api/automated-tasks", automatedTaskRoutes);
 
 // =========================
 // Root
@@ -190,4 +193,5 @@ const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  startTaskScheduler();
 });

@@ -136,6 +136,8 @@ router.get("/employees", protect, async (req, res) => {
       role: { $in: ["admin", "employee"] },
     }).select("-password");
 
+    const isAdmin = req.user?.role === "admin";
+
     const updatedUsers = users.map((user) => {
       let salaryDate = null;
 
@@ -144,10 +146,18 @@ router.get("/employees", protect, async (req, res) => {
         salaryDate.setDate(salaryDate.getDate() + 15);
       }
 
-      return {
-        ...user.toObject(),
-        salaryDate,
-      };
+      const userObj = { ...user.toObject(), salaryDate };
+
+      if (!isAdmin) {
+        delete userObj.monthlySalary;
+        delete userObj.hourlyRate;
+        delete userObj.basicSalary;
+        delete userObj.lastSalaryPaidMonth;
+        delete userObj.lastSalaryPaidYear;
+        delete userObj.salaryDate;
+      }
+
+      return userObj;
     });
 
     res.json({
@@ -211,6 +221,9 @@ if (req.body.name !== undefined)
 
 if (req.body.email !== undefined)
   updateData.email = req.body.email;
+
+if (req.body.role !== undefined)
+  updateData.role = req.body.role;
 
 if (req.body.employeeId !== undefined)
   updateData.employeeId = req.body.employeeId;

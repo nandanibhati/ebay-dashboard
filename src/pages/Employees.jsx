@@ -48,6 +48,7 @@ export default function Employees() {
     employeeId: "",
     joiningDate: "",
     monthlySalary: "",
+    role: "employee",
   });
 
   useEffect(() => {
@@ -84,10 +85,7 @@ export default function Employees() {
 
       const res = await apiFetch(url, {
         method,
-        body: JSON.stringify({
-          ...form,
-          role: "employee",
-        }),
+        body: JSON.stringify(form),
       });
 
       const data = await res.json();
@@ -102,6 +100,7 @@ export default function Employees() {
           employeeId: "",
           joiningDate: "",
           monthlySalary: "",
+          role: "employee",
         });
 
         fetchEmployees();
@@ -364,6 +363,18 @@ export default function Employees() {
               />
             </div>
 
+            <div>
+              <label className={labelCls}>Role</label>
+              <select
+                className={inputCls}
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+              >
+                <option value="employee">Employee</option>
+                <option value="manager">Manager</option>
+              </select>
+            </div>
+
           </div>
 
           <div className="flex gap-3 justify-end pt-2 border-t border-slate-100">
@@ -379,6 +390,7 @@ export default function Employees() {
                     employeeId: "",
                     joiningDate: "",
                     monthlySalary: "",
+                    role: "employee",
                   });
                 }}
                 className="bg-slate-100 border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-200 active:scale-[0.98] transition-all"
@@ -525,6 +537,7 @@ export default function Employees() {
                               employeeId: emp.employeeId || "",
                               joiningDate: emp.joiningDate ? emp.joiningDate.split("T")[0] : "",
                               monthlySalary: emp.monthlySalary || "",
+                              role: emp.role || "employee",
                             });
                           }}
                           className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 transition-all active:scale-95 shadow-sm"

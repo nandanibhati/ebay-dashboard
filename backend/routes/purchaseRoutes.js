@@ -3,9 +3,9 @@ const router = express.Router();
 
 const Purchase = require("../models/Purchase");
 const Stock = require("../models/Stock");
-const { protect } = require("../middleware/auth");
+const { protect, adminOnly } = require("../middleware/auth");
 
-router.use(protect);
+router.use(protect, adminOnly);
 
 // GET ALL PURCHASES
 router.get("/", async (req, res) => {

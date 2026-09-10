@@ -21,6 +21,7 @@ import AdminAttendance from "./pages/AdminAttendance";
 import AdminSalary from "./pages/AdminSalary";
 import AdminLeaves from "./pages/AdminLeaves";
 import AdminTasks from "./pages/AdminTasks";
+import ManagerDashboard from "./pages/ManagerDashboard";
 import EmployeeTasks from "./pages/EmployeeTasks";
 import Notes from "./pages/Notes";
 import Templates from "./pages/Templates";
@@ -78,6 +79,17 @@ function App() {
         <Route
   path="/tasks"
   element={<PrivateRoute><AdminTasks /></PrivateRoute>}
+/>
+
+<Route
+  path="/manager"
+  element={
+    <PrivateRoute>
+      {["admin", "manager"].includes(localStorage.getItem("role"))
+        ? <ManagerDashboard />
+        : <Navigate to="/employee-dashboard" />}
+    </PrivateRoute>
+  }
 />
 
 <Route

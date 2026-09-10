@@ -2,9 +2,9 @@ const express = require("express");
 const router = express.Router();
 
 const Subscription = require("../models/Subscription");
-const { protect } = require("../middleware/auth");
+const { protect, adminOnly } = require("../middleware/auth");
 
-router.use(protect);
+router.use(protect, adminOnly);
 
 // GET ALL
 router.get("/", async (req, res) => {
