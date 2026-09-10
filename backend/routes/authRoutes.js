@@ -262,7 +262,7 @@ router.post("/login", async (req, res) => {
 router.get("/employees", protect, async (req, res) => {
   try {
     const users = await User.find({
-      role: { $in: ["admin", "employee"] },
+      role: { $in: ["admin", "employee", "manager"] },
     }).select("-password");
 
     const isAdmin = req.user?.role === "admin";
