@@ -39,6 +39,7 @@ const EMPTY_TASK_FORM = {
   title: "",
   description: "",
   group: "",
+  assignedBy: "",
   assignedTo: "",
   priority: "Medium",
   status: "Todo",
@@ -163,6 +164,7 @@ export default function TaskManagerBoard({
   canManageAutomation = true,
   archivedScopeName = null,
   initialViewMode = "active",
+  canDeleteAnyTask = true,
 }) {
   const [editingId, setEditingId] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -187,7 +189,10 @@ export default function TaskManagerBoard({
   const [archivedLoaded, setArchivedLoaded] = useState(false);
   const [deletedByFilter, setDeletedByFilter] = useState("All");
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  // Local calendar date, not UTC — toISOString() would show yesterday's
+  // date for hours after local midnight but before UTC midnight (e.g. IST).
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
   const groups = useMemo(
     () => Array.from(new Set(tasks.map((t) => t.group).filter(Boolean))),
@@ -266,6 +271,14 @@ export default function TaskManagerBoard({
     return d;
   };
   const isWithinLast30 = (date) => date && new Date(date) >= daysAgo(30);
+  // Local calendar date of a timestamp — deletedAt/createdAt come back as
+  // UTC ISO strings, so a naive .split("T")[0] would drift a day off near
+  // the local/UTC midnight boundary.
+  const localDateStr = (input) => {
+    if (!input) return "";
+    const d = new Date(input);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
 
   const archivedStats = {
     totalDeleted: archivedTasks.length,
@@ -275,7 +288,7 @@ export default function TaskManagerBoard({
       return d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     }).length,
     thisWeek: archivedTasks.filter((t) => isWithinLast30(t.deletedAt) && new Date(t.deletedAt) >= daysAgo(7)).length,
-    today: archivedTasks.filter((t) => t.deletedAt && t.deletedAt.split("T")[0] === todayStr).length,
+    today: archivedTasks.filter((t) => t.deletedAt && localDateStr(t.deletedAt) === todayStr).length,
   };
   const last30Archived = archivedTasks.filter((t) => isWithinLast30(t.deletedAt));
   const archivedAvgTat = last30Archived.length
@@ -288,7 +301,7 @@ export default function TaskManagerBoard({
       ).toFixed(1)
     : 0;
   const archivedMissed = last30Archived.filter(
-    (t) => t.dueDate && t.deletedAt && t.dueDate.split("T")[0] < t.deletedAt.split("T")[0]
+    (t) => t.dueDate && t.deletedAt && t.dueDate.split("T")[0] < localDateStr(t.deletedAt)
   ).length;
   const archivedTotalEtcHrs = (
     archivedFilteredTasks.reduce((sum, t) => sum + Number(t.etcMinutes || 0), 0) / 60
@@ -341,6 +354,7 @@ export default function TaskManagerBoard({
       title: task.title || "",
       description: task.description || "",
       group: task.group || "",
+      assignedBy: task.assignedBy || "",
       assignedTo: task.assignedTo || "",
       priority: task.priority || "Medium",
       status: task.status || "Todo",
@@ -364,16 +378,25 @@ export default function TaskManagerBoard({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const markingDone = form.status === "Done" || form.status === "Closed";
+    if (markingDone && form.atcMinutes === "") {
+      toast.error("Enter Actual Time Taken (ATC) before marking this task Done — or use the Mark Done button instead.");
+      return;
+    }
+
     try {
       const url = editingId ? `/api/tasks/${editingId}` : "/api/tasks/create";
       const method = editingId ? "PUT" : "POST";
 
       const formData = new FormData();
       Object.entries(form).forEach(([key, value]) => {
-        if (key === "screenshot") return;
+        if (key === "screenshot" || key === "assignedBy" || key === "progress") return;
         formData.append(key, value ?? "");
       });
-      formData.append("assignedBy", currentUserName || "Employee");
+      formData.append("progress", markingDone ? 100 : form.progress);
+      // A create always assigns the current user; an edit must keep the
+      // task's original assignor instead of overwriting it with the editor.
+      formData.append("assignedBy", editingId ? (form.assignedBy || currentUserName || "Employee") : (currentUserName || "Employee"));
       if (form.screenshot) formData.append("screenshot", form.screenshot);
 
       const res = await apiFetch(url, { method, body: formData });
@@ -1029,13 +1052,15 @@ export default function TaskManagerBoard({
                           >
                             <Pencil size={14} className="stroke-[2.5]" />
                           </button>
-                          <button
-                            onClick={() => deleteTask(task._id)}
-                            className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-95 shadow-sm"
-                            title="Delete Task"
-                          >
-                            <Trash2 size={14} className="stroke-[2.5]" />
-                          </button>
+                          {(canDeleteAnyTask || task.assignedBy === currentUserName) && (
+                            <button
+                              onClick={() => deleteTask(task._id)}
+                              className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-95 shadow-sm"
+                              title="Delete Task"
+                            >
+                              <Trash2 size={14} className="stroke-[2.5]" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </motion.tr>

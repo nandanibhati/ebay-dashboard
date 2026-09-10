@@ -127,6 +127,7 @@ export default function EmployeeTasks() {
             currentUserName={employeeName}
             onTasksChanged={fetchTasks}
             canManageAutomation={false}
+            canDeleteAnyTask={false}
             archivedScopeName={employeeName}
             initialViewMode={searchParams.get("view") === "archived" ? "archived" : "active"}
           />

@@ -106,9 +106,17 @@ export default function ManagerDashboard() {
       }
 
       if (Array.isArray(attendance)) {
-        const todayStr = new Date().toISOString().split("T")[0];
+        // Attendance rows are tagged with the business's Asia/Kolkata date
+        // (see attendanceRoutes.js) regardless of the server's or this
+        // viewer's own timezone, so "today" here must match that, not UTC.
+        const todayIST = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Kolkata",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date());
         setPresentTodayCount(
-          attendance.filter((a) => a.date === todayStr && a.punchIn).length
+          attendance.filter((a) => a.date === todayIST && a.punchIn).length
         );
       }
     } catch (error) {
