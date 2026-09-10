@@ -22,6 +22,10 @@ import {
   ClipboardCheck,
   Power,
   Search,
+  Archive,
+  RotateCcw,
+  ArrowLeft,
+  Timer,
 } from "lucide-react";
 import { apiFetch } from "../api";
 import socket from "../socket";
@@ -133,22 +137,18 @@ function Modal({ title, icon, onClose, children, wide = true }) {
   );
 }
 
-function StatPill({ label, value, color, icon: Icon }) {
+function StatPill({ label, value, color, icon: Icon, subtitle }) {
   return (
     <div
-      className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl shrink-0 border shadow-sm"
-      style={{ background: `${color}14`, borderColor: `${color}33` }}
+      className="flex items-center gap-2 px-4 py-2 rounded-full shrink-0 text-white shadow-sm"
+      style={{ background: color }}
+      title={subtitle}
     >
-      <Icon size={15} style={{ color }} className="stroke-[2.5]" />
-      <div className="flex flex-col leading-tight">
-        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{label}</span>
-        <span
-          className="text-sm font-bold tabular-nums"
-          style={{ color: "#0F172A", fontFamily: "'JetBrains Mono', monospace" }}
-        >
-          {value}
-        </span>
-      </div>
+      <Icon size={13} className="stroke-[2.5] opacity-90" />
+      <span className="text-[10px] font-bold uppercase tracking-wider opacity-90">{label}</span>
+      <span className="text-sm font-extrabold tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+        {value}
+      </span>
     </div>
   );
 }
@@ -171,6 +171,11 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
   const [automatedForm, setAutomatedForm] = useState(EMPTY_AUTOMATED_FORM);
   const [doneTask, setDoneTask] = useState(null);
   const [atcInput, setAtcInput] = useState("");
+
+  const [viewMode, setViewMode] = useState("active");
+  const [archivedTasks, setArchivedTasks] = useState([]);
+  const [archivedLoaded, setArchivedLoaded] = useState(false);
+  const [deletedByFilter, setDeletedByFilter] = useState("All");
 
   const todayStr = new Date().toISOString().split("T")[0];
 
@@ -203,6 +208,16 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
   const totalAtcHrs = (
     tasks.reduce((sum, t) => sum + Number(t.atcMinutes || 0), 0) / 60
   ).toFixed(1);
+  const doneTasks = tasks.filter((t) => t.status === "Done" || t.status === "Closed");
+  const avgTatDays = doneTasks.length
+    ? (
+        doneTasks.reduce(
+          (sum, t) =>
+            sum + (new Date(t.updatedAt) - new Date(t.createdAt)) / (1000 * 60 * 60 * 24),
+          0
+        ) / doneTasks.length
+      ).toFixed(1)
+    : 0;
 
   const filteredTasks = tasks.filter((t) => {
     if (search) {
@@ -219,6 +234,62 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
     if (priorityFilter !== "All" && t.priority !== priorityFilter) return false;
     return true;
   });
+
+  // Archived view — its own filters (adds Deleted By) over the archived list.
+  const archivedFilteredTasks = archivedTasks.filter((t) => {
+    if (search) {
+      const q = search.toLowerCase();
+      if (!t.title?.toLowerCase().includes(q) && !t.description?.toLowerCase().includes(q))
+        return false;
+    }
+    if (groupFilter !== "All" && (t.group || "Ungrouped") !== groupFilter) return false;
+    if (assigneeFilter !== "All" && t.assignedTo !== assigneeFilter) return false;
+    if (statusFilter !== "All" && t.status !== statusFilter) return false;
+    if (priorityFilter !== "All" && t.priority !== priorityFilter) return false;
+    if (deletedByFilter !== "All" && t.deletedBy !== deletedByFilter) return false;
+    return true;
+  });
+
+  const daysAgo = (n) => {
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    return d;
+  };
+  const isWithinLast30 = (date) => date && new Date(date) >= daysAgo(30);
+
+  const archivedStats = {
+    totalDeleted: archivedTasks.length,
+    thisMonth: archivedTasks.filter((t) => {
+      const d = t.deletedAt && new Date(t.deletedAt);
+      const now = new Date();
+      return d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).length,
+    thisWeek: archivedTasks.filter((t) => isWithinLast30(t.deletedAt) && new Date(t.deletedAt) >= daysAgo(7)).length,
+    today: archivedTasks.filter((t) => t.deletedAt && t.deletedAt.split("T")[0] === todayStr).length,
+  };
+  const last30Archived = archivedTasks.filter((t) => isWithinLast30(t.deletedAt));
+  const archivedAvgTat = last30Archived.length
+    ? (
+        last30Archived.reduce(
+          (sum, t) =>
+            sum + (new Date(t.deletedAt) - new Date(t.createdAt)) / (1000 * 60 * 60 * 24),
+          0
+        ) / last30Archived.length
+      ).toFixed(1)
+    : 0;
+  const archivedMissed = last30Archived.filter(
+    (t) => t.dueDate && t.deletedAt && t.dueDate.split("T")[0] < t.deletedAt.split("T")[0]
+  ).length;
+  const archivedTotalEtcHrs = (
+    archivedFilteredTasks.reduce((sum, t) => sum + Number(t.etcMinutes || 0), 0) / 60
+  ).toFixed(1);
+  const archivedTotalAtcHrs = (
+    archivedFilteredTasks.reduce((sum, t) => sum + Number(t.atcMinutes || 0), 0) / 60
+  ).toFixed(1);
+  const tatDaysFor = (task) =>
+    task.deletedAt
+      ? Math.max(0, Math.round((new Date(task.deletedAt) - new Date(task.createdAt)) / (1000 * 60 * 60 * 24)))
+      : "-";
 
   const priorityBadge = (priority) =>
     priority === "High"
@@ -320,15 +391,65 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
   };
 
   const deleteTask = async (id) => {
-    if (!window.confirm("Delete Task?")) return;
+    if (!window.confirm("Delete Task? It will move to Archived Tasks.")) return;
 
     try {
-      const res = await apiFetch(`/api/tasks/${id}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/tasks/${id}`, {
+        method: "DELETE",
+        body: { deletedBy: currentUserName || "Unknown" },
+      });
       const data = await res.json();
 
       if (data.success) {
-        toast.success("Task Deleted");
+        toast.success("Task Archived");
         onTasksChanged();
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const loadArchivedTasks = async () => {
+    try {
+      const res = await apiFetch("/api/tasks/archived");
+      const data = await res.json();
+      if (data.success) {
+        setArchivedTasks(data.tasks);
+        setArchivedLoaded(true);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const openArchivedView = () => {
+    if (!archivedLoaded) loadArchivedTasks();
+    setViewMode("archived");
+  };
+
+  const restoreTask = async (id) => {
+    try {
+      const res = await apiFetch(`/api/tasks/${id}/restore`, { method: "PUT" });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Task Restored");
+        loadArchivedTasks();
+        onTasksChanged();
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const permanentDeleteTask = async (id) => {
+    if (!window.confirm("Permanently delete this task? This cannot be undone.")) return;
+
+    try {
+      const res = await apiFetch(`/api/tasks/${id}/permanent`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Task Permanently Deleted");
+        loadArchivedTasks();
       }
     } catch (error) {
       console.log(error);
@@ -505,34 +626,55 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
                 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900"
                 style={{ fontFamily: "Sora, sans-serif" }}
               >
-                Task Manager
+                {viewMode === "archived" ? "Archived Tasks" : "Task Manager"}
               </h1>
-              <p className="mt-1.5 text-slate-500 text-sm font-medium">Home &gt; Task Manager</p>
+              <p className="mt-1.5 text-slate-500 text-sm font-medium">
+                Home &gt; Task Manager{viewMode === "archived" && <> &gt; Archived Tasks</>}
+              </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <button
-                onClick={openAutomatedList}
-                className="px-4 py-2.5 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"
-              >
-                <Zap size={15} className="stroke-[2.5]" />
-                Automated Tasks
-              </button>
-              <button
-                onClick={() => setShowAutomatedModal(true)}
-                className="px-4 py-2.5 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"
-              >
-                <Clock size={15} className="stroke-[2.5]" />
-                New Automated Task
-              </button>
-              <button
-                onClick={openCreateTask}
-                className="px-5 py-2.5 rounded-xl text-sm font-bold active:scale-[0.98] transition-all duration-200 text-[#0F172A] flex items-center gap-1.5"
-                style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", boxShadow: "0 8px 22px -4px rgba(244,180,0,0.4)" }}
-              >
-                <Plus size={15} className="stroke-[2.5]" />
-                New Task
-              </button>
+              {viewMode === "archived" ? (
+                <button
+                  onClick={() => setViewMode("active")}
+                  className="px-4 py-2.5 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"
+                >
+                  <ArrowLeft size={15} className="stroke-[2.5]" />
+                  Back to Tasks
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={openArchivedView}
+                    className="px-4 py-2.5 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"
+                  >
+                    <Archive size={15} className="stroke-[2.5]" />
+                    Archived Tasks
+                  </button>
+                  <button
+                    onClick={openAutomatedList}
+                    className="px-4 py-2.5 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"
+                  >
+                    <Zap size={15} className="stroke-[2.5]" />
+                    Automated Tasks
+                  </button>
+                  <button
+                    onClick={() => setShowAutomatedModal(true)}
+                    className="px-4 py-2.5 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"
+                  >
+                    <Clock size={15} className="stroke-[2.5]" />
+                    New Automated Task
+                  </button>
+                  <button
+                    onClick={openCreateTask}
+                    className="px-5 py-2.5 rounded-xl text-sm font-bold active:scale-[0.98] transition-all duration-200 text-[#0F172A] flex items-center gap-1.5"
+                    style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", boxShadow: "0 8px 22px -4px rgba(244,180,0,0.4)" }}
+                  >
+                    <Plus size={15} className="stroke-[2.5]" />
+                    New Task
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </GlassPanel>
@@ -541,14 +683,29 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
       {/* Stat pills + filter toolbar share one row so the filters fill the
           leftover space next to the pills instead of stacking below them. */}
       <GlassPanel className="p-4 flex flex-wrap items-center gap-3">
-        <div className="flex gap-3 overflow-x-auto pb-0.5 shrink-0">
+        {viewMode === "archived" ? (
+          <div className="flex gap-2.5 overflow-x-auto pb-0.5 shrink-0">
+            <StatPill label="Total Deleted" value={archivedStats.totalDeleted} color="#EC4899" icon={Archive} />
+            <StatPill label="This Month" value={archivedStats.thisMonth} color="#F59E0B" icon={Calendar} />
+            <StatPill label="This Week" value={archivedStats.thisWeek} color="#8B5CF6" icon={Calendar} />
+            <StatPill label="Today" value={archivedStats.today} color="#EC4899" icon={Calendar} />
+            <StatPill label="TAT" value={`${archivedAvgTat}d`} color="#10B981" icon={Timer} subtitle="Avg last 30 days" />
+            <StatPill label="Missed" value={archivedMissed} color="#DC2626" icon={AlertTriangle} subtitle="Last 30 days" />
+            <StatPill label="Total ETC" value={`${archivedTotalEtcHrs}h`} color="#2563EB" icon={Clock} subtitle="Updates with filters" />
+            <StatPill label="Total ATC" value={`${archivedTotalAtcHrs}h`} color="#22C55E" icon={Timer} subtitle="Updates with filters" />
+          </div>
+        ) : (
+        <div className="flex gap-2.5 overflow-x-auto pb-0.5 shrink-0">
           <StatPill label="Pending" value={pendingCount} color="#2563EB" icon={ListTodo} />
           <StatPill label="Overdue" value={overdueCount} color="#EF4444" icon={AlertTriangle} />
-          <StatPill label="Open ETC" value={`${totalEtcHrs}h`} color="#F59E0B" icon={Clock} />
-          <StatPill label="Actual (ATC)" value={`${totalAtcHrs}h`} color="#8B5CF6" icon={Clock} />
-          <StatPill label="Avg Progress" value={`${avgProgress}%`} color="#F4B400" icon={BarChart3} />
-          <StatPill label="Completed" value={tasks.filter((t) => t.status === "Done" || t.status === "Closed").length} color="#22C55E" icon={CheckCircle2} />
+          <StatPill label="ETC" value={`${totalEtcHrs}h`} color="#F59E0B" icon={Clock} subtitle="Open estimated time" />
+          <StatPill label="ATC" value={`${totalAtcHrs}h`} color="#10B981" icon={Timer} subtitle="Actual time logged" />
+          <StatPill label="TAT" value={`${avgTatDays}d`} color="#06B6D4" icon={Timer} subtitle="Avg turnaround time" />
+          <StatPill label="Avg Score" value={`${avgProgress}%`} color="#8B5CF6" icon={BarChart3} />
+          <StatPill label="Missed" value={overdueCount} color="#DC2626" icon={AlertTriangle} subtitle="Overdue tasks" />
+          <StatPill label="Completed" value={doneTasks.length} color="#22C55E" icon={CheckCircle2} />
         </div>
+        )}
 
         <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[240px] lg:justify-end">
           <div className="relative flex-1 min-w-[160px] max-w-[220px]">
@@ -590,10 +747,113 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
             <option value="Medium">Medium</option>
             <option value="Low">Low</option>
           </select>
+
+          {viewMode === "archived" && (
+            <select value={deletedByFilter} onChange={(e) => setDeletedByFilter(e.target.value)} className={`${inputCls} !py-2 !w-auto text-xs`}>
+              <option value="All">Deleted By: All</option>
+              {employees.map((emp) => (
+                <option key={emp._id} value={emp.name}>{emp.name}</option>
+              ))}
+            </select>
+          )}
         </div>
       </GlassPanel>
 
       {/* Table */}
+      {viewMode === "archived" ? (
+      <GlassPanel className="overflow-hidden w-full flex flex-col">
+        {archivedFilteredTasks.length === 0 && (
+          <div className="flex flex-col items-center gap-2 justify-center py-16 px-6 text-slate-400 font-medium">
+            <Archive size={32} className="text-slate-300 stroke-[1.5]" />
+            <span className="text-center">No archived tasks match your filters.</span>
+          </div>
+        )}
+
+        {archivedFilteredTasks.length > 0 && (
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-900/[0.06] bg-white/40 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="px-4 py-4">Task</th>
+                  <th className="px-4 py-4">Links</th>
+                  <th className="px-4 py-4">Group</th>
+                  <th className="px-4 py-4">Assignor</th>
+                  <th className="px-4 py-4">Assignee</th>
+                  <th className="px-4 py-4">ETC / ATC</th>
+                  <th className="px-4 py-4">Priority</th>
+                  <th className="px-4 py-4">Status</th>
+                  <th className="px-4 py-4">TAT</th>
+                  <th className="px-4 py-4">Archived By</th>
+                  <th className="px-6 py-4 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-900/[0.06] text-sm text-slate-700">
+                {archivedFilteredTasks.map((task) => (
+                  <tr key={task._id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col gap-0.5 max-w-md">
+                        <span className="font-bold text-slate-900 truncate">{task.title}</span>
+                        <span className="text-xs text-slate-400 line-clamp-1">{task.description || "No description provided."}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">{linkIcons(task)}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-500">{task.group || "-"}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-600">{task.assignedBy || "-"}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-600">{task.assignedTo || "-"}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-500 tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <div className="flex flex-col leading-tight">
+                        <span>ETC {task.etcMinutes ? `${task.etcMinutes}m` : "-"}</span>
+                        <span className="text-violet-500">ATC {task.atcMinutes ? `${task.atcMinutes}m` : "-"}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-sm ${priorityBadge(task.priority)}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${priorityDot(task.priority)}`} />
+                        {task.priority}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-bold border ${statusBadge(task.status)}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        {task.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-xs font-bold text-slate-500 tabular-nums">{tatDaysFor(task)}{typeof tatDaysFor(task) === "number" ? " days" : ""}</td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-xs font-bold text-red-600">{task.deletedBy || "-"}</span>
+                        <span className="text-[10px] text-slate-400">
+                          {task.deletedAt
+                            ? new Date(task.deletedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                            : ""}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <div className="flex justify-center items-center gap-2">
+                        <button
+                          onClick={() => restoreTask(task._id)}
+                          className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-all active:scale-95 shadow-sm"
+                          title="Restore Task"
+                        >
+                          <RotateCcw size={14} className="stroke-[2.5]" />
+                        </button>
+                        <button
+                          onClick={() => permanentDeleteTask(task._id)}
+                          className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-95 shadow-sm"
+                          title="Delete Permanently"
+                        >
+                          <Trash2 size={14} className="stroke-[2.5]" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </GlassPanel>
+      ) : (
       <GlassPanel className="overflow-hidden w-full flex flex-col">
         {filteredTasks.length === 0 && (
           <div className="flex flex-col items-center gap-2 justify-center py-16 px-6 text-slate-400 font-medium">
@@ -754,6 +1014,7 @@ export default function TaskManagerBoard({ tasks, employees, currentUserName, on
           </div>
         )}
       </GlassPanel>
+      )}
 
       {/* Create / Edit Task Modal */}
       <AnimatePresence>

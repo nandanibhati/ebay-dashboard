@@ -50,10 +50,52 @@ router.post(
   }
 );
 
+// GET ARCHIVED (SOFT-DELETED) TASKS
+router.get("/archived", async (req, res) => {
+  try {
+    const tasks = await Task.find({ isDeleted: true }).sort({
+      deletedAt: -1,
+    });
+
+    res.json({
+      success: true,
+      tasks,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// RESTORE ARCHIVED TASK
+router.put("/:id/restore", async (req, res) => {
+  try {
+    const task = await Task.findByIdAndUpdate(
+      req.params.id,
+      { isDeleted: false, deletedBy: "", deletedAt: null },
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      message: "Task Restored Successfully",
+      task,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 // GET MY TASKS (Employee ke liye)
 router.get("/my-tasks/:name", async (req, res) => {
   try {
     const tasks = await Task.find({
+      isDeleted: { $ne: true },
       $or: [
         { assignedTo: req.params.name },
         { assignedBy: req.params.name },
@@ -76,6 +118,7 @@ router.get("/my-tasks/:name", async (req, res) => {
 router.get("/employee/:name", async (req, res) => {
   try {
     const tasks = await Task.find({
+      isDeleted: { $ne: true },
       assignedTo: req.params.name,
     }).sort({ createdAt: -1 });
 
@@ -94,7 +137,7 @@ router.get("/employee/:name", async (req, res) => {
 // GET ALL TASKS (Admin ke liye)
 router.get("/", async (req, res) => {
   try {
-    const tasks = await Task.find().sort({
+    const tasks = await Task.find({ isDeleted: { $ne: true } }).sort({
       createdAt: -1,
     });
 
@@ -162,14 +205,35 @@ router.put(
   }
 );
 
-// DELETE TASK
+// DELETE TASK (soft delete — moves it to Archived Tasks)
 router.delete("/:id", async (req, res) => {
+  try {
+    await Task.findByIdAndUpdate(req.params.id, {
+      isDeleted: true,
+      deletedBy: req.body?.deletedBy || "Unknown",
+      deletedAt: new Date(),
+    });
+
+    res.json({
+      success: true,
+      message: "Task Deleted Successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// PERMANENTLY DELETE AN ARCHIVED TASK
+router.delete("/:id/permanent", async (req, res) => {
   try {
     await Task.findByIdAndDelete(req.params.id);
 
     res.json({
       success: true,
-      message: "Task Deleted Successfully",
+      message: "Task Permanently Deleted",
     });
   } catch (error) {
     res.status(500).json({

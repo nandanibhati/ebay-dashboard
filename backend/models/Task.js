@@ -79,6 +79,21 @@ const taskSchema = new mongoose.Schema(
       ref: "AutomatedTask",
       default: null,
     },
+
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    deletedBy: {
+      type: String,
+      default: "",
+    },
+
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
