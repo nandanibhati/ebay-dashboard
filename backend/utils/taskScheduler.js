@@ -103,10 +103,35 @@ async function runScheduler() {
   }
 }
 
+// A task past its due date that was never marked Done/Closed counts as
+// Missed and moves to Archived Tasks automatically, instead of sitting
+// around indefinitely on the active board.
+async function archiveMissedTasks() {
+  const parts = getBusinessTimeParts(new Date());
+  const today = `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`;
+
+  await Task.updateMany(
+    {
+      isDeleted: { $ne: true },
+      dueDate: { $type: "string", $ne: "", $lt: today },
+      status: { $nin: ["Done", "Closed"] },
+    },
+    {
+      isDeleted: true,
+      deletedBy: "Missed (Auto-Archived)",
+      deletedAt: new Date(),
+    }
+  );
+}
+
 function startTaskScheduler() {
   cron.schedule("* * * * *", () => {
     runScheduler().catch((error) => {
       console.log("Task scheduler error:", error.message);
+    });
+
+    archiveMissedTasks().catch((error) => {
+      console.log("Missed-task archiver error:", error.message);
     });
   });
 
