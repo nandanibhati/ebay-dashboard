@@ -174,6 +174,8 @@ export default function TaskManagerBoard({
   const [automatedLoaded, setAutomatedLoaded] = useState(false);
   const [taskPriorities, setTaskPriorities] = useState(["High", "Medium", "Low"]);
   const [taskGroups, setTaskGroups] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState("All");
@@ -252,6 +254,43 @@ export default function TaskManagerBoard({
     if (priorityFilter !== "All" && t.priority !== priorityFilter) return false;
     return true;
   });
+
+  const canDeleteTask = (task) => canDeleteAnyTask || task.assignedBy === currentUserName;
+  const selectableIds = filteredTasks.filter(canDeleteTask).map((t) => t._id);
+  const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selectedIds.includes(id));
+
+  const toggleSelectAll = () => {
+    setSelectedIds(allSelected ? [] : selectableIds);
+  };
+
+  const toggleSelectOne = (id) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
+  };
+
+  const bulkDeleteSelected = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Archive ${selectedIds.length} selected task(s)?`)) return;
+
+    setBulkDeleting(true);
+    try {
+      await Promise.all(
+        selectedIds.map((id) =>
+          apiFetch(`/api/tasks/${id}`, {
+            method: "DELETE",
+            body: { deletedBy: currentUserName || "Unknown" },
+          })
+        )
+      );
+      toast.success(`${selectedIds.length} task(s) archived`);
+      setSelectedIds([]);
+      onTasksChanged();
+    } catch (error) {
+      console.log(error);
+      toast.error("Some tasks failed to archive");
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
 
   // Archived view — its own filters (adds Deleted By) over the archived list.
   const archivedFilteredTasks = archivedTasks.filter((t) => {
@@ -473,6 +512,10 @@ export default function TaskManagerBoard({
     if (!archivedLoaded) loadArchivedTasks();
     setViewMode("archived");
   };
+
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [search, groupFilter, assigneeFilter, statusFilter, priorityFilter, viewMode]);
 
   useEffect(() => {
     setViewMode(initialViewMode);
@@ -895,6 +938,28 @@ export default function TaskManagerBoard({
         </div>
       </GlassPanel>
 
+      {viewMode !== "archived" && selectedIds.length > 0 && (
+        <GlassPanel className="p-4 flex items-center justify-between gap-3" style={{ background: "rgba(244,180,0,0.08)" }}>
+          <span className="text-sm font-bold text-slate-700">{selectedIds.length} task(s) selected</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedIds([])}
+              className="px-3 py-2 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all"
+            >
+              Clear
+            </button>
+            <button
+              onClick={bulkDeleteSelected}
+              disabled={bulkDeleting}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-all active:scale-95"
+            >
+              <Trash2 size={13} className="stroke-[2.5]" />
+              {bulkDeleting ? "Archiving..." : "Delete Selected"}
+            </button>
+          </div>
+        </GlassPanel>
+      )}
+
       {/* Table */}
       {viewMode === "archived" ? (
       <GlassPanel className="overflow-hidden w-full flex flex-col">
@@ -1005,6 +1070,14 @@ export default function TaskManagerBoard({
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-900/[0.06] bg-white/40 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="px-4 py-4 w-10">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded cursor-pointer accent-[#F4B400]"
+                    />
+                  </th>
                   <th className="px-4 py-4">Group</th>
                   <th className="px-4 py-4 w-[28%]">Task</th>
                   <th className="px-4 py-4">Assignor</th>
@@ -1029,6 +1102,16 @@ export default function TaskManagerBoard({
                       transition={{ duration: 0.2, delay: idx * 0.015 }}
                       className="hover:bg-[#F4B400]/[0.06] transition-colors group"
                     >
+                      <td className="px-4 py-4">
+                        {canDeleteTask(task) && (
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(task._id)}
+                            onChange={() => toggleSelectOne(task._id)}
+                            className="w-4 h-4 rounded cursor-pointer accent-[#F4B400]"
+                          />
+                        )}
+                      </td>
                       <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-500">
                         {task.group || "-"}
                       </td>
