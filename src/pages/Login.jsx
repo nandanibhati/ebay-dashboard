@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Mail, Lock, ArrowRight, Loader2, ShoppingBag, TrendingUp, BarChart2, Sparkles } from "lucide-react";
 import { apiFetch } from "../api";
+import InstallAppBar from "../components/InstallAppBar";
 
 /* Design tokens - BuildMaster reference palette, pushed to full premium treatment
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -70,7 +71,10 @@ export default function Login() {
 
   // ── UI only ────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex" style={{ fontFamily: "Inter, ui-sans-serif, system-ui" }}>
+    <div className="min-h-screen flex flex-col" style={{ fontFamily: "Inter, ui-sans-serif, system-ui" }}>
+      <InstallAppBar />
+
+      <div className="flex-1 flex">
 
       {/* ── Left panel — branding / signature moment ── */}
       <div
@@ -295,6 +299,7 @@ export default function Login() {
             </p>
           </div>
         </div>
+      </div>
       </div>
 
       <style>{`
