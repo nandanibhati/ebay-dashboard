@@ -3,7 +3,6 @@ import {
   Routes,
   Route,
   Navigate,
-  useLocation,
 } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -31,19 +30,7 @@ import Purchases from "./pages/Purchases";
 import Subscriptions from "./pages/Subscriptions";
 import Chat from "./pages/Chat";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
-import FloatingChat from "./components/FloatingChat";
 import PrivateRoute from "./components/PrivateRoute";
-
-// The Chat page already has full team-chat UI built in — showing the
-// floating widget on top of it too is a redundant, overlapping duplicate.
-function GlobalFloatingChat() {
-  const location = useLocation();
-  const isLoggedIn = !!localStorage.getItem("token");
-
-  if (!isLoggedIn || location.pathname === "/chat") return null;
-
-  return <FloatingChat />;
-}
 
 function App() {
   return (
@@ -168,8 +155,6 @@ function App() {
 
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       </Routes>
-      <GlobalFloatingChat />
-
     </BrowserRouter>
   );
 }
