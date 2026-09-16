@@ -20,13 +20,13 @@ import EmployeeSidebar from "../components/EmployeeSidebar";
 export default function EbayIntegration() {
   const [stores, setStores] = useState([
     {
-      name: "TPS",
+      storeName: "TPS",
       connected: false,
       lastSync: null,
       marketplace: "eBay UK",
     },
     {
-      name: "SmartZone",
+      storeName: "SmartZone",
       connected: false,
       lastSync: null,
       marketplace: "eBay UK",
@@ -177,7 +177,7 @@ export default function EbayIntegration() {
 
   {stores.map((store) => (
           <div
-            key={store.name}
+            key={store.storeName}
             className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden"
           >
             {/* Card Header */}
@@ -196,7 +196,7 @@ export default function EbayIntegration() {
 
                   <h2 className="text-2xl font-bold text-slate-800">
 
-                    {store.name}
+                    {store.storeName}
 
                   </h2>
 
