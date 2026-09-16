@@ -1069,8 +1069,14 @@ export default function TaskManagerBoard({
               <tbody className="divide-y divide-slate-900/[0.06] text-sm text-slate-700">
                 {archivedFilteredTasks.map((task) => (
                   <tr key={task._id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-4">
-                      <span className="font-bold text-slate-900 text-xs leading-snug">{task.title}</span>
+                    <td className="px-4 py-4 max-w-[220px]">
+                      <button
+                        onClick={() => setViewingNote(task)}
+                        className="font-bold text-slate-900 truncate block w-full text-left hover:text-[#B45F06] hover:underline"
+                        title={task.title}
+                      >
+                        {task.title}
+                      </button>
                     </td>
                     <td className="px-4 py-4">{linkIcons(task)}</td>
                     <td className="px-4 py-4">{noteCell(task)}</td>
@@ -1161,11 +1167,15 @@ export default function TaskManagerBoard({
               <tbody className="divide-y divide-slate-900/[0.06] text-sm text-slate-700">
                 {automatedFilteredTasks.map((at) => (
                   <tr key={at._id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-4">
-                      <span className="font-bold text-slate-900 text-xs leading-snug flex items-start gap-1.5">
-                        <Zap size={12} className="text-amber-500 shrink-0 mt-0.5" />
-                        {at.title}
-                      </span>
+                    <td className="px-4 py-4 max-w-[220px]">
+                      <button
+                        onClick={() => setViewingNote(at)}
+                        className="font-bold text-slate-900 flex items-center gap-1.5 w-full text-left hover:text-[#B45F06] hover:underline"
+                        title={at.title}
+                      >
+                        <Zap size={12} className="text-amber-500 shrink-0" />
+                        <span className="truncate">{at.title}</span>
+                      </button>
                     </td>
                     <td className="px-4 py-4">{linkIcons(at)}</td>
                     <td className="px-4 py-4">{noteCell(at)}</td>
@@ -1285,11 +1295,15 @@ export default function TaskManagerBoard({
                         {task.group || "-"}
                       </td>
 
-                      <td className="px-4 py-4">
-                        <span className="font-bold text-slate-900 text-xs leading-snug group-hover:text-[#B45F06] transition-colors flex items-start gap-1.5">
-                          {task.sourceAutomatedTask && <Zap size={12} className="text-amber-500 shrink-0 mt-0.5" />}
-                          <span>{task.title}</span>
-                        </span>
+                      <td className="px-4 py-4 max-w-[220px]">
+                        <button
+                          onClick={() => setViewingNote(task)}
+                          className="font-bold text-slate-900 group-hover:text-[#B45F06] hover:underline transition-colors flex items-center gap-1.5 w-full text-left"
+                          title={task.title}
+                        >
+                          {task.sourceAutomatedTask && <Zap size={12} className="text-amber-500 shrink-0" />}
+                          <span className="truncate">{task.title}</span>
+                        </button>
                       </td>
 
                       <td className="px-4 py-4 whitespace-nowrap">
@@ -1842,7 +1856,7 @@ export default function TaskManagerBoard({
             wide={false}
           >
             <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
-              {viewingNote.description}
+              {viewingNote.description || "No description provided."}
             </p>
           </Modal>
         )}
