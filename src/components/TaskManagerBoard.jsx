@@ -211,6 +211,15 @@ export default function TaskManagerBoard({
     task.status !== "Done" &&
     task.status !== "Closed";
 
+  // Overdue tasks show how many days past their due date they are, instead
+  // of just the due date itself, so the age of the miss is visible at a glance.
+  const overdueDays = (task) => {
+    if (!isOverdue(task)) return 0;
+    const due = new Date(task.dueDate.split("T")[0]);
+    const today = new Date(todayStr);
+    return Math.round((today - due) / (1000 * 60 * 60 * 24));
+  };
+
   const filteredTasks = tasks.filter((t) => {
     if (search) {
       const q = search.toLowerCase();
@@ -1162,7 +1171,9 @@ export default function TaskManagerBoard({
                           <Calendar size={13} />
                           <span>
                             {task.dueDate
-                              ? new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                              ? isOverdue(task)
+                                ? `Overdue by ${overdueDays(task)}d`
+                                : new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
                               : "No due date"}
                           </span>
                         </div>
