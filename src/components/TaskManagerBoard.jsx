@@ -177,6 +177,9 @@ export default function TaskManagerBoard({
   const [taskGroups, setTaskGroups] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
+  const [bulkEditForm, setBulkEditForm] = useState({ assignedTo: "", assignedBy: "", dueDate: "", status: "" });
+  const [bulkEditing, setBulkEditing] = useState(false);
 
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState("All");
@@ -319,6 +322,63 @@ export default function TaskManagerBoard({
       toast.error("Some tasks failed to archive");
     } finally {
       setBulkDeleting(false);
+    }
+  };
+
+  const bulkEditSelected = async (e) => {
+    e.preventDefault();
+    if (selectedIds.length === 0) return;
+
+    const { assignedTo, assignedBy, dueDate, status } = bulkEditForm;
+    if (!assignedTo && !assignedBy && !dueDate && !status) {
+      toast.error("Choose at least one field to update");
+      return;
+    }
+
+    setBulkEditing(true);
+    try {
+      const targets = tasks.filter((t) => selectedIds.includes(t._id));
+
+      await Promise.all(
+        targets.map((task) => {
+          const newStatus = status || task.status;
+          const markingDone = (status === "Done" || status === "Closed");
+
+          const formData = new FormData();
+          formData.append("title", task.title);
+          formData.append("description", task.description || "");
+          formData.append("group", task.group || "");
+          formData.append("assignedTo", assignedTo || task.assignedTo);
+          formData.append("assignedBy", assignedBy || task.assignedBy);
+          formData.append("priority", task.priority);
+          formData.append("status", newStatus);
+          formData.append("startDate", task.startDate || "");
+          formData.append("dueDate", dueDate || task.dueDate || "");
+          formData.append("progress", markingDone ? 100 : (task.progress || 0));
+          formData.append("etcMinutes", task.etcMinutes || 0);
+          formData.append("atcMinutes", task.atcMinutes || 0);
+          formData.append("l1", task.l1 || "");
+          formData.append("l2", task.l2 || "");
+          formData.append("trainingLink", task.trainingLink || "");
+          formData.append("videoLink", task.videoLink || "");
+          formData.append("formLink", task.formLink || "");
+          formData.append("formReportLink", task.formReportLink || "");
+          formData.append("checklistLink", task.checklistLink || "");
+
+          return apiFetch(`/api/tasks/${task._id}`, { method: "PUT", body: formData });
+        })
+      );
+
+      toast.success(`${targets.length} task(s) updated`);
+      setSelectedIds([]);
+      setShowBulkEditModal(false);
+      setBulkEditForm({ assignedTo: "", assignedBy: "", dueDate: "", status: "" });
+      onTasksChanged();
+    } catch (error) {
+      console.log(error);
+      toast.error("Some tasks failed to update");
+    } finally {
+      setBulkEditing(false);
     }
   };
 
@@ -1024,6 +1084,13 @@ export default function TaskManagerBoard({
               className="px-3 py-2 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all"
             >
               Clear
+            </button>
+            <button
+              onClick={() => setShowBulkEditModal(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all active:scale-95"
+            >
+              <Pencil size={13} className="stroke-[2.5]" />
+              Bulk Edit
             </button>
             <button
               onClick={bulkDeleteSelected}
@@ -1839,6 +1906,96 @@ export default function TaskManagerBoard({
                 >
                   <CheckCircle2 size={15} className="stroke-[2.5]" />
                   Confirm {pendingStatus}
+                </button>
+              </div>
+            </form>
+          </Modal>
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Edit Modal */}
+      <AnimatePresence>
+        {showBulkEditModal && (
+          <Modal
+            title={`Bulk Edit ${selectedIds.length} Task(s)`}
+            icon={<Pencil size={18} className="stroke-[2.5]" />}
+            onClose={() => setShowBulkEditModal(false)}
+            wide={false}
+          >
+            <form onSubmit={bulkEditSelected} className="flex flex-col gap-5">
+              <p className="text-xs text-slate-400">
+                Only fields you set below will be applied — leave a field on "Keep unchanged" to leave it as-is.
+              </p>
+
+              <div>
+                <label className={labelCls}>Assignee</label>
+                <select
+                  className={inputCls}
+                  value={bulkEditForm.assignedTo}
+                  onChange={(e) => setBulkEditForm({ ...bulkEditForm, assignedTo: e.target.value })}
+                >
+                  <option value="">Keep unchanged</option>
+                  {employees.map((emp) => (
+                    <option key={emp._id} value={emp.name}>{emp.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className={labelCls}>Assignor</label>
+                <select
+                  className={inputCls}
+                  value={bulkEditForm.assignedBy}
+                  onChange={(e) => setBulkEditForm({ ...bulkEditForm, assignedBy: e.target.value })}
+                >
+                  <option value="">Keep unchanged</option>
+                  {employees.map((emp) => (
+                    <option key={emp._id} value={emp.name}>{emp.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className={labelCls}>Due Date</label>
+                <input
+                  type="date"
+                  className={inputCls}
+                  value={bulkEditForm.dueDate}
+                  onChange={(e) => setBulkEditForm({ ...bulkEditForm, dueDate: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className={labelCls}>Status</label>
+                <select
+                  className={inputCls}
+                  value={bulkEditForm.status}
+                  onChange={(e) => setBulkEditForm({ ...bulkEditForm, status: e.target.value })}
+                >
+                  <option value="">Keep unchanged</option>
+                  <option value="Todo">Todo</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Done">Done</option>
+                  <option value="Closed">Closed</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 justify-end pt-2 border-t border-slate-900/[0.06]">
+                <button
+                  type="button"
+                  onClick={() => setShowBulkEditModal(false)}
+                  className="bg-slate-100 border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-200 active:scale-[0.98] transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={bulkEditing}
+                  className="px-6 py-2.5 rounded-xl text-sm font-bold active:scale-[0.98] transition-all duration-200 text-[#0F172A] flex items-center justify-center gap-1.5"
+                  style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", boxShadow: "0 8px 22px -4px rgba(244,180,0,0.4)" }}
+                >
+                  <CheckCircle2 size={15} className="stroke-[2.5]" />
+                  {bulkEditing ? "Applying..." : "Apply Changes"}
                 </button>
               </div>
             </form>
