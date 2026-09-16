@@ -26,7 +26,6 @@ import {
   RotateCcw,
   ArrowLeft,
   Timer,
-  FileBarChart,
 } from "lucide-react";
 import { apiFetch } from "../api";
 import socket from "../socket";
@@ -170,15 +169,13 @@ export default function TaskManagerBoard({
   const [editingId, setEditingId] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showAutomatedModal, setShowAutomatedModal] = useState(false);
+  const [showAutomatedList, setShowAutomatedList] = useState(false);
   const [automatedTasks, setAutomatedTasks] = useState([]);
   const [automatedLoaded, setAutomatedLoaded] = useState(false);
   const [taskPriorities, setTaskPriorities] = useState(["High", "Medium", "Low"]);
   const [taskGroups, setTaskGroups] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
-  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
-  const [bulkEditForm, setBulkEditForm] = useState({ assignedTo: "", assignedBy: "", dueDate: "", status: "" });
-  const [bulkEditing, setBulkEditing] = useState(false);
 
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState("All");
@@ -295,63 +292,6 @@ export default function TaskManagerBoard({
     }
   };
 
-  const bulkEditSelected = async (e) => {
-    e.preventDefault();
-    if (selectedIds.length === 0) return;
-
-    const { assignedTo, assignedBy, dueDate, status } = bulkEditForm;
-    if (!assignedTo && !assignedBy && !dueDate && !status) {
-      toast.error("Choose at least one field to update");
-      return;
-    }
-
-    setBulkEditing(true);
-    try {
-      const targets = tasks.filter((t) => selectedIds.includes(t._id));
-
-      await Promise.all(
-        targets.map((task) => {
-          const newStatus = status || task.status;
-          const markingDone = (status === "Done" || status === "Closed");
-
-          const formData = new FormData();
-          formData.append("title", task.title);
-          formData.append("description", task.description || "");
-          formData.append("group", task.group || "");
-          formData.append("assignedTo", assignedTo || task.assignedTo);
-          formData.append("assignedBy", assignedBy || task.assignedBy);
-          formData.append("priority", task.priority);
-          formData.append("status", newStatus);
-          formData.append("startDate", task.startDate || "");
-          formData.append("dueDate", dueDate || task.dueDate || "");
-          formData.append("progress", markingDone ? 100 : (task.progress || 0));
-          formData.append("etcMinutes", task.etcMinutes || 0);
-          formData.append("atcMinutes", task.atcMinutes || 0);
-          formData.append("l1", task.l1 || "");
-          formData.append("l2", task.l2 || "");
-          formData.append("trainingLink", task.trainingLink || "");
-          formData.append("videoLink", task.videoLink || "");
-          formData.append("formLink", task.formLink || "");
-          formData.append("formReportLink", task.formReportLink || "");
-          formData.append("checklistLink", task.checklistLink || "");
-
-          return apiFetch(`/api/tasks/${task._id}`, { method: "PUT", body: formData });
-        })
-      );
-
-      toast.success(`${targets.length} task(s) updated`);
-      setSelectedIds([]);
-      setShowBulkEditModal(false);
-      setBulkEditForm({ assignedTo: "", assignedBy: "", dueDate: "", status: "" });
-      onTasksChanged();
-    } catch (error) {
-      console.log(error);
-      toast.error("Some tasks failed to update");
-    } finally {
-      setBulkEditing(false);
-    }
-  };
-
   // Archived view — its own filters (adds Deleted By) over the archived list.
   const archivedFilteredTasks = archivedTasks.filter((t) => {
     if (search) {
@@ -415,32 +355,6 @@ export default function TaskManagerBoard({
     task.deletedAt
       ? Math.max(0, Math.round((new Date(task.deletedAt) - new Date(task.createdAt)) / (1000 * 60 * 60 * 24)))
       : "-";
-
-  // Automated Tasks blade — its own filters, over the automated-task templates.
-  const automatedFilteredTasks = automatedTasks.filter((at) => {
-    if (search) {
-      const q = search.toLowerCase();
-      if (!at.title?.toLowerCase().includes(q) && !at.description?.toLowerCase().includes(q))
-        return false;
-    }
-    if (groupFilter !== "All" && (at.group || "Ungrouped") !== groupFilter) return false;
-    if (assigneeFilter !== "All" && at.assignedTo !== assigneeFilter) return false;
-    return true;
-  });
-  const automatedStats = {
-    total: automatedTasks.length,
-    active: automatedTasks.filter((at) => at.active).length,
-    paused: automatedTasks.filter((at) => !at.active).length,
-  };
-
-  // Overdue tasks show how many days past their due date they are, instead
-  // of just the due date itself, so the age of the miss is visible at a glance.
-  const overdueDays = (task) => {
-    if (!isOverdue(task)) return 0;
-    const due = new Date(task.dueDate.split("T")[0]);
-    const today = new Date(todayStr);
-    return Math.round((today - due) / (1000 * 60 * 60 * 24));
-  };
 
   const priorityBadge = (priority) =>
     priority === "High"
@@ -766,9 +680,9 @@ export default function TaskManagerBoard({
     }
   };
 
-  const openAutomatedView = () => {
+  const openAutomatedList = () => {
     if (!automatedLoaded) loadAutomatedTasks();
-    setViewMode("automated");
+    setShowAutomatedList(true);
   };
 
   const toggleAutomated = async (id) => {
@@ -818,8 +732,6 @@ export default function TaskManagerBoard({
         setAutomatedForm(EMPTY_AUTOMATED_FORM);
         setShowAutomatedModal(false);
         setAutomatedLoaded(false);
-        loadAutomatedTasks();
-        setViewMode("automated");
       } else {
         toast.error(data.message || "Failed to create automated task");
       }
@@ -834,7 +746,6 @@ export default function TaskManagerBoard({
     if (task.trainingLink) items.push({ key: "training", icon: GraduationCap, href: task.trainingLink, title: "Training" });
     if (task.videoLink) items.push({ key: "video", icon: Video, href: task.videoLink, title: "Video" });
     if (task.formLink) items.push({ key: "form", icon: FileText, href: task.formLink, title: "Form" });
-    if (task.formReportLink) items.push({ key: "formReport", icon: FileBarChart, href: task.formReportLink, title: "Form Report" });
     if (task.checklistLink) items.push({ key: "checklist", icon: ClipboardCheck, href: task.checklistLink, title: "Checklist" });
     if (!items.length) return <span className="text-slate-300">-</span>;
     return (
@@ -883,36 +794,22 @@ export default function TaskManagerBoard({
                 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900"
                 style={{ fontFamily: "Sora, sans-serif" }}
               >
-                {viewMode === "archived" ? "Archived Tasks" : viewMode === "automated" ? "Automated Tasks" : "Task Manager"}
+                {viewMode === "archived" ? "Archived Tasks" : "Task Manager"}
               </h1>
               <p className="mt-1.5 text-slate-500 text-sm font-medium">
-                Home &gt; Task Manager
-                {viewMode === "archived" && <> &gt; Archived Tasks</>}
-                {viewMode === "automated" && <> &gt; Automated Tasks</>}
+                Home &gt; Task Manager{viewMode === "archived" && <> &gt; Archived Tasks</>}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {viewMode === "archived" || viewMode === "automated" ? (
-                <>
-                  <button
-                    onClick={() => setViewMode("active")}
-                    className="px-4 py-2.5 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"
-                  >
-                    <ArrowLeft size={15} className="stroke-[2.5]" />
-                    Back to Tasks
-                  </button>
-                  {viewMode === "automated" && canManageAutomation && (
-                    <button
-                      onClick={() => setShowAutomatedModal(true)}
-                      className="px-5 py-2.5 rounded-xl text-sm font-bold active:scale-[0.98] transition-all duration-200 text-[#0F172A] flex items-center gap-1.5"
-                      style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", boxShadow: "0 8px 22px -4px rgba(244,180,0,0.4)" }}
-                    >
-                      <Plus size={15} className="stroke-[2.5]" />
-                      New Automated Task
-                    </button>
-                  )}
-                </>
+              {viewMode === "archived" ? (
+                <button
+                  onClick={() => setViewMode("active")}
+                  className="px-4 py-2.5 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"
+                >
+                  <ArrowLeft size={15} className="stroke-[2.5]" />
+                  Back to Tasks
+                </button>
               ) : (
                 <>
                   <button
@@ -925,7 +822,7 @@ export default function TaskManagerBoard({
                   {canManageAutomation && (
                     <>
                   <button
-                    onClick={openAutomatedView}
+                    onClick={openAutomatedList}
                     className="px-4 py-2.5 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"
                   >
                     <Zap size={15} className="stroke-[2.5]" />
@@ -968,12 +865,6 @@ export default function TaskManagerBoard({
             <StatPill label="Missed" value={archivedMissed} color="#DC2626" icon={AlertTriangle} subtitle="Last 30 days" />
             <StatPill label="Total ETC" value={`${archivedTotalEtcHrs}h`} color="#2563EB" icon={Clock} subtitle="Updates with filters" />
             <StatPill label="Total ATC" value={`${archivedTotalAtcHrs}h`} color="#22C55E" icon={Timer} subtitle="Updates with filters" />
-          </div>
-        ) : viewMode === "automated" ? (
-          <div className="flex gap-2.5 overflow-x-auto pb-0.5 shrink-0">
-            <StatPill label="Total" value={automatedStats.total} color="#8B5CF6" icon={Zap} />
-            <StatPill label="Active" value={automatedStats.active} color="#22C55E" icon={Power} />
-            <StatPill label="Paused" value={automatedStats.paused} color="#94A3B8" icon={Power} />
           </div>
         ) : (
         <div className="flex gap-2.5 overflow-x-auto pb-0.5 shrink-0">
@@ -1021,8 +912,6 @@ export default function TaskManagerBoard({
             ))}
           </select>
 
-          {viewMode !== "automated" && (
-            <>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`${inputCls} !py-2 !w-auto text-xs`}>
             <option value="All">Status: All</option>
             <option value="Todo">Todo</option>
@@ -1037,8 +926,6 @@ export default function TaskManagerBoard({
               <option key={p} value={p}>{p}</option>
             ))}
           </select>
-            </>
-          )}
 
           {viewMode === "archived" && (
             <select value={deletedByFilter} onChange={(e) => setDeletedByFilter(e.target.value)} className={`${inputCls} !py-2 !w-auto text-xs`}>
@@ -1051,7 +938,7 @@ export default function TaskManagerBoard({
         </div>
       </GlassPanel>
 
-      {viewMode === "active" && selectedIds.length > 0 && (
+      {viewMode !== "archived" && selectedIds.length > 0 && (
         <GlassPanel className="p-4 flex items-center justify-between gap-3" style={{ background: "rgba(244,180,0,0.08)" }}>
           <span className="text-sm font-bold text-slate-700">{selectedIds.length} task(s) selected</span>
           <div className="flex items-center gap-2">
@@ -1060,13 +947,6 @@ export default function TaskManagerBoard({
               className="px-3 py-2 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all"
             >
               Clear
-            </button>
-            <button
-              onClick={() => setShowBulkEditModal(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all active:scale-95"
-            >
-              <Pencil size={13} className="stroke-[2.5]" />
-              Bulk Edit
             </button>
             <button
               onClick={bulkDeleteSelected}
@@ -1176,99 +1056,6 @@ export default function TaskManagerBoard({
           </div>
         )}
       </GlassPanel>
-      ) : viewMode === "automated" ? (
-      <GlassPanel className="overflow-hidden w-full flex flex-col">
-        {automatedFilteredTasks.length === 0 && (
-          <div className="flex flex-col items-center gap-2 justify-center py-16 px-6 text-slate-400 font-medium">
-            <Zap size={32} className="text-slate-300 stroke-[1.5]" />
-            <span className="text-center">No automated tasks match your filters.</span>
-          </div>
-        )}
-
-        {automatedFilteredTasks.length > 0 && (
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-900/[0.06] bg-white/40 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="px-4 py-4">Task</th>
-                  <th className="px-4 py-4">Links</th>
-                  <th className="px-4 py-4">Group</th>
-                  <th className="px-4 py-4">Assignee</th>
-                  <th className="px-4 py-4">ETC</th>
-                  <th className="px-4 py-4">Priority</th>
-                  <th className="px-4 py-4">Schedule</th>
-                  <th className="px-4 py-4">Status</th>
-                  <th className="px-6 py-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-900/[0.06] text-sm text-slate-700">
-                {automatedFilteredTasks.map((at) => (
-                  <tr key={at._id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-4">
-                      <div className="flex flex-col gap-0.5 max-w-md">
-                        <span className="font-bold text-slate-900 truncate flex items-center gap-1.5">
-                          <Zap size={12} className="text-amber-500 shrink-0" />
-                          {at.title}
-                        </span>
-                        <span className="text-xs text-slate-400 line-clamp-1">{at.description || "No description provided."}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">{linkIcons(at)}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-500">{at.group || "-"}</td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500">
-                          <User size={12} />
-                        </div>
-                        <span className="text-xs font-semibold">{at.assignedTo || "Unassigned"}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-500 tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                      {at.etcMinutes ? `${at.etcMinutes}m` : "-"}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-sm ${priorityBadge(at.priority)}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${priorityDot(at.priority)}`} />
-                        {at.priority}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-500">
-                      {at.frequency} @ {at.time}
-                      {at.frequency === "Weekly" && at.weekday !== null && ` (${WEEKDAYS[at.weekday]})`}
-                      {at.frequency === "Monthly" && at.dayOfMonth !== null && ` (Day ${at.dayOfMonth})`}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-bold border ${at.active ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-slate-100 border-slate-200 text-slate-500"}`}>
-                        {at.active ? "Active" : "Paused"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="flex justify-center items-center gap-2">
-                        <button
-                          onClick={() => toggleAutomated(at._id)}
-                          title={at.active ? "Active — click to pause" : "Paused — click to activate"}
-                          className={`flex items-center justify-center p-2 rounded-lg border transition-all active:scale-95 shadow-sm ${
-                            at.active ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-slate-100 border-slate-200 text-slate-400"
-                          }`}
-                        >
-                          <Power size={14} className="stroke-[2.5]" />
-                        </button>
-                        <button
-                          onClick={() => deleteAutomated(at._id)}
-                          className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-95 shadow-sm"
-                          title="Delete"
-                        >
-                          <Trash2 size={14} className="stroke-[2.5]" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </GlassPanel>
       ) : (
       <GlassPanel className="overflow-hidden w-full flex flex-col">
         {filteredTasks.length === 0 && (
@@ -1364,9 +1151,7 @@ export default function TaskManagerBoard({
                           <Calendar size={13} />
                           <span>
                             {task.dueDate
-                              ? isOverdue(task)
-                                ? `Overdue by ${overdueDays(task)}d`
-                                : new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                              ? new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
                               : "No due date"}
                           </span>
                         </div>
@@ -1473,7 +1258,7 @@ export default function TaskManagerBoard({
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="md:col-span-2 lg:col-span-3">
-                  <label className={labelCls}>Task Title *</label>
+                  <label className={labelCls}>Task Title</label>
                   <input
                     type="text"
                     placeholder="e.g. Integrate Payment Webhooks"
@@ -1497,7 +1282,7 @@ export default function TaskManagerBoard({
                 </div>
 
                 <div>
-                  <label className={labelCls}>Assigned To *</label>
+                  <label className={labelCls}>Assigned To</label>
                   <select
                     className={inputCls}
                     value={form.assignedTo}
@@ -1560,10 +1345,9 @@ export default function TaskManagerBoard({
                 </div>
 
                 <div>
-                  <label className={labelCls}>Due Date *</label>
+                  <label className={labelCls}>Due Date</label>
                   <input
                     type="date"
-                    required
                     className={inputCls}
                     value={form.dueDate}
                     onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
@@ -1571,11 +1355,10 @@ export default function TaskManagerBoard({
                 </div>
 
                 <div>
-                  <label className={labelCls}>ETC (Minutes) *</label>
+                  <label className={labelCls}>ETC (Minutes)</label>
                   <input
                     type="number"
                     min="0"
-                    required
                     placeholder="10"
                     className={inputCls}
                     value={form.etcMinutes}
@@ -1879,96 +1662,52 @@ export default function TaskManagerBoard({
         )}
       </AnimatePresence>
 
-      {/* Bulk Edit Modal */}
+      {/* Automated Tasks List Modal */}
       <AnimatePresence>
-        {showBulkEditModal && (
-          <Modal
-            title={`Bulk Edit ${selectedIds.length} Task(s)`}
-            icon={<Pencil size={18} className="stroke-[2.5]" />}
-            onClose={() => setShowBulkEditModal(false)}
-            wide={false}
-          >
-            <form onSubmit={bulkEditSelected} className="flex flex-col gap-5">
-              <p className="text-xs text-slate-400">
-                Only fields you set below will be applied — leave a field on "Keep unchanged" to leave it as-is.
-              </p>
-
-              <div>
-                <label className={labelCls}>Assignee</label>
-                <select
-                  className={inputCls}
-                  value={bulkEditForm.assignedTo}
-                  onChange={(e) => setBulkEditForm({ ...bulkEditForm, assignedTo: e.target.value })}
-                >
-                  <option value="">Keep unchanged</option>
-                  {employees.map((emp) => (
-                    <option key={emp._id} value={emp.name}>{emp.name}</option>
-                  ))}
-                </select>
+        {showAutomatedList && (
+          <Modal title="Automated Tasks" icon={<Zap size={18} className="stroke-[2.5]" />} onClose={() => setShowAutomatedList(false)} wide>
+            {automatedTasks.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 justify-center py-10 text-slate-400 font-medium">
+                <Zap size={28} className="text-slate-300 stroke-[1.5]" />
+                <span>No automated tasks set up yet.</span>
               </div>
-
-              <div>
-                <label className={labelCls}>Assignor</label>
-                <select
-                  className={inputCls}
-                  value={bulkEditForm.assignedBy}
-                  onChange={(e) => setBulkEditForm({ ...bulkEditForm, assignedBy: e.target.value })}
-                >
-                  <option value="">Keep unchanged</option>
-                  {employees.map((emp) => (
-                    <option key={emp._id} value={emp.name}>{emp.name}</option>
-                  ))}
-                </select>
+            ) : (
+              <div className="flex flex-col divide-y divide-slate-900/[0.06]">
+                {automatedTasks.map((at) => (
+                  <div key={at._id} className="py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-bold text-slate-800 truncate">{at.title}</p>
+                      <p className="text-xs text-slate-400">
+                        {at.frequency} @ {at.time} → {at.assignedTo}
+                        {at.frequency === "Weekly" && at.weekday !== null && ` (${WEEKDAYS[at.weekday]})`}
+                        {at.frequency === "Monthly" && at.dayOfMonth !== null && ` (Day ${at.dayOfMonth})`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => toggleAutomated(at._id)}
+                        title={at.active ? "Active — click to pause" : "Paused — click to activate"}
+                        className={`flex items-center justify-center p-2 rounded-lg border transition-all active:scale-95 ${
+                          at.active ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-slate-100 border-slate-200 text-slate-400"
+                        }`}
+                      >
+                        <Power size={14} className="stroke-[2.5]" />
+                      </button>
+                      <button
+                        onClick={() => deleteAutomated(at._id)}
+                        className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-95"
+                        title="Delete"
+                      >
+                        <Trash2 size={14} className="stroke-[2.5]" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-
-              <div>
-                <label className={labelCls}>Due Date</label>
-                <input
-                  type="date"
-                  className={inputCls}
-                  value={bulkEditForm.dueDate}
-                  onChange={(e) => setBulkEditForm({ ...bulkEditForm, dueDate: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className={labelCls}>Status</label>
-                <select
-                  className={inputCls}
-                  value={bulkEditForm.status}
-                  onChange={(e) => setBulkEditForm({ ...bulkEditForm, status: e.target.value })}
-                >
-                  <option value="">Keep unchanged</option>
-                  <option value="Todo">Todo</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Done">Done</option>
-                  <option value="Closed">Closed</option>
-                </select>
-              </div>
-
-              <div className="flex gap-3 justify-end pt-2 border-t border-slate-900/[0.06]">
-                <button
-                  type="button"
-                  onClick={() => setShowBulkEditModal(false)}
-                  className="bg-slate-100 border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-200 active:scale-[0.98] transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={bulkEditing}
-                  className="px-6 py-2.5 rounded-xl text-sm font-bold active:scale-[0.98] transition-all duration-200 text-[#0F172A] flex items-center justify-center gap-1.5"
-                  style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", boxShadow: "0 8px 22px -4px rgba(244,180,0,0.4)" }}
-                >
-                  <CheckCircle2 size={15} className="stroke-[2.5]" />
-                  {bulkEditing ? "Applying..." : "Apply Changes"}
-                </button>
-              </div>
-            </form>
+            )}
           </Modal>
         )}
       </AnimatePresence>
-
     </div>
   );
 }
