@@ -610,6 +610,7 @@ export default function TaskManagerBoard({
   useEffect(() => {
     setViewMode(initialViewMode);
     if (initialViewMode === "archived") loadArchivedTasks();
+    if (initialViewMode === "automated") loadAutomatedTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialViewMode]);
 

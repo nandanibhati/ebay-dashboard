@@ -14,6 +14,7 @@ import {
   LogOut,
   FileText,
   Store,
+  Zap,
 } from "lucide-react";
 
 import { Link, useLocation } from "react-router-dom";
@@ -57,6 +58,11 @@ export default function Sidebar() {
       name: "Archived Tasks",
       icon: Archive,
       path: "/tasks?view=archived",
+    },
+    {
+      name: "Automated Tasks",
+      icon: Zap,
+      path: "/tasks?view=automated",
     },
     {
       name: "Stock",

@@ -6,6 +6,7 @@ import {
   Store,
   Archive,
   Users,
+  Zap,
 } from "lucide-react";
 
 import { Link, useLocation } from "react-router-dom";
@@ -34,6 +35,11 @@ export default function ManagerSidebar() {
       name: "Archived Tasks",
       icon: Archive,
       path: "/manager?view=archived",
+    },
+    {
+      name: "Automated Tasks",
+      icon: Zap,
+      path: "/manager?view=automated",
     },
     {
       name: "Employees",

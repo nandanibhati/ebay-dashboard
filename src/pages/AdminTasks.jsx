@@ -124,7 +124,13 @@ export default function AdminTasks() {
             employees={employees}
             currentUserName={localStorage.getItem("employeeName") || "Admin"}
             onTasksChanged={fetchTasks}
-            initialViewMode={searchParams.get("view") === "archived" ? "archived" : "active"}
+            initialViewMode={
+              searchParams.get("view") === "archived"
+                ? "archived"
+                : searchParams.get("view") === "automated"
+                ? "automated"
+                : "active"
+            }
           />
         </div>
       </div>
