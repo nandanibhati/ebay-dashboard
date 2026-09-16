@@ -210,35 +210,6 @@ export default function TaskManagerBoard({
     task.status !== "Done" &&
     task.status !== "Closed";
 
-  // Stats
-  const pendingCount = tasks.filter(
-    (t) => t.status === "Todo" || t.status === "In Progress"
-  ).length;
-  const overdueCount = tasks.filter(isOverdue).length;
-  const totalEtcHrs = (
-    tasks
-      .filter((t) => t.status !== "Done" && t.status !== "Closed")
-      .reduce((sum, t) => sum + Number(t.etcMinutes || 0), 0) / 60
-  ).toFixed(1);
-  const avgProgress = tasks.length
-    ? (
-        tasks.reduce((sum, t) => sum + Number(t.progress || 0), 0) / tasks.length
-      ).toFixed(0)
-    : 0;
-  const totalAtcHrs = (
-    tasks.reduce((sum, t) => sum + Number(t.atcMinutes || 0), 0) / 60
-  ).toFixed(1);
-  const doneTasks = tasks.filter((t) => t.status === "Done" || t.status === "Closed");
-  const avgTatDays = doneTasks.length
-    ? (
-        doneTasks.reduce(
-          (sum, t) =>
-            sum + (new Date(t.updatedAt) - new Date(t.createdAt)) / (1000 * 60 * 60 * 24),
-          0
-        ) / doneTasks.length
-      ).toFixed(1)
-    : 0;
-
   const filteredTasks = tasks.filter((t) => {
     if (search) {
       const q = search.toLowerCase();
@@ -254,6 +225,38 @@ export default function TaskManagerBoard({
     if (priorityFilter !== "All" && t.priority !== priorityFilter) return false;
     return true;
   });
+
+  // Stats
+  const pendingCount = tasks.filter(
+    (t) => t.status === "Todo" || t.status === "In Progress"
+  ).length;
+  const overdueCount = tasks.filter(isOverdue).length;
+  // ETC/ATC react to the active filters (e.g. clicking the Done pill) so
+  // they always summarize whatever's currently showing in the table below,
+  // not the whole unfiltered task list.
+  const totalEtcHrs = (
+    filteredTasks
+      .filter((t) => t.status === "Done" || t.status === "Closed")
+      .reduce((sum, t) => sum + Number(t.etcMinutes || 0), 0) / 60
+  ).toFixed(1);
+  const avgProgress = tasks.length
+    ? (
+        tasks.reduce((sum, t) => sum + Number(t.progress || 0), 0) / tasks.length
+      ).toFixed(0)
+    : 0;
+  const totalAtcHrs = (
+    filteredTasks.reduce((sum, t) => sum + Number(t.atcMinutes || 0), 0) / 60
+  ).toFixed(1);
+  const doneTasks = tasks.filter((t) => t.status === "Done" || t.status === "Closed");
+  const avgTatDays = doneTasks.length
+    ? (
+        doneTasks.reduce(
+          (sum, t) =>
+            sum + (new Date(t.updatedAt) - new Date(t.createdAt)) / (1000 * 60 * 60 * 24),
+          0
+        ) / doneTasks.length
+      ).toFixed(1)
+    : 0;
 
   const canDeleteTask = (task) => canDeleteAnyTask || task.assignedBy === currentUserName;
   const selectableIds = filteredTasks.filter(canDeleteTask).map((t) => t._id);
@@ -870,8 +873,15 @@ export default function TaskManagerBoard({
         <div className="flex gap-2.5 overflow-x-auto pb-0.5 shrink-0">
           <StatPill label="Pending" value={pendingCount} color="#2563EB" icon={ListTodo} />
           <StatPill label="Overdue" value={overdueCount} color="#EF4444" icon={AlertTriangle} />
-          <StatPill label="ETC" value={`${totalEtcHrs}h`} color="#F59E0B" icon={Clock} subtitle="Open estimated time" />
-          <StatPill label="ATC" value={`${totalAtcHrs}h`} color="#10B981" icon={Timer} subtitle="Actual time logged" />
+          <StatPill
+            label="ETC"
+            value={`${totalEtcHrs}h`}
+            color="#F59E0B"
+            icon={Clock}
+            onClick={() => setStatusFilter(statusFilter === "Done" ? "All" : "Done")}
+            subtitle="Estimated time of Done tasks matching filters — click to filter"
+          />
+          <StatPill label="ATC" value={`${totalAtcHrs}h`} color="#10B981" icon={Timer} subtitle="Actual time of tasks matching filters" />
           <StatPill label="TAT" value={`${avgTatDays}d`} color="#06B6D4" icon={Timer} subtitle="Avg turnaround time" />
           <StatPill label="Avg Score" value={`${avgProgress}%`} color="#8B5CF6" icon={BarChart3} />
           <StatPill label="Missed" value={overdueCount} color="#DC2626" icon={AlertTriangle} subtitle="Overdue tasks" />
