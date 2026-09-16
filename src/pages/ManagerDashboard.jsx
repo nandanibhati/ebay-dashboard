@@ -7,6 +7,7 @@ import { Toaster } from "react-hot-toast";
 import { Menu, X, Package, Clock3, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { apiFetch } from "../api";
+import InstallAppBar from "../components/InstallAppBar";
 
 const FONT_LINK_ID = "ebay-dash-fonts";
 function ensureFonts() {
@@ -154,6 +155,7 @@ export default function ManagerDashboard() {
       )}
 
       <div className="relative z-10 flex flex-col min-h-screen">
+        <InstallAppBar />
         <header className="sticky top-0 z-20 h-[72px] flex items-center gap-3 px-5 lg:px-10 border-b border-slate-900/[0.06] bg-white/70 backdrop-blur-xl">
           <button
             onClick={() => setSidebarOpen(true)}

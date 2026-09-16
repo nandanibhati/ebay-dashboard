@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "../api";
 import NotificationBell from "../components/NotificationBell";
+import InstallAppBar from "../components/InstallAppBar";
 import {
   LogIn, LogOut as LogOutIcon, CalendarCheck, CalendarX, CalendarClock,
   Wallet, Search, ChevronDown, ArrowUpRight, Sparkles,
@@ -488,6 +489,7 @@ export default function EmployeeDashboard() {
       )}
 
       <div className="relative z-10 flex flex-col min-h-screen">
+        <InstallAppBar />
         {/* ── Top bar ── */}
         <header className="sticky top-0 z-20 h-[72px] flex items-center gap-3 px-5 lg:px-10 border-b border-slate-900/[0.06] bg-white/70 backdrop-blur-xl">
           <button

@@ -9,6 +9,7 @@ import {
 import { apiFetch } from "../api";
 import NotificationBell from "../components/NotificationBell";
 import PendingSignups from "../components/PendingSignups";
+import InstallAppBar from "../components/InstallAppBar";
 import { isSalaryDueToday } from "../utils/salary";
 
 /* Design tokens - BuildMaster reference palette
@@ -484,6 +485,7 @@ export default function Dashboard() {
       )}
 
       <div className="relative z-10 flex flex-col min-h-screen">
+        <InstallAppBar />
         {/* ── Top bar ── */}
         <header className="sticky top-0 z-20 h-[72px] flex items-center gap-3 px-5 lg:px-10 border-b border-slate-900/[0.06] bg-white/70 backdrop-blur-xl">
           {/* Menu button — opens sidebar drawer */}
