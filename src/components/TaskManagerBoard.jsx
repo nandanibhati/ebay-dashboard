@@ -1070,7 +1070,7 @@ export default function TaskManagerBoard({
                 {archivedFilteredTasks.map((task) => (
                   <tr key={task._id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-4">
-                      <span className="font-bold text-slate-900">{task.title}</span>
+                      <span className="font-bold text-slate-900 text-xs leading-snug">{task.title}</span>
                     </td>
                     <td className="px-4 py-4">{linkIcons(task)}</td>
                     <td className="px-4 py-4">{noteCell(task)}</td>
@@ -1162,7 +1162,7 @@ export default function TaskManagerBoard({
                 {automatedFilteredTasks.map((at) => (
                   <tr key={at._id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-4">
-                      <span className="font-bold text-slate-900 flex items-start gap-1.5">
+                      <span className="font-bold text-slate-900 text-xs leading-snug flex items-start gap-1.5">
                         <Zap size={12} className="text-amber-500 shrink-0 mt-0.5" />
                         {at.title}
                       </span>
@@ -1286,7 +1286,7 @@ export default function TaskManagerBoard({
                       </td>
 
                       <td className="px-4 py-4">
-                        <span className="font-bold text-slate-900 group-hover:text-[#B45F06] transition-colors flex items-start gap-1.5">
+                        <span className="font-bold text-slate-900 text-xs leading-snug group-hover:text-[#B45F06] transition-colors flex items-start gap-1.5">
                           {task.sourceAutomatedTask && <Zap size={12} className="text-amber-500 shrink-0 mt-0.5" />}
                           <span>{task.title}</span>
                         </span>
