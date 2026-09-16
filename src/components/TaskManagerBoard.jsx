@@ -26,6 +26,7 @@ import {
   RotateCcw,
   ArrowLeft,
   Timer,
+  FileBarChart,
 } from "lucide-react";
 import { apiFetch } from "../api";
 import socket from "../socket";
@@ -748,6 +749,7 @@ export default function TaskManagerBoard({
     if (task.trainingLink) items.push({ key: "training", icon: GraduationCap, href: task.trainingLink, title: "Training" });
     if (task.videoLink) items.push({ key: "video", icon: Video, href: task.videoLink, title: "Video" });
     if (task.formLink) items.push({ key: "form", icon: FileText, href: task.formLink, title: "Form" });
+    if (task.formReportLink) items.push({ key: "formReport", icon: FileBarChart, href: task.formReportLink, title: "Form Report" });
     if (task.checklistLink) items.push({ key: "checklist", icon: ClipboardCheck, href: task.checklistLink, title: "Checklist" });
     if (!items.length) return <span className="text-slate-300">-</span>;
     return (
