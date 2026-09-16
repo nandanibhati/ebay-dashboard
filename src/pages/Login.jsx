@@ -103,13 +103,13 @@ export default function Login() {
         {/* Logo */}
         <div className="relative z-10 flex items-center gap-3 anim-fade-up" style={{ animationDelay: "0ms" }}>
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center shadow-[0_8px_20px_rgba(244,180,0,0.35)]"
-            style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)" }}
+            className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shadow-[0_8px_20px_rgba(244,180,0,0.35)]"
+            style={{ background: "#000" }}
           >
-            <ShoppingBag size={19} className="text-[#0F172A]" />
+            <img src="/driftline-icon.png" alt="Driftline" className="w-full h-full object-cover" />
           </div>
           <span className="text-white font-bold text-lg tracking-tight" style={{ fontFamily: "Sora, sans-serif" }}>
-            eBay Analytics
+            Driftline Workspace
           </span>
         </div>
 
@@ -170,7 +170,7 @@ export default function Login() {
 
         {/* Footer */}
         <p className="relative z-10 text-slate-600 text-xs anim-fade-up" style={{ animationDelay: "240ms" }}>
-          © 2026 eBay Analytics. All rights reserved.
+          © 2026 Driftline Workspace. All rights reserved.
         </p>
       </div>
 
@@ -205,12 +205,12 @@ export default function Login() {
             {/* Mobile logo */}
             <div className="flex lg:hidden items-center justify-center gap-2 mb-1">
               <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)" }}
+                className="w-8 h-8 rounded-xl flex items-center justify-center overflow-hidden"
+                style={{ background: "#000" }}
               >
-                <ShoppingBag size={16} className="text-[#0F172A]" />
+                <img src="/driftline-icon.png" alt="Driftline" className="w-full h-full object-cover" />
               </div>
-              <span className="font-bold text-slate-800 text-base" style={{ fontFamily: "Sora, sans-serif" }}>eBay Analytics</span>
+              <span className="font-bold text-slate-800 text-base" style={{ fontFamily: "Sora, sans-serif" }}>Driftline Workspace</span>
             </div>
 
             {/* Heading */}

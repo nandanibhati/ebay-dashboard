@@ -8,7 +8,6 @@ import {
   Wallet,
   LogOut,
   CalendarDays,
-  Sparkles,
   FileText,
   Store,
   Archive,
@@ -103,15 +102,15 @@ export default function EmployeeSidebar() {
       <div className="p-6 border-b border-white/[0.06]">
         <div className="flex items-center gap-3">
           <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-            style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", boxShadow: "0 0 24px rgba(244,180,0,0.35)" }}
+            className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden"
+            style={{ background: "#000", boxShadow: "0 0 24px rgba(244,180,0,0.35)" }}
           >
-            <Sparkles className="text-[#0F172A]" size={22} />
+            <img src="/driftline-icon.png" alt="Driftline" className="w-full h-full object-cover" />
           </div>
 
           <div>
             <h1 className="text-white text-xl font-bold" style={{ fontFamily: "Sora, sans-serif" }}>
-              eBay Analytics
+              Driftline
             </h1>
 
             <p className="text-[10px] font-semibold tracking-[0.2em]" style={{ color: "#F4B400" }}>
