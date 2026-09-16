@@ -27,6 +27,7 @@ import {
   ArrowLeft,
   Timer,
   FileBarChart,
+  StickyNote,
 } from "lucide-react";
 import { apiFetch } from "../api";
 import socket from "../socket";
@@ -170,7 +171,6 @@ export default function TaskManagerBoard({
   const [editingId, setEditingId] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showAutomatedModal, setShowAutomatedModal] = useState(false);
-  const [showAutomatedList, setShowAutomatedList] = useState(false);
   const [automatedTasks, setAutomatedTasks] = useState([]);
   const [automatedLoaded, setAutomatedLoaded] = useState(false);
   const [taskPriorities, setTaskPriorities] = useState(["High", "Medium", "Low"]);
@@ -189,6 +189,7 @@ export default function TaskManagerBoard({
   const [doneTask, setDoneTask] = useState(null);
   const [pendingStatus, setPendingStatus] = useState("Done");
   const [atcInput, setAtcInput] = useState("");
+  const [viewingNote, setViewingNote] = useState(null);
 
   const [viewMode, setViewMode] = useState(initialViewMode);
   const [archivedTasks, setArchivedTasks] = useState([]);
@@ -218,6 +219,23 @@ export default function TaskManagerBoard({
     const due = new Date(task.dueDate.split("T")[0]);
     const today = new Date(todayStr);
     return Math.round((today - due) / (1000 * 60 * 60 * 24));
+  };
+
+  // Automated Tasks blade — its own filters, over the automated-task templates.
+  const automatedFilteredTasks = automatedTasks.filter((at) => {
+    if (search) {
+      const q = search.toLowerCase();
+      if (!at.title?.toLowerCase().includes(q) && !at.description?.toLowerCase().includes(q))
+        return false;
+    }
+    if (groupFilter !== "All" && (at.group || "Ungrouped") !== groupFilter) return false;
+    if (assigneeFilter !== "All" && at.assignedTo !== assigneeFilter) return false;
+    return true;
+  });
+  const automatedStats = {
+    total: automatedTasks.length,
+    active: automatedTasks.filter((at) => at.active).length,
+    paused: automatedTasks.filter((at) => !at.active).length,
   };
 
   const filteredTasks = tasks.filter((t) => {
@@ -692,9 +710,9 @@ export default function TaskManagerBoard({
     }
   };
 
-  const openAutomatedList = () => {
+  const openAutomatedView = () => {
     if (!automatedLoaded) loadAutomatedTasks();
-    setShowAutomatedList(true);
+    setViewMode("automated");
   };
 
   const toggleAutomated = async (id) => {
@@ -744,6 +762,8 @@ export default function TaskManagerBoard({
         setAutomatedForm(EMPTY_AUTOMATED_FORM);
         setShowAutomatedModal(false);
         setAutomatedLoaded(false);
+        loadAutomatedTasks();
+        setViewMode("automated");
       } else {
         toast.error(data.message || "Failed to create automated task");
       }
@@ -779,6 +799,19 @@ export default function TaskManagerBoard({
     );
   };
 
+  const noteCell = (item) =>
+    item.description ? (
+      <button
+        onClick={() => setViewingNote(item)}
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 border border-amber-100 text-amber-700 hover:bg-amber-100 transition-colors"
+      >
+        <StickyNote size={12} className="stroke-[2.5]" />
+        View
+      </button>
+    ) : (
+      <span className="text-slate-300">-</span>
+    );
+
   return (
     <div className="flex flex-col gap-6">
       <datalist id="task-groups-list">
@@ -807,22 +840,36 @@ export default function TaskManagerBoard({
                 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900"
                 style={{ fontFamily: "Sora, sans-serif" }}
               >
-                {viewMode === "archived" ? "Archived Tasks" : "Task Manager"}
+                {viewMode === "archived" ? "Archived Tasks" : viewMode === "automated" ? "Automated Tasks" : "Task Manager"}
               </h1>
               <p className="mt-1.5 text-slate-500 text-sm font-medium">
-                Home &gt; Task Manager{viewMode === "archived" && <> &gt; Archived Tasks</>}
+                Home &gt; Task Manager
+                {viewMode === "archived" && <> &gt; Archived Tasks</>}
+                {viewMode === "automated" && <> &gt; Automated Tasks</>}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {viewMode === "archived" ? (
-                <button
-                  onClick={() => setViewMode("active")}
-                  className="px-4 py-2.5 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"
-                >
-                  <ArrowLeft size={15} className="stroke-[2.5]" />
-                  Back to Tasks
-                </button>
+              {viewMode === "archived" || viewMode === "automated" ? (
+                <>
+                  <button
+                    onClick={() => setViewMode("active")}
+                    className="px-4 py-2.5 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"
+                  >
+                    <ArrowLeft size={15} className="stroke-[2.5]" />
+                    Back to Tasks
+                  </button>
+                  {viewMode === "automated" && canManageAutomation && (
+                    <button
+                      onClick={() => setShowAutomatedModal(true)}
+                      className="px-5 py-2.5 rounded-xl text-sm font-bold active:scale-[0.98] transition-all duration-200 text-[#0F172A] flex items-center gap-1.5"
+                      style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", boxShadow: "0 8px 22px -4px rgba(244,180,0,0.4)" }}
+                    >
+                      <Plus size={15} className="stroke-[2.5]" />
+                      New Automated Task
+                    </button>
+                  )}
+                </>
               ) : (
                 <>
                   <button
@@ -835,7 +882,7 @@ export default function TaskManagerBoard({
                   {canManageAutomation && (
                     <>
                   <button
-                    onClick={openAutomatedList}
+                    onClick={openAutomatedView}
                     className="px-4 py-2.5 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"
                   >
                     <Zap size={15} className="stroke-[2.5]" />
@@ -878,6 +925,12 @@ export default function TaskManagerBoard({
             <StatPill label="Missed" value={archivedMissed} color="#DC2626" icon={AlertTriangle} subtitle="Last 30 days" />
             <StatPill label="Total ETC" value={`${archivedTotalEtcHrs}h`} color="#2563EB" icon={Clock} subtitle="Updates with filters" />
             <StatPill label="Total ATC" value={`${archivedTotalAtcHrs}h`} color="#22C55E" icon={Timer} subtitle="Updates with filters" />
+          </div>
+        ) : viewMode === "automated" ? (
+          <div className="flex gap-2.5 overflow-x-auto pb-0.5 shrink-0">
+            <StatPill label="Total" value={automatedStats.total} color="#8B5CF6" icon={Zap} />
+            <StatPill label="Active" value={automatedStats.active} color="#22C55E" icon={Power} />
+            <StatPill label="Paused" value={automatedStats.paused} color="#94A3B8" icon={Power} />
           </div>
         ) : (
         <div className="flex gap-2.5 overflow-x-auto pb-0.5 shrink-0">
@@ -932,6 +985,8 @@ export default function TaskManagerBoard({
             ))}
           </select>
 
+          {viewMode !== "automated" && (
+            <>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`${inputCls} !py-2 !w-auto text-xs`}>
             <option value="All">Status: All</option>
             <option value="Todo">Todo</option>
@@ -946,6 +1001,8 @@ export default function TaskManagerBoard({
               <option key={p} value={p}>{p}</option>
             ))}
           </select>
+            </>
+          )}
 
           {viewMode === "archived" && (
             <select value={deletedByFilter} onChange={(e) => setDeletedByFilter(e.target.value)} className={`${inputCls} !py-2 !w-auto text-xs`}>
@@ -958,7 +1015,7 @@ export default function TaskManagerBoard({
         </div>
       </GlassPanel>
 
-      {viewMode !== "archived" && selectedIds.length > 0 && (
+      {viewMode === "active" && selectedIds.length > 0 && (
         <GlassPanel className="p-4 flex items-center justify-between gap-3" style={{ background: "rgba(244,180,0,0.08)" }}>
           <span className="text-sm font-bold text-slate-700">{selectedIds.length} task(s) selected</span>
           <div className="flex items-center gap-2">
@@ -997,6 +1054,7 @@ export default function TaskManagerBoard({
                 <tr className="border-b border-slate-900/[0.06] bg-white/40 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   <th className="px-4 py-4">Task</th>
                   <th className="px-4 py-4">Links</th>
+                  <th className="px-4 py-4">Note</th>
                   <th className="px-4 py-4">Group</th>
                   <th className="px-4 py-4">Assignor</th>
                   <th className="px-4 py-4">Assignee</th>
@@ -1012,12 +1070,10 @@ export default function TaskManagerBoard({
                 {archivedFilteredTasks.map((task) => (
                   <tr key={task._id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-4">
-                      <div className="flex flex-col gap-0.5 max-w-md">
-                        <span className="font-bold text-slate-900 truncate">{task.title}</span>
-                        <span className="text-xs text-slate-400 line-clamp-1">{task.description || "No description provided."}</span>
-                      </div>
+                      <span className="font-bold text-slate-900">{task.title}</span>
                     </td>
                     <td className="px-4 py-4">{linkIcons(task)}</td>
+                    <td className="px-4 py-4">{noteCell(task)}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-500">{task.group || "-"}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-600">{task.assignedBy || "-"}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-600">{task.assignedTo || "-"}</td>
@@ -1076,6 +1132,98 @@ export default function TaskManagerBoard({
           </div>
         )}
       </GlassPanel>
+      ) : viewMode === "automated" ? (
+      <GlassPanel className="overflow-hidden w-full flex flex-col">
+        {automatedFilteredTasks.length === 0 && (
+          <div className="flex flex-col items-center gap-2 justify-center py-16 px-6 text-slate-400 font-medium">
+            <Zap size={32} className="text-slate-300 stroke-[1.5]" />
+            <span className="text-center">No automated tasks match your filters.</span>
+          </div>
+        )}
+
+        {automatedFilteredTasks.length > 0 && (
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-900/[0.06] bg-white/40 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="px-4 py-4">Task</th>
+                  <th className="px-4 py-4">Links</th>
+                  <th className="px-4 py-4">Note</th>
+                  <th className="px-4 py-4">Group</th>
+                  <th className="px-4 py-4">Assignee</th>
+                  <th className="px-4 py-4">ETC</th>
+                  <th className="px-4 py-4">Priority</th>
+                  <th className="px-4 py-4">Schedule</th>
+                  <th className="px-4 py-4">Status</th>
+                  <th className="px-6 py-4 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-900/[0.06] text-sm text-slate-700">
+                {automatedFilteredTasks.map((at) => (
+                  <tr key={at._id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-4">
+                      <span className="font-bold text-slate-900 flex items-start gap-1.5">
+                        <Zap size={12} className="text-amber-500 shrink-0 mt-0.5" />
+                        {at.title}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">{linkIcons(at)}</td>
+                    <td className="px-4 py-4">{noteCell(at)}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-500">{at.group || "-"}</td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500">
+                          <User size={12} />
+                        </div>
+                        <span className="text-xs font-semibold">{at.assignedTo || "Unassigned"}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-500 tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      {at.etcMinutes ? `${at.etcMinutes}m` : "-"}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-sm ${priorityBadge(at.priority)}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${priorityDot(at.priority)}`} />
+                        {at.priority}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-500">
+                      {at.frequency} @ {at.time}
+                      {at.frequency === "Weekly" && at.weekday !== null && ` (${WEEKDAYS[at.weekday]})`}
+                      {at.frequency === "Monthly" && at.dayOfMonth !== null && ` (Day ${at.dayOfMonth})`}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-bold border ${at.active ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-slate-100 border-slate-200 text-slate-500"}`}>
+                        {at.active ? "Active" : "Paused"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <div className="flex justify-center items-center gap-2">
+                        <button
+                          onClick={() => toggleAutomated(at._id)}
+                          title={at.active ? "Active — click to pause" : "Paused — click to activate"}
+                          className={`flex items-center justify-center p-2 rounded-lg border transition-all active:scale-95 shadow-sm ${
+                            at.active ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-slate-100 border-slate-200 text-slate-400"
+                          }`}
+                        >
+                          <Power size={14} className="stroke-[2.5]" />
+                        </button>
+                        <button
+                          onClick={() => deleteAutomated(at._id)}
+                          className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-95 shadow-sm"
+                          title="Delete"
+                        >
+                          <Trash2 size={14} className="stroke-[2.5]" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </GlassPanel>
       ) : (
       <GlassPanel className="overflow-hidden w-full flex flex-col">
         {filteredTasks.length === 0 && (
@@ -1108,6 +1256,7 @@ export default function TaskManagerBoard({
                   <th className="px-4 py-4">Status</th>
                   <th className="px-4 py-4">Progress</th>
                   <th className="px-4 py-4">Links</th>
+                  <th className="px-4 py-4">Note</th>
                   <th className="px-6 py-4 text-center">Actions</th>
                 </tr>
               </thead>
@@ -1137,15 +1286,10 @@ export default function TaskManagerBoard({
                       </td>
 
                       <td className="px-4 py-4">
-                        <div className="flex flex-col gap-0.5 max-w-md">
-                          <span className="font-bold text-slate-900 group-hover:text-[#B45F06] transition-colors flex items-center gap-1.5">
-                            {task.sourceAutomatedTask && <Zap size={12} className="text-amber-500 shrink-0" />}
-                            <span className="truncate">{task.title}</span>
-                          </span>
-                          <span className="text-xs text-slate-400 line-clamp-1 leading-relaxed">
-                            {task.description || "No description provided."}
-                          </span>
-                        </div>
+                        <span className="font-bold text-slate-900 group-hover:text-[#B45F06] transition-colors flex items-start gap-1.5">
+                          {task.sourceAutomatedTask && <Zap size={12} className="text-amber-500 shrink-0 mt-0.5" />}
+                          <span>{task.title}</span>
+                        </span>
                       </td>
 
                       <td className="px-4 py-4 whitespace-nowrap">
@@ -1227,6 +1371,8 @@ export default function TaskManagerBoard({
 
                       <td className="px-4 py-4">{linkIcons(task)}</td>
 
+                      <td className="px-4 py-4">{noteCell(task)}</td>
+
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex justify-center items-center gap-2">
                           {task.status !== "Done" && task.status !== "Closed" && (
@@ -1280,7 +1426,7 @@ export default function TaskManagerBoard({
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="md:col-span-2 lg:col-span-3">
-                  <label className={labelCls}>Task Title</label>
+                  <label className={labelCls}>Task Title *</label>
                   <input
                     type="text"
                     placeholder="e.g. Integrate Payment Webhooks"
@@ -1304,7 +1450,7 @@ export default function TaskManagerBoard({
                 </div>
 
                 <div>
-                  <label className={labelCls}>Assigned To</label>
+                  <label className={labelCls}>Assigned To *</label>
                   <select
                     className={inputCls}
                     value={form.assignedTo}
@@ -1367,9 +1513,10 @@ export default function TaskManagerBoard({
                 </div>
 
                 <div>
-                  <label className={labelCls}>Due Date</label>
+                  <label className={labelCls}>Due Date *</label>
                   <input
                     type="date"
+                    required
                     className={inputCls}
                     value={form.dueDate}
                     onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
@@ -1377,10 +1524,11 @@ export default function TaskManagerBoard({
                 </div>
 
                 <div>
-                  <label className={labelCls}>ETC (Minutes)</label>
+                  <label className={labelCls}>ETC (Minutes) *</label>
                   <input
                     type="number"
                     min="0"
+                    required
                     placeholder="10"
                     className={inputCls}
                     value={form.etcMinutes}
@@ -1684,52 +1832,22 @@ export default function TaskManagerBoard({
         )}
       </AnimatePresence>
 
-      {/* Automated Tasks List Modal */}
+      {/* View Note popup */}
       <AnimatePresence>
-        {showAutomatedList && (
-          <Modal title="Automated Tasks" icon={<Zap size={18} className="stroke-[2.5]" />} onClose={() => setShowAutomatedList(false)} wide>
-            {automatedTasks.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 justify-center py-10 text-slate-400 font-medium">
-                <Zap size={28} className="text-slate-300 stroke-[1.5]" />
-                <span>No automated tasks set up yet.</span>
-              </div>
-            ) : (
-              <div className="flex flex-col divide-y divide-slate-900/[0.06]">
-                {automatedTasks.map((at) => (
-                  <div key={at._id} className="py-3 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-bold text-slate-800 truncate">{at.title}</p>
-                      <p className="text-xs text-slate-400">
-                        {at.frequency} @ {at.time} → {at.assignedTo}
-                        {at.frequency === "Weekly" && at.weekday !== null && ` (${WEEKDAYS[at.weekday]})`}
-                        {at.frequency === "Monthly" && at.dayOfMonth !== null && ` (Day ${at.dayOfMonth})`}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => toggleAutomated(at._id)}
-                        title={at.active ? "Active — click to pause" : "Paused — click to activate"}
-                        className={`flex items-center justify-center p-2 rounded-lg border transition-all active:scale-95 ${
-                          at.active ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-slate-100 border-slate-200 text-slate-400"
-                        }`}
-                      >
-                        <Power size={14} className="stroke-[2.5]" />
-                      </button>
-                      <button
-                        onClick={() => deleteAutomated(at._id)}
-                        className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-95"
-                        title="Delete"
-                      >
-                        <Trash2 size={14} className="stroke-[2.5]" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+        {viewingNote && (
+          <Modal
+            title={viewingNote.title}
+            icon={<StickyNote size={18} className="stroke-[2.5]" />}
+            onClose={() => setViewingNote(null)}
+            wide={false}
+          >
+            <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
+              {viewingNote.description}
+            </p>
           </Modal>
         )}
       </AnimatePresence>
+
     </div>
   );
 }
