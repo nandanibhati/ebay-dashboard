@@ -469,6 +469,10 @@ export default function TaskManagerBoard({
       ? "bg-emerald-50 border-emerald-200 text-emerald-700"
       : status === "In Progress"
       ? "bg-blue-50 border-blue-200 text-blue-700"
+      : status === "Rework"
+      ? "bg-red-50 border-red-200 text-red-700"
+      : status === "Dependent"
+      ? "bg-violet-50 border-violet-200 text-violet-700"
       : "bg-slate-100 border-slate-200 text-slate-500";
 
   const progressBar = (progress) =>
@@ -1052,6 +1056,8 @@ export default function TaskManagerBoard({
             <option value="All">Status: All</option>
             <option value="Todo">Todo</option>
             <option value="In Progress">In Progress</option>
+            <option value="Rework">Rework</option>
+            <option value="Dependent">Dependent</option>
             <option value="Done">Done</option>
             <option value="Closed">Closed</option>
           </select>
@@ -1430,6 +1436,8 @@ export default function TaskManagerBoard({
                         >
                           <option value="Todo">Todo</option>
                           <option value="In Progress">In Progress</option>
+                          <option value="Rework">Rework</option>
+                          <option value="Dependent">Dependent</option>
                           <option value="Done">Done</option>
                           <option value="Closed">Closed</option>
                         </select>
@@ -1579,6 +1587,8 @@ export default function TaskManagerBoard({
                   >
                     <option value="Todo">Todo</option>
                     <option value="In Progress">In Progress</option>
+                    <option value="Rework">Rework</option>
+                    <option value="Dependent">Dependent</option>
                     <option value="Done">Done</option>
                     <option value="Closed">Closed</option>
                   </select>
@@ -1976,6 +1986,8 @@ export default function TaskManagerBoard({
                   <option value="">Keep unchanged</option>
                   <option value="Todo">Todo</option>
                   <option value="In Progress">In Progress</option>
+                  <option value="Rework">Rework</option>
+                  <option value="Dependent">Dependent</option>
                   <option value="Done">Done</option>
                   <option value="Closed">Closed</option>
                 </select>

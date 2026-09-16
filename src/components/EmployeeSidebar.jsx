@@ -135,6 +135,13 @@ export default function EmployeeSidebar() {
               <Link
                 key={item.name}
                 to={item.path}
+                onClick={(e) => {
+                  const targetPath = item.path.split("?")[0];
+                  if (location.pathname === targetPath) {
+                    e.preventDefault();
+                    window.location.href = item.path;
+                  }
+                }}
                 className="relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group"
                 style={
                   active

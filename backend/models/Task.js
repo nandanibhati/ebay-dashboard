@@ -32,6 +32,8 @@ const taskSchema = new mongoose.Schema(
       enum: [
         "Todo",
         "In Progress",
+        "Rework",
+        "Dependent",
         "Done",
         "Closed",
       ],

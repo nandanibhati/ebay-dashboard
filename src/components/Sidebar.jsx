@@ -170,6 +170,17 @@ export default function Sidebar() {
               <Link
                 key={item.name}
                 to={item.path}
+                onClick={(e) => {
+                  // Re-clicking the section you're already in should reset
+                  // it to a clean state (filters, sub-view) rather than
+                  // doing nothing, since it's the exact same URL and React
+                  // Router won't otherwise re-render anything.
+                  const targetPath = item.path.split("?")[0];
+                  if (location.pathname === targetPath) {
+                    e.preventDefault();
+                    window.location.href = item.path;
+                  }
+                }}
                 className="relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300"
                 style={
                   active
