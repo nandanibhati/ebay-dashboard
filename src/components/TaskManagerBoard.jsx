@@ -231,13 +231,12 @@ export default function TaskManagerBoard({
     (t) => t.status === "Todo" || t.status === "In Progress"
   ).length;
   const overdueCount = tasks.filter(isOverdue).length;
-  // ETC/ATC react to the active filters (e.g. clicking the Done pill) so
-  // they always summarize whatever's currently showing in the table below,
-  // not the whole unfiltered task list.
+  // ETC/ATC summarize whatever's currently showing in the table below, so
+  // they change as filters (including the Status filter) change — e.g.
+  // clicking the ETC pill narrows to Done tasks, and the value narrows
+  // along with it instead of staying the same "Done-only" number always.
   const totalEtcHrs = (
-    filteredTasks
-      .filter((t) => t.status === "Done" || t.status === "Closed")
-      .reduce((sum, t) => sum + Number(t.etcMinutes || 0), 0) / 60
+    filteredTasks.reduce((sum, t) => sum + Number(t.etcMinutes || 0), 0) / 60
   ).toFixed(1);
   const avgProgress = tasks.length
     ? (
@@ -879,7 +878,7 @@ export default function TaskManagerBoard({
             color="#F59E0B"
             icon={Clock}
             onClick={() => setStatusFilter(statusFilter === "Done" ? "All" : "Done")}
-            subtitle="Estimated time of Done tasks matching filters — click to filter"
+            subtitle="Estimated time of tasks matching filters — click to filter Done"
           />
           <StatPill label="ATC" value={`${totalAtcHrs}h`} color="#10B981" icon={Timer} subtitle="Actual time of tasks matching filters" />
           <StatPill label="TAT" value={`${avgTatDays}d`} color="#06B6D4" icon={Timer} subtitle="Avg turnaround time" />
