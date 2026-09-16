@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const Task = require("../models/Task");
+const User = require("../models/User");
 const upload = require("../middleware/upload");
 const { protect } = require("../middleware/auth");
 
@@ -215,13 +216,34 @@ router.put(
 );
 
 // DELETE TASK (soft delete — moves it to Archived Tasks)
+// Deletion authority sits with the task's assignor and admins only — a
+// manager or teammate who didn't assign the task can't archive it out
+// from under the assignor.
 router.delete("/:id", async (req, res) => {
   try {
-    await Task.findByIdAndUpdate(req.params.id, {
-      isDeleted: true,
-      deletedBy: req.body?.deletedBy || "Unknown",
-      deletedAt: new Date(),
-    });
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task Not Found",
+      });
+    }
+
+    const user = await User.findById(req.user.id);
+    const isAdmin = user?.role === "admin";
+    const isAssignor = user?.name === task.assignedBy;
+
+    if (!isAdmin && !isAssignor) {
+      return res.status(403).json({
+        success: false,
+        message: "Only the task's assignor or an admin can delete this task",
+      });
+    }
+
+    task.isDeleted = true;
+    task.deletedBy = user?.name || req.body?.deletedBy || "Unknown";
+    task.deletedAt = new Date();
+    await task.save();
 
     res.json({
       success: true,

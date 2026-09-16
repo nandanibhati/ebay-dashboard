@@ -227,6 +227,7 @@ export default function ManagerDashboard() {
             currentUserName={localStorage.getItem("employeeName") || "Manager"}
             onTasksChanged={fetchTasks}
             initialViewMode={searchParams.get("view") === "archived" ? "archived" : "active"}
+            canDeleteAnyTask={false}
           />
         </div>
       </div>
