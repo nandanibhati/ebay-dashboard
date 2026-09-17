@@ -13,6 +13,11 @@ const stockSchema = new mongoose.Schema(
       default: 0,
     },
 
+    shipping: {
+      type: Number,
+      default: 0,
+    },
+
     masterSku: {
       type: String,
       default: "",

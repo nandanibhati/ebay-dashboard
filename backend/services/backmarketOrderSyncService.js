@@ -1,4 +1,5 @@
 const Order = require("../models/Order");
+const Stock = require("../models/Stock");
 const BackmarketSync = require("../models/BackmarketSync");
 const { fetchBackmarketOrders } = require("./backmarketOrderService");
 const {
@@ -53,9 +54,18 @@ async function upsertOrderline(bmOrder, orderline, orderId, status) {
     const quantity = Number(orderline.quantity || 1);
     const sellingPrice = Number(orderline.price || 0);
     const ebayFee = Number(orderline.orderline_fee || 0);
-    const costPrice = 0;
     const adFee = 0;
-    const deliveryCost = Number(orderline.shipping_price || 0);
+
+    // Backmarket doesn't tell us our purchase cost, but if this SKU is
+    // already in Stock we know what we paid for it - use that instead of
+    // leaving 0. Same for shipping: Backmarket's shipping_price is what the
+    // buyer paid, not what it actually costs to post the item.
+    const sku = (orderline.listing || "").trim();
+    const stockItem = sku ? await Stock.findOne({ sku }) : null;
+    const costPrice = Number(stockItem?.price || 0);
+    const deliveryCost = stockItem
+      ? Number(stockItem.shipping || 0)
+      : Number(orderline.shipping_price || 0);
 
     const { revenue, profit, margin } = computeFinancials({
       quantity,

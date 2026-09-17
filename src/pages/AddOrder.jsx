@@ -127,6 +127,7 @@ export default function AddOrder() {
         sku: "",
         product: "",
         costPrice: "",
+        deliveryCost: "",
       }));
       return;
     }
@@ -149,6 +150,7 @@ export default function AddOrder() {
           sku,
           product: "",
           costPrice: "",
+          deliveryCost: "",
         }));
         return;
       }
@@ -161,6 +163,7 @@ export default function AddOrder() {
         product: stock.product || "",
         costPrice: stock.price || "",
         sellingPrice: stock.price || "",
+        deliveryCost: stock.shipping || "",
       }));
     } catch (err) {
       console.log(err);

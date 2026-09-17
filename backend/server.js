@@ -51,7 +51,9 @@ const templateRoutes = require("./routes/templateRoutes");
 const backmarketRoutes = require("./routes/backmarketRoutes");
 const automatedTaskRoutes = require("./routes/automatedTaskRoutes");
 const settingsRoutes = require("./routes/settingsRoutes");
+const googleSheetRoutes = require("./routes/googleSheetRoutes");
 const { startTaskScheduler } = require("./utils/taskScheduler");
+const { startGoogleSheetScheduler } = require("./utils/googleSheetScheduler");
 // =========================
 // MongoDB
 // =========================
@@ -178,6 +180,7 @@ app.use("/api/templates", templateRoutes);
 app.use("/api/backmarket", backmarketRoutes);
 app.use("/api/automated-tasks", automatedTaskRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/google-sheet", googleSheetRoutes);
 
 // =========================
 // Root
@@ -196,4 +199,5 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   startTaskScheduler();
+  startGoogleSheetScheduler();
 });

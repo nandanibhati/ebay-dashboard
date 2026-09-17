@@ -50,7 +50,7 @@ function computeFinancials({
 
 // New line items become new Order rows; existing ones only have their
 // status refreshed so manually-entered cost/fee data is never overwritten.
-async function upsertLineItem(store, ebayOrder, lineItem, orderId, status, deliveryCost, ebayFee) {
+async function upsertLineItem(store, ebayOrder, lineItem, orderId, status, fallbackDeliveryCost, ebayFee) {
   const existing = await Order.findOne({ orderId });
 
   if (!existing) {
@@ -64,6 +64,13 @@ async function upsertLineItem(store, ebayOrder, lineItem, orderId, status, deliv
     const sku = (lineItem.sku || "").trim();
     const stockItem = sku ? await Stock.findOne({ sku }) : null;
     const costPrice = Number(stockItem?.price || 0);
+
+    // eBay's own deliveryCost is what the buyer paid (often 0 on "free
+    // shipping" listings) - Stock's shipping figure is what it actually
+    // costs to post the item, which is the real cost for margin purposes.
+    const deliveryCost = stockItem
+      ? Number(stockItem.shipping || 0)
+      : fallbackDeliveryCost;
 
     const adFee = 0;
 
