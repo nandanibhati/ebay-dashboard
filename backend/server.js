@@ -54,6 +54,7 @@ const settingsRoutes = require("./routes/settingsRoutes");
 const googleSheetRoutes = require("./routes/googleSheetRoutes");
 const { startTaskScheduler } = require("./utils/taskScheduler");
 const { startGoogleSheetScheduler } = require("./utils/googleSheetScheduler");
+const { startOrderSyncScheduler } = require("./utils/orderSyncScheduler");
 // =========================
 // MongoDB
 // =========================
@@ -200,4 +201,5 @@ server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   startTaskScheduler();
   startGoogleSheetScheduler();
+  startOrderSyncScheduler();
 });
