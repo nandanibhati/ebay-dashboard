@@ -7,6 +7,11 @@ const { protect, managerOrAdmin } = require("../middleware/auth");
 
 router.use(protect, managerOrAdmin);
 
+// multer gives a single string for one "assignedTo" field and an array for
+// several.
+const toAssigneeList = (value) =>
+  (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean);
+
 // CREATE AUTOMATED TASK
 router.post("/create", upload.single("image"), async (req, res) => {
   try {
@@ -15,7 +20,7 @@ router.post("/create", upload.single("image"), async (req, res) => {
       description: req.body.description,
       group: req.body.group,
       assignedBy: req.body.assignedBy,
-      assignedTo: req.body.assignedTo,
+      assignedTo: toAssigneeList(req.body.assignedTo),
       priority: req.body.priority || "Medium",
       etcMinutes: req.body.etcMinutes || 0,
       l1: req.body.l1,
@@ -78,7 +83,7 @@ router.put("/:id", upload.single("image"), async (req, res) => {
       description: req.body.description,
       group: req.body.group,
       assignedBy: req.body.assignedBy,
-      assignedTo: req.body.assignedTo,
+      assignedTo: toAssigneeList(req.body.assignedTo),
       priority: req.body.priority,
       etcMinutes: req.body.etcMinutes,
       l1: req.body.l1,
@@ -107,7 +112,7 @@ router.put("/:id", upload.single("image"), async (req, res) => {
     const automatedTask = await AutomatedTask.findByIdAndUpdate(
       req.params.id,
       updateData,
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     res.json({

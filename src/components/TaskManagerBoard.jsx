@@ -37,12 +37,58 @@ const inputCls =
 const labelCls =
   "text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5";
 
+// Automated tasks used to store a single assignee string; newer ones store
+// a list. Normalise either shape to an array.
+const toAssigneeList = (value) =>
+  (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean);
+
+function AssigneePicker({ employees, value, onChange, placeholder = "Add person..." }) {
+  const remaining = employees.filter((emp) => !value.includes(emp.name));
+
+  return (
+    <div className="flex flex-col gap-2">
+      <select
+        className={inputCls}
+        value=""
+        onChange={(e) => e.target.value && onChange([...value, e.target.value])}
+      >
+        <option value="">{remaining.length ? placeholder : "Everyone added"}</option>
+        {remaining.map((emp) => (
+          <option key={emp._id} value={emp.name}>{emp.name}</option>
+        ))}
+      </select>
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {value.map((name) => (
+            <span
+              key={name}
+              className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-lg text-xs font-bold bg-amber-50 border border-amber-200 text-amber-800"
+            >
+              {name}
+              <button
+                type="button"
+                onClick={() => onChange(value.filter((n) => n !== name))}
+                className="p-0.5 rounded hover:bg-amber-100"
+                title={`Remove ${name}`}
+              >
+                <X size={12} className="stroke-[2.5]" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const EMPTY_TASK_FORM = {
   title: "",
   description: "",
   group: "",
   assignedBy: "",
   assignedTo: "",
+  // Create mode only: each selected person gets their own copy of the task.
+  assignees: [],
   priority: "Medium",
   status: "Todo",
   startDate: "",
@@ -65,7 +111,7 @@ const EMPTY_AUTOMATED_FORM = {
   description: "",
   group: "",
   etcMinutes: "",
-  assignedTo: "",
+  assignedTo: [],
   priority: "Medium",
   l1: "",
   l2: "",
@@ -189,6 +235,7 @@ export default function TaskManagerBoard({
 
   const [form, setForm] = useState(EMPTY_TASK_FORM);
   const [automatedForm, setAutomatedForm] = useState(EMPTY_AUTOMATED_FORM);
+  const [editingAutomatedId, setEditingAutomatedId] = useState(null);
   const [doneTask, setDoneTask] = useState(null);
   const [pendingStatus, setPendingStatus] = useState("Done");
   const [atcInput, setAtcInput] = useState("");
@@ -232,7 +279,7 @@ export default function TaskManagerBoard({
         return false;
     }
     if (groupFilter !== "All" && (at.group || "Ungrouped") !== groupFilter) return false;
-    if (assigneeFilter !== "All" && at.assignedTo !== assigneeFilter) return false;
+    if (assigneeFilter !== "All" && !toAssigneeList(at.assignedTo).includes(assigneeFilter)) return false;
     return true;
   });
   const automatedStats = {
@@ -528,39 +575,68 @@ export default function TaskManagerBoard({
       return;
     }
 
+    // An edit targets one existing task; a create makes a separate copy for
+    // each selected person so everyone tracks their own status and ATC.
+    const assignees = editingId ? [form.assignedTo] : form.assignees;
+    if (assignees.length === 0) {
+      toast.error("Select at least one person to assign this task to.");
+      return;
+    }
+
     try {
       const url = editingId ? `/api/tasks/${editingId}` : "/api/tasks/create";
       const method = editingId ? "PUT" : "POST";
 
-      const formData = new FormData();
-      Object.entries(form).forEach(([key, value]) => {
-        if (key === "screenshot" || key === "assignedBy" || key === "progress") return;
-        formData.append(key, value ?? "");
-      });
-      formData.append("progress", markingDone ? 100 : form.progress);
-      // A create always assigns the current user; an edit must keep the
-      // task's original assignor instead of overwriting it with the editor.
-      formData.append("assignedBy", editingId ? (form.assignedBy || currentUserName || "Employee") : (currentUserName || "Employee"));
-      if (form.screenshot) formData.append("screenshot", form.screenshot);
+      const buildFormData = (assignee) => {
+        const formData = new FormData();
+        Object.entries(form).forEach(([key, value]) => {
+          if (["screenshot", "assignedBy", "progress", "assignedTo", "assignees"].includes(key)) return;
+          formData.append(key, value ?? "");
+        });
+        formData.append("assignedTo", assignee);
+        formData.append("progress", markingDone ? 100 : form.progress);
+        // A create always assigns the current user; an edit must keep the
+        // task's original assignor instead of overwriting it with the editor.
+        formData.append("assignedBy", editingId ? (form.assignedBy || currentUserName || "Employee") : (currentUserName || "Employee"));
+        if (form.screenshot) formData.append("screenshot", form.screenshot);
+        return formData;
+      };
 
-      const res = await apiFetch(url, { method, body: formData });
-      const data = await res.json();
+      const failed = [];
+      for (const assignee of assignees) {
+        const res = await apiFetch(url, { method, body: buildFormData(assignee) });
+        const data = await res.json();
 
-      if (data.success) {
-        toast.success(editingId ? "Task Updated Successfully" : "Task Created Successfully");
+        if (!data.success) {
+          failed.push(assignee);
+          continue;
+        }
 
         if (!editingId) {
           socket.emit("taskAssigned", {
-            assignedToName: form.assignedTo,
+            assignedToName: assignee,
             assignedByName: currentUserName || "Employee",
             title: form.title,
           });
         }
-
-        resetTaskForm();
-        setShowTaskModal(false);
-        onTasksChanged();
       }
+
+      if (failed.length === assignees.length) {
+        toast.error(editingId ? "Failed to update task" : "Failed to create task");
+        return;
+      }
+
+      if (failed.length) {
+        toast.error(`Could not create the task for: ${failed.join(", ")}`);
+      } else if (editingId) {
+        toast.success("Task Updated Successfully");
+      } else {
+        toast.success(assignees.length > 1 ? `Task Created for ${assignees.length} people` : "Task Created Successfully");
+      }
+
+      resetTaskForm();
+      setShowTaskModal(false);
+      onTasksChanged();
     } catch (error) {
       console.log(error);
       toast.error("Something went wrong");
@@ -804,33 +880,72 @@ export default function TaskManagerBoard({
     }
   };
 
+  const openEditAutomated = (at) => {
+    setAutomatedForm({
+      ...EMPTY_AUTOMATED_FORM,
+      title: at.title || "",
+      description: at.description || "",
+      group: at.group || "",
+      etcMinutes: at.etcMinutes ?? "",
+      assignedTo: toAssigneeList(at.assignedTo),
+      priority: at.priority || "Medium",
+      l1: at.l1 || "",
+      l2: at.l2 || "",
+      trainingLink: at.trainingLink || "",
+      videoLink: at.videoLink || "",
+      formLink: at.formLink || "",
+      formReportLink: at.formReportLink || "",
+      checklistLink: at.checklistLink || "",
+      time: at.time || "09:00",
+      frequency: at.frequency || "Daily",
+      weekday: at.weekday != null ? String(at.weekday) : "1",
+      dayOfMonth: at.dayOfMonth != null ? String(at.dayOfMonth) : "1",
+    });
+    setEditingAutomatedId(at._id);
+    setShowAutomatedModal(true);
+  };
+
+  const closeAutomatedModal = () => {
+    setShowAutomatedModal(false);
+    setAutomatedForm(EMPTY_AUTOMATED_FORM);
+    setEditingAutomatedId(null);
+  };
+
   const handleAutomatedSubmit = async (e) => {
     e.preventDefault();
+
+    if (automatedForm.assignedTo.length === 0) {
+      toast.error("Select at least one person to assign this task to.");
+      return;
+    }
 
     try {
       const formData = new FormData();
       Object.entries(automatedForm).forEach(([key, value]) => {
         if (key === "image") return;
+        if (key === "assignedTo") {
+          value.forEach((name) => formData.append("assignedTo", name));
+          return;
+        }
         formData.append(key, value ?? "");
       });
-      formData.append("assignedBy", currentUserName || "Employee");
+      if (!editingAutomatedId) formData.append("assignedBy", currentUserName || "Employee");
       if (automatedForm.image) formData.append("image", automatedForm.image);
 
-      const res = await apiFetch("/api/automated-tasks/create", {
-        method: "POST",
-        body: formData,
-      });
+      const res = await apiFetch(
+        editingAutomatedId ? `/api/automated-tasks/${editingAutomatedId}` : "/api/automated-tasks/create",
+        { method: editingAutomatedId ? "PUT" : "POST", body: formData }
+      );
       const data = await res.json();
 
       if (data.success) {
-        toast.success("Automated Task Created");
-        setAutomatedForm(EMPTY_AUTOMATED_FORM);
-        setShowAutomatedModal(false);
+        toast.success(editingAutomatedId ? "Automated Task Updated" : "Automated Task Created");
+        closeAutomatedModal();
         setAutomatedLoaded(false);
         loadAutomatedTasks();
         setViewMode("automated");
       } else {
-        toast.error(data.message || "Failed to create automated task");
+        toast.error(data.message || `Failed to ${editingAutomatedId ? "update" : "create"} automated task`);
       }
     } catch (error) {
       console.log(error);
@@ -1259,7 +1374,7 @@ export default function TaskManagerBoard({
                         <div className="w-6 h-6 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500">
                           <User size={12} />
                         </div>
-                        <span className="text-xs font-semibold">{at.assignedTo || "Unassigned"}</span>
+                        <span className="text-xs font-semibold">{toAssigneeList(at.assignedTo).join(", ") || "Unassigned"}</span>
                       </div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-slate-500 tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
@@ -1291,6 +1406,13 @@ export default function TaskManagerBoard({
                           }`}
                         >
                           <Power size={14} className="stroke-[2.5]" />
+                        </button>
+                        <button
+                          onClick={() => openEditAutomated(at)}
+                          className="flex items-center justify-center p-2 text-slate-500 bg-slate-100 border border-slate-200 rounded-lg hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-all active:scale-95 shadow-sm"
+                          title="Edit"
+                        >
+                          <Pencil size={14} className="stroke-[2.5]" />
                         </button>
                         <button
                           onClick={() => deleteAutomated(at._id)}
@@ -1541,17 +1663,25 @@ export default function TaskManagerBoard({
 
                 <div>
                   <label className={labelCls}>Assigned To *</label>
-                  <select
-                    className={inputCls}
-                    value={form.assignedTo}
-                    onChange={(e) => setForm({ ...form, assignedTo: e.target.value })}
-                    required
-                  >
-                    <option value="">Select Employee</option>
-                    {employees.map((emp) => (
-                      <option key={emp._id} value={emp.name}>{emp.name}</option>
-                    ))}
-                  </select>
+                  {editingId ? (
+                    <select
+                      className={inputCls}
+                      value={form.assignedTo}
+                      onChange={(e) => setForm({ ...form, assignedTo: e.target.value })}
+                      required
+                    >
+                      <option value="">Select Employee</option>
+                      {employees.map((emp) => (
+                        <option key={emp._id} value={emp.name}>{emp.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <AssigneePicker
+                      employees={employees}
+                      value={form.assignees}
+                      onChange={(names) => setForm({ ...form, assignees: names })}
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -1721,12 +1851,9 @@ export default function TaskManagerBoard({
       <AnimatePresence>
         {showAutomatedModal && (
           <Modal
-            title="Automated Task Information"
+            title={editingAutomatedId ? "Edit Automated Task" : "Automated Task Information"}
             icon={<Zap size={18} className="stroke-[2.5]" />}
-            onClose={() => {
-              setShowAutomatedModal(false);
-              setAutomatedForm(EMPTY_AUTOMATED_FORM);
-            }}
+            onClose={closeAutomatedModal}
           >
             <form onSubmit={handleAutomatedSubmit} className="flex flex-col gap-5">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1745,12 +1872,11 @@ export default function TaskManagerBoard({
 
                 <div>
                   <label className={labelCls}>Assignee *</label>
-                  <select className={inputCls} required value={automatedForm.assignedTo} onChange={(e) => setAutomatedForm({ ...automatedForm, assignedTo: e.target.value })}>
-                    <option value="">Please Select</option>
-                    {employees.map((emp) => (
-                      <option key={emp._id} value={emp.name}>{emp.name}</option>
-                    ))}
-                  </select>
+                  <AssigneePicker
+                    employees={employees}
+                    value={automatedForm.assignedTo}
+                    onChange={(names) => setAutomatedForm({ ...automatedForm, assignedTo: names })}
+                  />
                 </div>
                 <div>
                   <label className={labelCls}>Priority</label>
@@ -1853,10 +1979,7 @@ export default function TaskManagerBoard({
               <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end pt-3 border-t border-slate-900/[0.06]">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowAutomatedModal(false);
-                    setAutomatedForm(EMPTY_AUTOMATED_FORM);
-                  }}
+                  onClick={closeAutomatedModal}
                   className="bg-slate-100 border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-200 active:scale-[0.98] transition-all"
                 >
                   Cancel
@@ -1867,7 +1990,7 @@ export default function TaskManagerBoard({
                   style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", boxShadow: "0 8px 22px -4px rgba(244,180,0,0.4)" }}
                 >
                   <CheckCircle2 size={15} className="stroke-[2.5]" />
-                  Create
+                  {editingAutomatedId ? "Save Changes" : "Create"}
                 </button>
               </div>
             </form>

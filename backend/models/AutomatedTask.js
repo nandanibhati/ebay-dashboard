@@ -19,9 +19,14 @@ const automatedTaskSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Each name gets its own copy of the generated task. Older documents
+    // stored a single string, which Mongoose casts to a one-item array.
     assignedTo: {
-      type: String,
-      required: true,
+      type: [String],
+      validate: {
+        validator: (names) => names.length > 0,
+        message: "At least one assignee is required",
+      },
     },
 
     priority: {

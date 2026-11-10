@@ -75,28 +75,32 @@ async function runScheduler() {
   for (const automatedTask of dueTasks) {
     if (!isDue(automatedTask, parts)) continue;
 
-    await Task.create({
-      title: automatedTask.title,
-      description: automatedTask.description,
-      group: automatedTask.group,
-      assignedBy: automatedTask.assignedBy,
-      assignedTo: automatedTask.assignedTo,
-      priority: automatedTask.priority,
-      status: "Todo",
-      startDate: today,
-      dueDate: today,
-      progress: 0,
-      etcMinutes: automatedTask.etcMinutes,
-      l1: automatedTask.l1,
-      l2: automatedTask.l2,
-      trainingLink: automatedTask.trainingLink,
-      videoLink: automatedTask.videoLink,
-      formLink: automatedTask.formLink,
-      formReportLink: automatedTask.formReportLink,
-      checklistLink: automatedTask.checklistLink,
-      screenshot: automatedTask.image,
-      sourceAutomatedTask: automatedTask._id,
-    });
+    // One separate task per assignee, so each person tracks their own
+    // status and ATC.
+    await Task.insertMany(
+      automatedTask.assignedTo.filter(Boolean).map((assignee) => ({
+        title: automatedTask.title,
+        description: automatedTask.description,
+        group: automatedTask.group,
+        assignedBy: automatedTask.assignedBy,
+        assignedTo: assignee,
+        priority: automatedTask.priority,
+        status: "Todo",
+        startDate: today,
+        dueDate: today,
+        progress: 0,
+        etcMinutes: automatedTask.etcMinutes,
+        l1: automatedTask.l1,
+        l2: automatedTask.l2,
+        trainingLink: automatedTask.trainingLink,
+        videoLink: automatedTask.videoLink,
+        formLink: automatedTask.formLink,
+        formReportLink: automatedTask.formReportLink,
+        checklistLink: automatedTask.checklistLink,
+        screenshot: automatedTask.image,
+        sourceAutomatedTask: automatedTask._id,
+      }))
+    );
 
     automatedTask.lastGeneratedDate = today;
     await automatedTask.save();
