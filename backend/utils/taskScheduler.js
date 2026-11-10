@@ -66,17 +66,29 @@ async function runScheduler() {
   const currentTime = `${pad(parts.hour)}:${pad(parts.minute)}`;
   const today = `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`;
 
+  // Any time at or before now (not just this exact minute), so a run missed
+  // while the server was asleep or restarting is caught up later the same
+  // day. "HH:MM" strings compare correctly as text.
   const dueTasks = await AutomatedTask.find({
     active: true,
-    time: currentTime,
+    time: { $lte: currentTime },
     lastGeneratedDate: { $ne: today },
   });
 
   for (const automatedTask of dueTasks) {
     if (!isDue(automatedTask, parts)) continue;
 
+    // Claim today's run atomically so overlapping scheduler ticks can't
+    // generate the same task twice.
+    const claimed = await AutomatedTask.updateOne(
+      { _id: automatedTask._id, lastGeneratedDate: { $ne: today } },
+      { lastGeneratedDate: today }
+    );
+    if (claimed.modifiedCount === 0) continue;
+
     // One separate task per assignee, so each person tracks their own
-    // status and ATC.
+    // status and ATC. If that fails, release the claim so the next tick
+    // retries instead of silently skipping today.
     await Task.insertMany(
       automatedTask.assignedTo.filter(Boolean).map((assignee) => ({
         title: automatedTask.title,
@@ -100,10 +112,13 @@ async function runScheduler() {
         screenshot: automatedTask.image,
         sourceAutomatedTask: automatedTask._id,
       }))
-    );
-
-    automatedTask.lastGeneratedDate = today;
-    await automatedTask.save();
+    ).catch(async (error) => {
+      await AutomatedTask.updateOne(
+        { _id: automatedTask._id },
+        { lastGeneratedDate: automatedTask.lastGeneratedDate }
+      );
+      throw error;
+    });
   }
 }
 

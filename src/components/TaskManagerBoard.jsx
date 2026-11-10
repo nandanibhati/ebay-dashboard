@@ -1887,7 +1887,7 @@ export default function TaskManagerBoard({
                   </select>
                 </div>
                 <div>
-                  <label className={labelCls}>Time *</label>
+                  <label className={labelCls}>Time (IST) *</label>
                   <input type="time" required className={inputCls} value={automatedForm.time} onChange={(e) => setAutomatedForm({ ...automatedForm, time: e.target.value })} />
                 </div>
 
