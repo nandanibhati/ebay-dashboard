@@ -260,7 +260,7 @@ export default function Orders() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.08] bg-white shrink-0"
+              className="lg:hidden w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.08] bg-white shrink-0"
             >
               <Menu size={18} />
             </button>
@@ -445,7 +445,7 @@ export default function Orders() {
           </div>
 
           <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
-            <table className="min-w-[1400px] text-left text-sm">
+            <table className="w-full min-w-[1400px] text-left text-sm">
               <thead className="sticky top-0 z-10">
                 <tr className="border-b border-slate-200 bg-slate-50 shadow-sm">
                   {["Site", "Date", "Order ID", "SKU", "Qty", "Unit Price", "Cost", "Revenue", "Profit", "Tracking", "Notes", "Status", "Courier", "Employee", "Actions"].map((h) => (

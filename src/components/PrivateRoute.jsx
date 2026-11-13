@@ -1,4 +1,5 @@
 import { Navigate } from "react-router-dom";
+import AppShell from "./AppShell";
 
 export default function PrivateRoute({ children }) {
   const token = localStorage.getItem("token");
@@ -7,5 +8,5 @@ export default function PrivateRoute({ children }) {
     return <Navigate to="/" replace />;
   }
 
-  return children;
+  return <AppShell>{children}</AppShell>;
 }

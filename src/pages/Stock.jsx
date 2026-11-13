@@ -237,7 +237,7 @@ export default function Stock() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.08] bg-white shrink-0"
+            className="lg:hidden w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.08] bg-white shrink-0"
           >
             <Menu size={18} />
           </button>
@@ -549,7 +549,7 @@ export default function Stock() {
             </div>
           </div>
           <div className="overflow-auto h-[70vh] w-full">
-            <table className="text-left border-collapse min-w-[1200px] table-fixed">
+            <table className="w-full text-left border-collapse min-w-[1200px] table-fixed">
               <thead className="sticky top-0 z-20 bg-slate-50">
                 <tr className="border-b border-slate-200 bg-slate-50/90 backdrop-blur-sm text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   <th className="w-48 px-6 py-3.5">Listing SKU</th>

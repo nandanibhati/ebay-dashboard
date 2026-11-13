@@ -140,7 +140,7 @@ export default function EbayIntegration() {
 
           <button
             onClick={() => setSidebarOpen(true)}
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.08] bg-white shrink-0"
+            className="lg:hidden w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.08] bg-white shrink-0"
           >
             <Menu size={18} />
           </button>

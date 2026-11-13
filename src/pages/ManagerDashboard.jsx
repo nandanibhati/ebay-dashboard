@@ -163,7 +163,7 @@ export default function ManagerDashboard() {
         <header className="sticky top-0 z-20 h-[72px] flex items-center gap-3 px-5 lg:px-10 border-b border-slate-900/[0.06] bg-white/70 backdrop-blur-xl">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="w-10 h-10 rounded-2xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.06]"
+            className="lg:hidden w-10 h-10 rounded-2xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.06]"
           >
             <Menu size={18} />
           </button>

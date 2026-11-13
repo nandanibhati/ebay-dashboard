@@ -939,7 +939,7 @@ export default function TimeTracker() {
         <div className="flex items-center gap-3 mb-4">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.08] bg-white shrink-0"
+            className="lg:hidden w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-900/[0.05] transition border border-slate-900/[0.08] bg-white shrink-0"
           >
             <Menu size={18} />
           </button>
@@ -995,7 +995,10 @@ export default function TimeTracker() {
                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${meta.dot}`} />
                   <Icon size={13} className="hidden sm:block shrink-0" />
-                  {meta.label}<span className="hidden sm:inline">&nbsp;now</span>
+                  <span>
+                    {meta.label}
+                    <span className="hidden sm:inline"> now</span>
+                  </span>
                 </div>
                 <p className="mt-2 text-3xl font-bold text-slate-900 tabular-nums" style={MONO}>{counts[s]}</p>
               </div>

@@ -1,1 +1,31 @@
 @import "tailwindcss";
+
+/* Slightly larger text on tablets/desktops, and a bit more on very wide
+   monitors. Percentages respect the viewer's own browser font setting.
+   Phones keep the default size. Everything sized in rem (text-sm, p-4…)
+   scales with this automatically. */
+@media (min-width: 768px) {
+  html {
+    font-size: 106.25%; /* 17px */
+  }
+}
+
+@media (min-width: 1800px) {
+  html {
+    font-size: 112.5%; /* 18px */
+  }
+}
+
+/* Labels sized in fixed px (text-[10px] etc.) wouldn't follow the root
+   size, so map them to the rem equivalent on the same screens. Unlayered
+   CSS wins over Tailwind's utilities layer. */
+@media (min-width: 768px) {
+  .text-\[8px\] { font-size: 0.5rem; }
+  .text-\[9px\] { font-size: 0.5625rem; }
+  .text-\[10px\] { font-size: 0.625rem; }
+  .text-\[11px\] { font-size: 0.6875rem; }
+  .text-\[12px\] { font-size: 0.75rem; }
+  .text-\[13px\] { font-size: 0.8125rem; }
+  .text-\[15px\] { font-size: 0.9375rem; }
+  .text-\[17px\] { font-size: 1.0625rem; }
+}
