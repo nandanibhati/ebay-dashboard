@@ -52,6 +52,7 @@ const backmarketRoutes = require("./routes/backmarketRoutes");
 const automatedTaskRoutes = require("./routes/automatedTaskRoutes");
 const settingsRoutes = require("./routes/settingsRoutes");
 const googleSheetRoutes = require("./routes/googleSheetRoutes");
+const supplierLedgerRoutes = require("./routes/supplierLedgerRoutes");
 const { startTaskScheduler } = require("./utils/taskScheduler");
 const { startGoogleSheetScheduler } = require("./utils/googleSheetScheduler");
 const { startOrderSyncScheduler } = require("./utils/orderSyncScheduler");
@@ -182,6 +183,7 @@ app.use("/api/backmarket", backmarketRoutes);
 app.use("/api/automated-tasks", automatedTaskRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/google-sheet", googleSheetRoutes);
+app.use("/api/supplier-ledger", supplierLedgerRoutes);
 
 // =========================
 // Root

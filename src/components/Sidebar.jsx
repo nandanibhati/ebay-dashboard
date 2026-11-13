@@ -15,6 +15,7 @@ import {
   FileText,
   Store,
   Zap,
+  Receipt,
 } from "lucide-react";
 
 import { Link, useLocation } from "react-router-dom";
@@ -74,6 +75,11 @@ export default function Sidebar() {
       name: "Purchases",
       icon: Package,
       path: "/purchases",
+    },
+    {
+      name: "Supplier Ledger",
+      icon: Receipt,
+      path: "/supplier-ledger",
     },
     {
       name: "Subscriptions",

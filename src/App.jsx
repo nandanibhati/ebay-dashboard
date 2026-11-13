@@ -27,6 +27,7 @@ import Notes from "./pages/Notes";
 import Templates from "./pages/Templates";
 import EbayIntegration from "./pages/EbayIntegration";
 import Purchases from "./pages/Purchases";
+import SupplierLedger from "./pages/SupplierLedger";
 import Subscriptions from "./pages/Subscriptions";
 import Chat from "./pages/Chat";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -86,6 +87,16 @@ function App() {
     <PrivateRoute>
       {localStorage.getItem("role") === "admin"
         ? <Purchases />
+        : <Navigate to="/dashboard" />}
+    </PrivateRoute>
+  }
+/>
+<Route
+  path="/supplier-ledger"
+  element={
+    <PrivateRoute>
+      {localStorage.getItem("role") === "admin"
+        ? <SupplierLedger />
         : <Navigate to="/dashboard" />}
     </PrivateRoute>
   }
