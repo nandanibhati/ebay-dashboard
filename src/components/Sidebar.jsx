@@ -16,6 +16,7 @@ import {
   Store,
   Zap,
   Receipt,
+  Timer,
 } from "lucide-react";
 
 import { Link, useLocation } from "react-router-dom";
@@ -80,6 +81,11 @@ export default function Sidebar() {
       name: "Supplier Ledger",
       icon: Receipt,
       path: "/supplier-ledger",
+    },
+    {
+      name: "Time Tracker",
+      icon: Timer,
+      path: "/time-tracker",
     },
     {
       name: "Subscriptions",

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'" />
+    <title>Driftline Tracker</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <div class="eyebrow">Driftline</div>
+      <h1>Time Tracker</h1>
+    </header>
+
+    <!-- Sign in -->
+    <section id="login" class="hidden">
+      <main>
+        <form id="login-form">
+          <label for="email">Email</label>
+          <input id="email" type="email" required autocomplete="username" />
+          <label for="password">Password</label>
+          <input id="password" type="password" required autocomplete="current-password" />
+
+          <div id="server-row" class="hidden">
+            <label for="api-url">Server</label>
+            <input id="api-url" type="url" />
+          </div>
+
+          <button id="login-btn" class="btn-primary" type="submit">Sign in &amp; start tracking</button>
+          <div id="login-error" class="error"></div>
+        </form>
+        <p class="notice">
+          Use the same email and password as the dashboard. While tracking, this app records when you
+          are active or idle, which apps and window titles you use, and takes periodic screenshots.
+          Your manager can see this data.
+        </p>
+        <button id="show-server" class="link" type="button">Server settings</button>
+      </main>
+    </section>
+
+    <!-- Tracking -->
+    <section id="home" class="hidden">
+      <main>
+        <div class="status">
+          <div id="dot" class="dot"></div>
+          <div>
+            <div id="state-label" class="label">Not tracking</div>
+            <div id="state-sub" class="sub"></div>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="k">Active today</div>
+            <div id="active-today" class="v green">0h 00m</div>
+          </div>
+          <div class="stat">
+            <div class="k">Idle today</div>
+            <div id="idle-today" class="v amber">0h 00m</div>
+          </div>
+        </div>
+
+        <button id="toggle-btn" class="btn-primary" type="button">Start tracking</button>
+
+        <div id="offline" class="offline hidden">Offline — your time is saved and will sync when you're back online.</div>
+
+        <div id="perm-warning" class="notice warn hidden">
+          Screenshots need permission. Open System Settings → Privacy &amp; Security → Screen Recording and allow
+          Driftline Tracker, then restart the app.
+          <br />
+          <button id="open-perm" class="link" type="button">Open Screen Recording settings</button>
+        </div>
+
+        <p id="info" class="notice"></p>
+      </main>
+      <footer>
+        <span id="who"></span>
+        <button id="sign-out" class="link" type="button">Sign out</button>
+      </footer>
+    </section>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

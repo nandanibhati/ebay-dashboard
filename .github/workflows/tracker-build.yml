@@ -1,0 +1,66 @@
+# Builds the Driftline Tracker desktop installers (desktop-agent/).
+# Mac installers can only be built on macOS, so both run on GitHub's
+# machines. Run it from the Actions tab ("Run workflow"), or push a tag
+# like tracker-v1.0.0 to also attach the installers to a GitHub Release.
+name: Build desktop tracker
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "tracker-v*"
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            script: dist:win
+            files: desktop-agent/dist/*.exe
+          - os: macos-latest
+            script: dist:mac
+            files: desktop-agent/dist/*.dmg
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop-agent
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: desktop-agent/package-lock.json
+
+      - run: npm ci
+
+      - run: npm test
+
+      # No code-signing certificates yet: Windows SmartScreen and macOS
+      # Gatekeeper will warn on first launch (see desktop-agent/README.md).
+      - run: npm run ${{ matrix.script }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tracker-${{ matrix.os }}
+          path: ${{ matrix.files }}
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/tracker-v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: installers
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: installers/*

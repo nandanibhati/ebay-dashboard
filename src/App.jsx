@@ -28,6 +28,7 @@ import Templates from "./pages/Templates";
 import EbayIntegration from "./pages/EbayIntegration";
 import Purchases from "./pages/Purchases";
 import SupplierLedger from "./pages/SupplierLedger";
+import TimeTracker from "./pages/TimeTracker";
 import Subscriptions from "./pages/Subscriptions";
 import Chat from "./pages/Chat";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -98,6 +99,16 @@ function App() {
       {localStorage.getItem("role") === "admin"
         ? <SupplierLedger />
         : <Navigate to="/dashboard" />}
+    </PrivateRoute>
+  }
+/>
+<Route
+  path="/time-tracker"
+  element={
+    <PrivateRoute>
+      {["admin", "manager"].includes(localStorage.getItem("role"))
+        ? <TimeTracker />
+        : <Navigate to="/employee-dashboard" />}
     </PrivateRoute>
   }
 />

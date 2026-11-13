@@ -1,0 +1,50 @@
+{
+  "name": "driftline-tracker",
+  "productName": "Driftline Tracker",
+  "version": "1.0.0",
+  "description": "Desktop time tracker for the Driftline dashboard: active/idle time and screenshots.",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "test": "node --test test/tracker.test.js test/usage.test.js"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.driftline.tracker",
+    "productName": "Driftline Tracker",
+    "files": [
+      "main.js",
+      "preload.js",
+      "lib/**",
+      "renderer/**",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "extendInfo": {
+        "NSScreenCaptureUsageDescription": "Driftline Tracker takes periodic screenshots while you are tracking work time."
+      }
+    }
+  }
+}

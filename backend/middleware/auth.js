@@ -26,6 +26,16 @@ exports.protect = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Desktop-tracker tokens live on employee PCs for months; they may only
+    // report tracker data, never use the rest of the API.
+    if (decoded.scope === "tracker" && !req.originalUrl.startsWith("/api/tracker/agent/")) {
+      return res.status(403).json({
+        success: false,
+        message: "This token can only be used by the desktop tracker",
+      });
+    }
+
     req.user = decoded;
     next();
   } catch (error) {

@@ -7,6 +7,7 @@ import {
   Archive,
   Users,
   Zap,
+  Timer,
 } from "lucide-react";
 
 import { Link, useLocation } from "react-router-dom";
@@ -45,6 +46,11 @@ export default function ManagerSidebar() {
       name: "Employees",
       icon: Users,
       path: "/employees",
+    },
+    {
+      name: "Time Tracker",
+      icon: Timer,
+      path: "/time-tracker",
     },
     {
       name: "Notes",

@@ -56,6 +56,8 @@ const automatedTaskRoutes = require("./routes/automatedTaskRoutes");
 const settingsRoutes = require("./routes/settingsRoutes");
 const googleSheetRoutes = require("./routes/googleSheetRoutes");
 const supplierLedgerRoutes = require("./routes/supplierLedgerRoutes");
+const trackerRoutes = require("./routes/trackerRoutes");
+const { startTrackerCleanup } = require("./utils/trackerCleanup");
 const { startTaskScheduler } = require("./utils/taskScheduler");
 const { startGoogleSheetScheduler } = require("./utils/googleSheetScheduler");
 const { startOrderSyncScheduler } = require("./utils/orderSyncScheduler");
@@ -187,6 +189,7 @@ app.use("/api/automated-tasks", automatedTaskRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/google-sheet", googleSheetRoutes);
 app.use("/api/supplier-ledger", supplierLedgerRoutes);
+app.use("/api/tracker", trackerRoutes);
 
 // =========================
 // Root
@@ -205,6 +208,7 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   startTaskScheduler();
+  startTrackerCleanup();
   startGoogleSheetScheduler();
   startOrderSyncScheduler();
 });
