@@ -173,6 +173,8 @@ footer {
   color: var(--muted);
 }
 
+footer.updates { margin-top: -8px; }
+
 /* Idle prompt */
 .idle-body { padding: 22px; text-align: center; }
 .idle-body h2 { margin: 0 0 6px; font-size: 18px; }

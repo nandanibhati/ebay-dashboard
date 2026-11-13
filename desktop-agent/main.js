@@ -61,11 +61,12 @@ let heartbeatTimer = null;
 let screenshotTimer = null;
 let quitting = false;
 
-// Auto-update (from GitHub Releases).
-// { version, ready } — ready = downloaded and installable (Windows), or
-// { version, manual: true } on Mac, where unsigned apps can't self-update.
+// Auto-update (from GitHub Releases). `update.state` is one of:
+// checking | current | downloading (with percent) | ready (downloaded,
+// installs when idle — Windows) | manual (Mac: unsigned apps can't
+// self-update, so the employee downloads it) | error | unavailable.
 let update = null;
-const RELEASES_URL = "https://github.com/nandanibhati/ebay-dashboard/releases/latest";
+const MAC_DOWNLOAD_URL = "https://github.com/nandanibhati/ebay-dashboard/releases/latest/download/Driftline-Tracker.dmg";
 const UPDATE_CHECK_MS = 4 * 60 * 60 * 1000;
 
 const usage = new UsageRecorder();
@@ -530,10 +531,11 @@ function updateTray() {
         click: () => (tracker.tracking ? stopTracking() : startTracking()),
       },
       {
-        label: update?.manual ? `Download update (v${update.version})` : `Restart to update (v${update?.version})`,
-        visible: Boolean(update && (update.ready || update.manual)),
+        label: update?.state === "manual" ? `Download update (v${update.version})` : `Restart to update (v${update?.version})`,
+        visible: ["ready", "manual"].includes(update?.state),
         click: applyUpdate,
       },
+      { label: `Check for updates (v${app.getVersion()})`, click: checkForUpdates },
       { label: "Open Driftline Tracker", click: showMainWindow },
       { type: "separator" },
       { label: "Quit", click: () => app.quit() },
@@ -550,7 +552,7 @@ function showMainWindow() {
 
   mainWindow = new BrowserWindow({
     width: 380,
-    height: 560,
+    height: 680,
     resizable: false,
     maximizable: false,
     title: "Driftline Tracker",
@@ -576,36 +578,60 @@ ipcMain.handle("start", () => startTracking());
 ipcMain.handle("stop", () => stopTracking());
 // ---------- auto-update ----------
 
+function setUpdate(next) {
+  update = next;
+  pushState();
+  updateTray();
+}
+
+let autoUpdater = null;
+
 function setupAutoUpdate() {
   // Only installed builds can update (not `npm start`).
   if (!app.isPackaged) return;
 
-  const { autoUpdater } = require("electron-updater");
+  ({ autoUpdater } = require("electron-updater"));
   // macOS refuses to auto-install unsigned apps, so there we only announce
-  // the new version and link to the download.
+  // the new version and let the employee download it from the app.
   autoUpdater.autoDownload = process.platform !== "darwin";
   autoUpdater.autoInstallOnAppQuit = true;
 
-  autoUpdater.on("update-available", (info) => {
-    if (process.platform === "darwin") {
-      update = { version: info.version, manual: true };
-      pushState();
-      updateTray();
-    }
+  autoUpdater.on("checking-for-update", () => {
+    // Don't hide a pending update behind a "checking" message.
+    if (!["ready", "manual", "downloading"].includes(update?.state)) setUpdate({ state: "checking" });
   });
-
+  autoUpdater.on("update-not-available", () => setUpdate({ state: "current" }));
+  autoUpdater.on("update-available", (info) => {
+    setUpdate(
+      process.platform === "darwin"
+        ? { state: "manual", version: info.version }
+        : { state: "downloading", version: info.version, percent: 0 }
+    );
+  });
+  autoUpdater.on("download-progress", (p) => {
+    if (update?.state === "downloading") setUpdate({ ...update, percent: Math.round(p.percent) });
+  });
   autoUpdater.on("update-downloaded", (info) => {
-    update = { version: info.version, ready: true };
-    pushState();
-    updateTray();
+    setUpdate({ state: "ready", version: info.version });
     installWhenQuiet();
   });
+  autoUpdater.on("error", (error) => {
+    console.log("Update check failed:", error.message);
+    if (!["ready", "manual"].includes(update?.state)) setUpdate({ state: "error" });
+  });
 
-  autoUpdater.on("error", (error) => console.log("Update check failed:", error.message));
+  setTimeout(checkForUpdates, 30 * 1000);
+  setInterval(checkForUpdates, UPDATE_CHECK_MS);
+}
 
-  const check = () => autoUpdater.checkForUpdates().catch(() => {});
-  setTimeout(check, 30 * 1000);
-  setInterval(check, UPDATE_CHECK_MS);
+function checkForUpdates() {
+  if (!autoUpdater) {
+    setUpdate({ state: "unavailable" });
+    return;
+  }
+  // Already downloading or downloaded: nothing new to check.
+  if (["downloading", "ready"].includes(update?.state)) return;
+  autoUpdater.checkForUpdates().catch(() => {});
 }
 
 // Install a downloaded update without interrupting work: as soon as the
@@ -614,17 +640,17 @@ let installTimer = null;
 function installWhenQuiet() {
   clearInterval(installTimer);
   installTimer = setInterval(() => {
-    if (update?.ready && tracker.state !== "active") applyUpdate();
+    if (update?.state === "ready" && tracker.state !== "active") applyUpdate();
   }, 30 * 1000);
 }
 
 async function applyUpdate() {
-  if (!update) return;
-  if (update.manual) {
-    shell.openExternal(RELEASES_URL);
+  if (update?.state === "manual") {
+    // Starts the .dmg download in the browser.
+    shell.openExternal(MAC_DOWNLOAD_URL);
     return;
   }
-  if (!update.ready || quitting) return;
+  if (update?.state !== "ready" || quitting) return;
 
   clearInterval(installTimer);
   quitting = true;
@@ -633,12 +659,12 @@ async function applyUpdate() {
   await Promise.race([flush(), new Promise((r) => setTimeout(r, 4000))]);
   saveStore();
 
-  const { autoUpdater } = require("electron-updater");
   // Silent install, then relaunch the app.
   autoUpdater.quitAndInstall(true, true);
 }
 
 ipcMain.handle("apply-update", () => applyUpdate());
+ipcMain.handle("check-updates", () => checkForUpdates());
 
 ipcMain.handle("open-screen-settings", () =>
   shell.openExternal("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")

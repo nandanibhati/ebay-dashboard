@@ -41,15 +41,34 @@ function render() {
 
   $("offline").classList.toggle("hidden", s.online);
 
+  // Update banner: only when there's something for the employee to see.
   const u = s.update;
-  $("update").classList.toggle("hidden", !(u && (u.ready || u.manual)));
-  if (u?.manual) {
-    $("update-text").textContent = `Version ${u.version} is available.`;
+  const showBanner = ["manual", "ready", "downloading"].includes(u?.state);
+  $("update").classList.toggle("hidden", !showBanner);
+  $("update-btn").classList.toggle("hidden", u?.state === "downloading");
+  if (u?.state === "manual") {
+    $("update-text").textContent =
+      `Version ${u.version} is available. Click below to download it, open the downloaded file, ` +
+      "and drag Driftline Tracker into Applications (choose Replace). Then open it again.";
     $("update-btn").textContent = "Download the new version";
-  } else if (u?.ready) {
+  } else if (u?.state === "ready") {
     $("update-text").textContent = `Version ${u.version} is ready. It installs automatically next time you're idle.`;
     $("update-btn").textContent = "Restart and update now";
+  } else if (u?.state === "downloading") {
+    $("update-text").textContent = `Downloading version ${u.version}… ${u.percent || 0}%`;
   }
+
+  // Small status next to "Check for updates".
+  const status = {
+    checking: "Checking…",
+    current: "Up to date",
+    downloading: "Downloading update…",
+    ready: "Update ready",
+    manual: "Update available",
+    error: "Couldn't check — try later",
+    unavailable: "Updates only work in the installed app",
+  }[u?.state];
+  $("update-status").textContent = status ? ` · ${status}` : "";
   $("perm-warning").classList.toggle("hidden", !s.screenPermissionMissing);
 
   $("info").textContent =
@@ -109,3 +128,4 @@ $("sign-out").addEventListener("click", () => {
 $("open-perm").addEventListener("click", () => window.tracker.openScreenSettings());
 
 $("update-btn").addEventListener("click", () => window.tracker.applyUpdate());
+$("check-updates").addEventListener("click", () => window.tracker.checkUpdates());

@@ -1,7 +1,7 @@
 {
   "name": "driftline-tracker",
   "productName": "Driftline Tracker",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Desktop time tracker for the Driftline dashboard: active/idle time and screenshots.",
   "main": "main.js",
   "private": true,
