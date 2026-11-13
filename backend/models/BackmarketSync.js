@@ -8,6 +8,9 @@ const backmarketSyncSchema = new mongoose.Schema(
     lastSync: { type: Date, default: null },
     lastError: { type: String, default: "" },
     totalOrders: { type: Number, default: 0 },
+    // Sync used to filter by creation date, so status changes on older
+    // orders were missed. A one-time catch-up refreshes them.
+    modificationBackfillDone: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -8,6 +8,7 @@ const {
 } = require("../utils/stockAdjustment");
 
 const DEFAULT_LOOKBACK_DAYS = 30;
+const BACKFILL_DAYS = 120;
 
 // Backmarket orderline.state codes (confirmed against live API responses):
 // 0/1 = new/awaiting validation, 2 = accepted/preparing, 3 = shipped,
@@ -47,8 +48,12 @@ function computeFinancials({
 
 // New orderlines become new Order rows; existing ones only have their
 // status refreshed so manually-entered cost/fee data is never overwritten.
-async function upsertOrderline(bmOrder, orderline, orderId, status) {
+// `updateOnly` skips creating rows (used by the historical catch-up, where
+// creating an old order would wrongly deduct today's stock).
+async function upsertOrderline(bmOrder, orderline, orderId, status, { updateOnly = false } = {}) {
   const existing = await Order.findOne({ orderId });
+
+  if (!existing && updateOnly) return "skipped";
 
   if (!existing) {
     const quantity = Number(orderline.quantity || 1);
@@ -128,12 +133,33 @@ async function syncBackmarketOrders() {
   let sync = await BackmarketSync.findOne();
   if (!sync) sync = await BackmarketSync.create({});
 
-  const since =
-    sync.lastSync ||
-    new Date(Date.now() - DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+  // Overlap the previous sync by an hour so nothing modified right around
+  // it slips through; re-processing an unchanged order is a no-op.
+  const since = sync.lastSync
+    ? new Date(sync.lastSync.getTime() - 60 * 60 * 1000)
+    : new Date(Date.now() - DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
 
   const bmOrders = await fetchBackmarketOrders(since);
+  const { created, updated } = await applyOrders(bmOrders);
 
+  let backfillUpdated = 0;
+  if (!sync.modificationBackfillDone) {
+    const older = await fetchBackmarketOrders(
+      new Date(Date.now() - BACKFILL_DAYS * 24 * 60 * 60 * 1000)
+    );
+    backfillUpdated = (await applyOrders(older, { updateOnly: true })).updated;
+    sync.modificationBackfillDone = true;
+  }
+
+  sync.lastSync = new Date();
+  sync.totalOrders = await Order.countDocuments({ site: "Backmarket" });
+  sync.lastError = "";
+  await sync.save();
+
+  return { created, updated: updated + backfillUpdated, fetched: bmOrders.length };
+}
+
+async function applyOrders(bmOrders, options) {
   let created = 0;
   let updated = 0;
 
@@ -149,19 +175,14 @@ async function syncBackmarketOrders() {
 
       const status = mapStatus(orderline.state);
 
-      const result = await upsertOrderline(bmOrder, orderline, orderId, status);
+      const result = await upsertOrderline(bmOrder, orderline, orderId, status, options);
 
       if (result === "created") created++;
       if (result === "updated") updated++;
     }
   }
 
-  sync.lastSync = new Date();
-  sync.totalOrders = await Order.countDocuments({ site: "Backmarket" });
-  sync.lastError = "";
-  await sync.save();
-
-  return { created, updated, fetched: bmOrders.length };
+  return { created, updated };
 }
 
 module.exports = { syncBackmarketOrders };
