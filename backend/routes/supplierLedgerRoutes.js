@@ -3,6 +3,15 @@ const router = express.Router();
 
 const SupplierLedgerEntry = require("../models/SupplierLedgerEntry");
 const Vendor = require("../models/Vendor");
+const multer = require("multer");
+const { readInvoice, InvoiceReaderError } = require("../utils/invoiceReader");
+
+// Invoices to be read by AI are kept in memory only; the file is attached
+// to the ledger entry (via Cloudinary) when the admin saves it.
+const invoiceInMemory = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
 const documentUpload = require("../middleware/documentUpload");
 const { protect, adminOnly } = require("../middleware/auth");
 
@@ -13,9 +22,12 @@ router.use(protect, adminOnly);
 const uploadFile = (req, res, next) => {
   documentUpload.single("file")(req, res, (error) => {
     if (error) {
+      // Cloudinary sometimes rejects with { error: { message } } and no
+      // top-level message.
+      const detail = error.message || error.error?.message || "unknown error";
       return res.status(400).json({
         success: false,
-        message: error.message,
+        message: `Couldn't upload the attached file (${detail}). Try again, or save without the file.`,
       });
     }
     next();
@@ -195,6 +207,29 @@ router.delete("/vendors/:id", async (req, res) => {
       message: error.message,
     });
   }
+});
+
+// READ INVOICE WITH AI — returns the extracted details to pre-fill the
+// entry form. Saves nothing.
+router.post("/read-invoice", (req, res) => {
+  invoiceInMemory.single("file")(req, res, async (uploadError) => {
+    try {
+      if (uploadError) throw new InvoiceReaderError(uploadError.message, 400);
+      if (!req.file) throw new InvoiceReaderError("Choose an invoice file to read.", 400);
+
+      const vendors = await Vendor.find().sort({ name: 1 }).select("name");
+      const invoice = await readInvoice({
+        buffer: req.file.buffer,
+        mimetype: req.file.mimetype,
+        vendorNames: vendors.map((v) => v.name),
+      });
+
+      res.json({ success: true, invoice });
+    } catch (error) {
+      const status = error instanceof InvoiceReaderError ? error.status : 500;
+      res.status(status).json({ success: false, message: error.message });
+    }
+  });
 });
 
 // GET ALL ENTRIES

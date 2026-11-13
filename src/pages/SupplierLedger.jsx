@@ -12,6 +12,7 @@ import {
   Paperclip,
   Search,
   Plus,
+  Sparkles,
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import { apiFetch } from "../api";
@@ -238,6 +239,9 @@ export default function SupplierLedger() {
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
+  // AI invoice reading: what was extracted, shown above the form for review.
+  const [aiReading, setAiReading] = useState(false);
+  const [aiInvoice, setAiInvoice] = useState(null);
 
   const [supplierFilter, setSupplierFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
@@ -371,6 +375,48 @@ export default function SupplierLedger() {
     setForm(emptyForm());
     setEditingId(null);
     setFileInputKey((k) => k + 1);
+    setAiInvoice(null);
+  };
+
+  // Send the invoice to the server's AI reader and pre-fill the form with
+  // what it found. Nothing is saved until the admin clicks Add Invoice.
+  const readInvoiceWithAI = async (file) => {
+    if (!file) return;
+    setAiReading(true);
+    setAiInvoice(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await apiFetch("/api/supplier-ledger/read-invoice", { method: "POST", body });
+      const data = await res.json();
+      if (!data.success) {
+        toast.error(data.message || "Couldn't read the invoice");
+        return;
+      }
+      const inv = data.invoice;
+      const lines = inv.items
+        .map((i) => `${i.quantity}× ${i.description} @ ${money(i.unit_price)}`)
+        .join("; ");
+      const imeiCount = inv.items.reduce((n, i) => n + i.imeis.length, 0);
+      setEditingId(null);
+      setForm({
+        ...emptyForm(),
+        type: "Invoice",
+        supplier: inv.matched_vendor,
+        date: inv.invoice_date || todayStr(),
+        amount: inv.total ? String(inv.total) : "",
+        reference: inv.invoice_number,
+        notes: [lines, imeiCount ? `${imeiCount} IMEI(s) listed` : ""].filter(Boolean).join(" · ").slice(0, 500),
+        // Attach the invoice itself to the entry when it's saved.
+        file,
+      });
+      setAiInvoice(inv);
+      toast.success("Invoice read — check the details, then save");
+    } catch {
+      toast.error("Couldn't read the invoice. Check the internet and try again.");
+    } finally {
+      setAiReading(false);
+    }
   };
 
   const startEdit = (entry) => {
@@ -661,6 +707,103 @@ export default function SupplierLedger() {
                 )}
               </div>
 
+              {!editingId && (
+                <div className="mb-5">
+                  <label
+                    className={`flex items-center gap-3 rounded-2xl border-2 border-dashed px-4 py-3.5 transition-colors ${
+                      aiReading ? "border-violet-300 bg-violet-50 cursor-wait" : "border-violet-200 bg-violet-50/50 hover:bg-violet-50 cursor-pointer"
+                    }`}
+                  >
+                    <span className="w-10 h-10 rounded-xl flex items-center justify-center bg-violet-600 text-white shrink-0">
+                      <Sparkles size={18} className={aiReading ? "animate-pulse" : ""} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold text-violet-900">
+                        {aiReading ? "Reading invoice…" : "Read invoice with AI"}
+                      </span>
+                      <span className="block text-xs text-violet-700/80">
+                        {aiReading ? "This takes a few seconds" : "Upload a PDF or photo — vendor, date, invoice no. and total fill in automatically"}
+                      </span>
+                    </span>
+                    <input
+                      type="file"
+                      accept="application/pdf,image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      disabled={aiReading}
+                      onChange={(e) => {
+                        readInvoiceWithAI(e.target.files[0]);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+
+                  {aiInvoice && (
+                    <div className="mt-3 rounded-2xl border border-violet-200 bg-white p-4 text-sm">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-bold text-slate-800">
+                          Filled from invoice{aiInvoice.invoice_number ? ` ${aiInvoice.invoice_number}` : ""} — check before saving
+                        </p>
+                        <button type="button" onClick={resetForm} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">
+                          Clear
+                        </button>
+                      </div>
+
+                      {aiInvoice.matched_vendor ? (
+                        <p className="mt-1.5 text-emerald-700 text-xs font-semibold">✓ Vendor matched: {aiInvoice.matched_vendor}</p>
+                      ) : aiInvoice.vendor_name ? (
+                        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+                          <span>“{aiInvoice.vendor_name}” isn't in your vendors yet.</span>
+                          <button
+                            type="button"
+                            onClick={() => setVendorModal({ name: aiInvoice.vendor_name, selectAfterSave: true })}
+                            className="font-bold underline"
+                          >
+                            Add as new vendor
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="mt-1.5 text-amber-700 text-xs font-semibold">Vendor not found on the invoice — choose it below.</p>
+                      )}
+
+                      {aiInvoice.items.length > 0 && (
+                        <ul className="mt-2.5 divide-y divide-slate-100 border-y border-slate-100">
+                          {aiInvoice.items.map((item, i) => (
+                            <li key={i} className="py-1.5 flex items-start justify-between gap-3 text-xs">
+                              <span className="text-slate-700 min-w-0">
+                                {item.quantity}× {item.description}
+                                {item.imeis.length > 0 && (
+                                  <span className="block text-slate-400 break-all" style={MONO}>
+                                    IMEI: {item.imeis.join(", ")}
+                                  </span>
+                                )}
+                              </span>
+                              <span className="tabular-nums text-slate-800 shrink-0" style={MONO}>{money(item.line_total)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      <div className="mt-2 flex flex-wrap justify-end gap-x-4 gap-y-1 text-xs text-slate-500 tabular-nums" style={MONO}>
+                        {aiInvoice.subtotal > 0 && <span>Subtotal {money(aiInvoice.subtotal)}</span>}
+                        {aiInvoice.vat > 0 && <span>VAT {money(aiInvoice.vat)}</span>}
+                        <span className="font-bold text-slate-800">Total {money(aiInvoice.total)}</span>
+                      </div>
+
+                      {aiInvoice.currency && aiInvoice.currency !== "GBP" && (
+                        <p className="mt-2 text-xs font-semibold text-red-600">
+                          This invoice is in {aiInvoice.currency}, not GBP — convert the amount before saving.
+                        </p>
+                      )}
+                      {aiInvoice.notes && (
+                        <p className="mt-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+                          ⚠ {aiInvoice.notes}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-3.5">
                 <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl">
                   {Object.values(TYPES).map(({ label, icon: Icon }) => (
@@ -765,7 +908,10 @@ export default function SupplierLedger() {
                     className={`${inputCls} file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-slate-200 file:text-slate-700 file:text-xs file:font-semibold`}
                     onChange={(e) => setForm({ ...form, file: e.target.files[0] || null })}
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">Max 10MB.{editingId && form.existingFile ? " Choosing a file replaces the current one." : ""}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    {form.file ? `📎 ${form.file.name} will be attached. ` : ""}
+                    Max 10MB.{editingId && form.existingFile ? " Choosing a file replaces the current one." : ""}
+                  </p>
                 </div>
 
                 <button
