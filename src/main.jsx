@@ -10,8 +10,9 @@ import App from './App.jsx'
 // loaded — it's still running old JS that references old asset hashes
 // which no longer exist post-deploy (the server's SPA rewrite serves
 // index.html for those, which the browser rejects as a module script).
-// So force a reload once the new version is ready, and poll periodically
-// in case the tab is left open across a deploy.
+// So force a reload once the new version is ready, and check for one every
+// few minutes and whenever the tab/app comes back into view, so a deploy
+// reaches open tabs quickly.
 const updateSW = registerSW({
   immediate: true,
   onNeedRefresh() {
@@ -19,7 +20,11 @@ const updateSW = registerSW({
   },
   onRegisteredSW(swUrl, registration) {
     if (!registration) return
-    setInterval(() => registration.update(), 60 * 60 * 1000)
+    const check = () => registration.update().catch(() => {})
+    setInterval(check, 5 * 60 * 1000)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') check()
+    })
   },
 })
 

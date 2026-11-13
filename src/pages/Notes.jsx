@@ -3,6 +3,7 @@ import Sidebar from "../components/Sidebar";
 import EmployeeSidebar from "../components/EmployeeSidebar";
 import { Menu, X } from "lucide-react";
 import { apiFetch } from "../api";
+import useLiveRefresh from "../useLiveRefresh";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -232,6 +233,7 @@ export default function Notes() {
   };
 
   useEffect(() => { fetchNotes(); }, []);
+  useLiveRefresh(["notes"], fetchNotes);
 
   const deleteNote = async (id) => {
     const ok = window.confirm("Delete this note?");

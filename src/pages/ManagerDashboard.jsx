@@ -7,6 +7,7 @@ import { Toaster } from "react-hot-toast";
 import { Menu, X, Package, Clock3, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { apiFetch } from "../api";
+import useLiveRefresh from "../useLiveRefresh";
 import InstallAppBar from "../components/InstallAppBar";
 
 const FONT_LINK_ID = "ebay-dash-fonts";
@@ -130,6 +131,9 @@ export default function ManagerDashboard() {
     fetchEmployees();
     fetchSummary();
   }, []);
+  useLiveRefresh(["tasks"], fetchTasks);
+  useLiveRefresh(["users"], fetchEmployees);
+  useLiveRefresh(["stocks", "attendances"], fetchSummary);
 
   return (
     <div

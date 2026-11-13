@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { apiFetch } from "../api";
+import useLiveRefresh from "../useLiveRefresh";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -87,12 +88,19 @@ export default function Stock() {
     ensureFonts();
   }, []);
 
-  useEffect(() => {
+  const loadLiveData = () => {
     apiFetch("/api/stock")
       .then((res) => res.json())
       .then((data) => setStock(data))
       .catch((err) => console.log(err));
+  };
+
+  useEffect(() => {
+    loadLiveData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useLiveRefresh(["stocks"], loadLiveData);
 
   const handleChange = (e) => {
     setForm({

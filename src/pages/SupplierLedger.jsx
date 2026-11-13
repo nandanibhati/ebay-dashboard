@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import { apiFetch } from "../api";
+import useLiveRefresh from "../useLiveRefresh";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -273,6 +274,9 @@ export default function SupplierLedger() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useLiveRefresh(["supplierledgerentries"], loadEntries, role === "admin");
+  useLiveRefresh(["vendors"], loadVendors, role === "admin");
 
   // Every vendor, plus any supplier name used on an entry without a vendor
   // record, so no balance is ever hidden.

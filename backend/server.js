@@ -5,6 +5,8 @@ const mongoose = require("mongoose");
 const http = require("http");
 const compression = require("compression");
 const { Server } = require("socket.io");
+// Before any route/model require — see liveUpdates.js.
+const { setLiveUpdatesIo } = require("./utils/liveUpdates");
 
 dotenv.config();
 
@@ -22,6 +24,7 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
   },
 });
+setLiveUpdatesIo(io);
 
 app.use(
   cors({

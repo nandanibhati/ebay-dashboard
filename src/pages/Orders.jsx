@@ -5,6 +5,7 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import { Menu, X } from "lucide-react";
 import { apiFetch } from "../api";
+import useLiveRefresh from "../useLiveRefresh";
 
 /* Design tokens - matched to BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -41,12 +42,19 @@ export default function Orders() {
     ensureFonts();
   }, []);
 
-  useEffect(() => {
+  const loadLiveData = () => {
     apiFetch("/api/orders")
       .then((res) => res.json())
       .then((data) => setOrders(data))
       .catch((err) => console.log(err));
+  };
+
+  useEffect(() => {
+    loadLiveData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useLiveRefresh(["orders"], loadLiveData);
 
   useEffect(() => {
     apiFetch("/api/settings")

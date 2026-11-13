@@ -6,6 +6,7 @@ import {
   CalendarCheck, CalendarX, Loader2, Filter, Menu, X,
 } from "lucide-react";
 import { apiFetch } from "../api";
+import useLiveRefresh from "../useLiveRefresh";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -92,6 +93,7 @@ export default function AdminLeaves() {
   };
 
   useEffect(() => { fetchLeaves(); }, []);
+  useLiveRefresh(["leaves"], fetchLeaves);
 
   const approveLeave = async (id) => {
     try {

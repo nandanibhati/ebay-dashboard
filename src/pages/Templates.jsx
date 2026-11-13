@@ -3,6 +3,7 @@ import Sidebar from "../components/Sidebar";
 import EmployeeSidebar from "../components/EmployeeSidebar";
 import { Menu, X, Copy, Check, Pencil, Trash2, FileText } from "lucide-react";
 import { apiFetch } from "../api";
+import useLiveRefresh from "../useLiveRefresh";
 
 const FONT_LINK_ID = "ebay-dash-fonts";
 function ensureFonts() {
@@ -107,6 +108,7 @@ export default function Templates() {
   useEffect(() => {
     fetchTemplates();
   }, []);
+  useLiveRefresh(["templates"], fetchTemplates);
 
   const resetForm = () => {
     setForm({ title: "", content: "", category: "General" });

@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { apiFetch } from "../api";
+import useLiveRefresh from "../useLiveRefresh";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -41,7 +42,7 @@ export default function Attendance() {
     ensureFonts();
   }, []);
 
-  useEffect(() => {
+  const loadLiveData = () => {
     apiFetch("/api/attendance")
       .then((res) => res.json())
       .then((data) => {
@@ -50,7 +51,14 @@ export default function Attendance() {
         setAttendance(filtered);
       })
       .catch((err) => console.log(err));
+  };
+
+  useEffect(() => {
+    loadLiveData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useLiveRefresh(["attendances"], loadLiveData);
 
   // Derived metrics
   const totalDaysLogged = attendance.length;

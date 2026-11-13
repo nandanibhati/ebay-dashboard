@@ -20,6 +20,7 @@ import {
   AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid,
 } from "recharts";
 import { apiFetch } from "../api";
+import useLiveRefresh from "../useLiveRefresh";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -126,7 +127,7 @@ export default function Analytics() {
     ensureFonts();
   }, []);
 
-  useEffect(() => {
+  const loadLiveData = () => {
     apiFetch("/api/orders")
       .then((res) => res.json())
       .then((data) => setOrders(data))
@@ -145,7 +146,14 @@ export default function Analytics() {
         if (data.success) setSubscriptions(data.subscriptions);
       })
       .catch((err) => console.log(err));
+  };
+
+  useEffect(() => {
+    loadLiveData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useLiveRefresh(["orders", "purchases", "subscriptions"], loadLiveData);
 
   // Cancelled/returned orders never earned real revenue, so they're left out
   // of every revenue/profit/margin figure on this page.

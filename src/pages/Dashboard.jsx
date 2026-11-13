@@ -7,6 +7,7 @@ import {
   Menu, X, Plus, PieChart, Boxes, Layers, User, Wallet,
 } from "lucide-react";
 import { apiFetch } from "../api";
+import useLiveRefresh from "../useLiveRefresh";
 import NotificationBell from "../components/NotificationBell";
 import PendingSignups from "../components/PendingSignups";
 import InstallAppBar from "../components/InstallAppBar";
@@ -306,7 +307,7 @@ export default function Dashboard() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
+  const loadLiveData = () => {
     apiFetch("/api/orders")
       .then((res) => res.json())
       .then((data) => setOrders(data))
@@ -338,7 +339,14 @@ export default function Dashboard() {
         }
       })
       .catch((err) => console.log(err));
+  };
+
+  useEffect(() => {
+    loadLiveData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useLiveRefresh(["orders", "purchases", "subscriptions", "users"], loadLiveData);
 
   // Cancelled/returned orders never earned real revenue, so they're left out
   // of every revenue/profit/margin figure on this page.

@@ -30,6 +30,7 @@ import {
   StickyNote,
 } from "lucide-react";
 import { apiFetch } from "../api";
+import useLiveRefresh from "../useLiveRefresh";
 import socket from "../socket";
 
 const inputCls =
@@ -42,41 +43,59 @@ const labelCls =
 const toAssigneeList = (value) =>
   (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean);
 
-function AssigneePicker({ employees, value, onChange, placeholder = "Add person..." }) {
-  const remaining = employees.filter((emp) => !value.includes(emp.name));
+// Every employee as a toggleable pill, so it's obvious several people can
+// be picked at once. Each selected person gets their own copy of the task.
+function AssigneePicker({ employees, value, onChange }) {
+  const names = employees.map((emp) => emp.name);
+  const allSelected = names.length > 0 && names.every((n) => value.includes(n));
+  const toggle = (name) =>
+    onChange(value.includes(name) ? value.filter((n) => n !== name) : [...value, name]);
 
   return (
-    <div className="flex flex-col gap-2">
-      <select
-        className={inputCls}
-        value=""
-        onChange={(e) => e.target.value && onChange([...value, e.target.value])}
-      >
-        <option value="">{remaining.length ? placeholder : "Everyone added"}</option>
-        {remaining.map((emp) => (
-          <option key={emp._id} value={emp.name}>{emp.name}</option>
-        ))}
-      </select>
-      {value.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {value.map((name) => (
-            <span
-              key={name}
-              className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-lg text-xs font-bold bg-amber-50 border border-amber-200 text-amber-800"
-            >
-              {name}
-              <button
-                type="button"
-                onClick={() => onChange(value.filter((n) => n !== name))}
-                className="p-0.5 rounded hover:bg-amber-100"
-                title={`Remove ${name}`}
-              >
-                <X size={12} className="stroke-[2.5]" />
-              </button>
-            </span>
-          ))}
+    <div className="rounded-xl border border-slate-900/[0.08] bg-white/70 p-2.5 shadow-sm">
+      <div className="flex items-center justify-between gap-2 mb-2 px-0.5">
+        <span className="text-xs font-semibold text-slate-500">
+          {value.length === 0
+            ? "Click to select one or more people"
+            : `${value.length} selected · each gets their own copy`}
+        </span>
+        <div className="flex gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => onChange(allSelected ? [] : names)}
+            className="text-xs font-bold text-amber-600 hover:text-amber-700"
+          >
+            {allSelected ? "Clear" : "Select all"}
+          </button>
+          {value.length > 0 && !allSelected && (
+            <button type="button" onClick={() => onChange([])} className="text-xs font-bold text-slate-400 hover:text-slate-600">
+              Clear
+            </button>
+          )}
         </div>
-      )}
+      </div>
+      <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+        {employees.length === 0 && <span className="text-xs text-slate-400 px-0.5">No employees found</span>}
+        {employees.map((emp) => {
+          const selected = value.includes(emp.name);
+          return (
+            <button
+              key={emp._id}
+              type="button"
+              onClick={() => toggle(emp.name)}
+              aria-pressed={selected}
+              className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all active:scale-95 ${
+                selected
+                  ? "bg-amber-100 border-amber-300 text-amber-900"
+                  : "bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-100"
+              }`}
+            >
+              {selected && <CheckCircle2 size={12} className="stroke-[2.5]" />}
+              {emp.name}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -850,6 +869,10 @@ export default function TaskManagerBoard({
       console.log(error);
     }
   };
+
+  // Only refresh lists this board has actually opened.
+  useLiveRefresh(["automatedtasks"], loadAutomatedTasks, automatedLoaded);
+  useLiveRefresh(["tasks"], loadArchivedTasks, archivedLoaded);
 
   const openAutomatedView = () => {
     if (!automatedLoaded) loadAutomatedTasks();
@@ -1661,7 +1684,7 @@ export default function TaskManagerBoard({
                   />
                 </div>
 
-                <div>
+                <div className={editingId ? "" : "md:col-span-2 lg:col-span-3"}>
                   <label className={labelCls}>Assigned To *</label>
                   {editingId ? (
                     <select
@@ -1870,7 +1893,7 @@ export default function TaskManagerBoard({
                   <input type="number" min="0" required className={inputCls} value={automatedForm.etcMinutes} onChange={(e) => setAutomatedForm({ ...automatedForm, etcMinutes: e.target.value })} />
                 </div>
 
-                <div>
+                <div className="md:col-span-2 lg:col-span-3">
                   <label className={labelCls}>Assignee *</label>
                   <AssigneePicker
                     employees={employees}

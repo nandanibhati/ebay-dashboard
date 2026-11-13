@@ -2,6 +2,7 @@ import EmployeeSidebar from "../components/EmployeeSidebar";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "../api";
+import useLiveRefresh from "../useLiveRefresh";
 import NotificationBell from "../components/NotificationBell";
 import InstallAppBar from "../components/InstallAppBar";
 import {
@@ -294,7 +295,7 @@ export default function EmployeeDashboard() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
+  const loadLiveData = () => {
     const email = localStorage.getItem("employeeEmail");
     const name = localStorage.getItem("employeeName");
 
@@ -336,7 +337,14 @@ export default function EmployeeDashboard() {
       .catch((err) => console.log(err));
 
     fetchTodayAttendance();
+  };
+
+  useEffect(() => {
+    loadLiveData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useLiveRefresh(["leaves", "users", "tasks", "attendances"], loadLiveData);
 
   const fetchTodayAttendance = async () => {
     try {

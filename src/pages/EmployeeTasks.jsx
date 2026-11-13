@@ -5,6 +5,7 @@ import TaskManagerBoard from "../components/TaskManagerBoard";
 import { Toaster } from "react-hot-toast";
 import { Menu, X } from "lucide-react";
 import { apiFetch } from "../api";
+import useLiveRefresh from "../useLiveRefresh";
 
 const FONT_LINK_ID = "ebay-dash-fonts";
 function ensureFonts() {
@@ -83,6 +84,8 @@ export default function EmployeeTasks() {
     fetchTasks();
     fetchEmployees();
   }, []);
+  useLiveRefresh(["tasks"], fetchTasks);
+  useLiveRefresh(["users"], fetchEmployees);
 
   return (
     <div

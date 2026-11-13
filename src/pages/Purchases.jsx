@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import { Menu, X } from "lucide-react";
 import { apiFetch } from "../api";
+import useLiveRefresh from "../useLiveRefresh";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -89,6 +90,7 @@ export default function Purchases() {
   };
 
   useEffect(() => { fetchPurchases(); }, []);
+  useLiveRefresh(["purchases"], fetchPurchases);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
