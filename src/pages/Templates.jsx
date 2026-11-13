@@ -197,7 +197,7 @@ export default function Templates() {
         </div>
       )}
 
-      <div className="p-4 lg:p-8 max-w-[1200px]">
+      <div className="p-4 lg:p-8 w-full">
         <div className="flex items-center gap-3 mb-4">
           <button
             onClick={() => setSidebarOpen(true)}

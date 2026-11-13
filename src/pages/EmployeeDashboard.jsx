@@ -594,7 +594,7 @@ export default function EmployeeDashboard() {
         </header>
 
         {/* ── Page body ── */}
-        <main className="flex-1 px-5 lg:px-10 py-8 max-w-[1680px] mx-auto w-full space-y-7">
+        <main className="flex-1 px-5 lg:px-10 py-8 w-full space-y-7">
 
           {/* Hero / welcome */}
           <GlassPanel hover={false} className="p-7 md:p-9 overflow-hidden relative">

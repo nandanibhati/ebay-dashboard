@@ -123,7 +123,7 @@ export default function EmployeeTasks() {
           </h1>
         </header>
 
-        <div className="flex-1 px-5 lg:px-10 py-8 max-w-[1800px] mx-auto w-full">
+        <div className="flex-1 px-5 lg:px-10 py-8 w-full">
           <TaskManagerBoard
             tasks={tasks}
             employees={employees}

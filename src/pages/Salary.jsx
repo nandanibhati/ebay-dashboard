@@ -78,7 +78,7 @@ export default function Salary() {
         </div>
       )}
 
-      <div className="p-4 lg:p-8 max-w-[1400px] mx-auto flex flex-col gap-6 w-full">
+      <div className="p-4 lg:p-8 w-full flex flex-col gap-6">
 
         {/* Top bar */}
         <div className="flex items-center gap-3">

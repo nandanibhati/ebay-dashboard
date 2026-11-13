@@ -172,7 +172,7 @@ export default function ManagerDashboard() {
           </h1>
         </header>
 
-        <div className="flex-1 px-5 lg:px-10 py-8 max-w-[1800px] mx-auto w-full flex flex-col gap-6">
+        <div className="flex-1 px-5 lg:px-10 py-8 w-full flex flex-col gap-6">
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
             <GlassPanel className="p-6 sm:p-8 overflow-hidden relative">
               <div
