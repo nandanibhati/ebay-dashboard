@@ -15,12 +15,21 @@ jobs:
     strategy:
       matrix:
         include:
+          # latest*.yml, .blockmap and the Mac .zip are what the apps'
+          # auto-updater reads; they must be in the release too.
           - os: windows-latest
             script: dist:win
-            files: desktop-agent/dist/*.exe
+            files: |
+              desktop-agent/dist/*.exe
+              desktop-agent/dist/*.exe.blockmap
+              desktop-agent/dist/latest.yml
           - os: macos-latest
             script: dist:mac
-            files: desktop-agent/dist/*.dmg
+            files: |
+              desktop-agent/dist/*.dmg
+              desktop-agent/dist/*.zip
+              desktop-agent/dist/*.blockmap
+              desktop-agent/dist/latest-mac.yml
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -61,6 +70,14 @@ jobs:
           path: installers
           merge-multiple: true
 
+      # Fixed-name copies, so these links always give the newest version:
+      #   .../releases/latest/download/Driftline-Tracker-Setup.exe
+      #   .../releases/latest/download/Driftline-Tracker.dmg
+      - run: |
+          cp installers/Driftline-Tracker-Setup-*.exe installers/Driftline-Tracker-Setup.exe
+          cp installers/Driftline-Tracker-*-universal.dmg installers/Driftline-Tracker.dmg
+
       - uses: softprops/action-gh-release@v2
         with:
           files: installers/*
+          make_latest: true

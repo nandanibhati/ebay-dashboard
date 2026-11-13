@@ -61,6 +61,13 @@ let heartbeatTimer = null;
 let screenshotTimer = null;
 let quitting = false;
 
+// Auto-update (from GitHub Releases).
+// { version, ready } — ready = downloaded and installable (Windows), or
+// { version, manual: true } on Mac, where unsigned apps can't self-update.
+let update = null;
+const RELEASES_URL = "https://github.com/nandanibhati/ebay-dashboard/releases/latest";
+const UPDATE_CHECK_MS = 4 * 60 * 60 * 1000;
+
 const usage = new UsageRecorder();
 const windowWatcher = createActiveWindowWatcher();
 
@@ -488,6 +495,7 @@ function stateForUi(message) {
     idleThresholdMinutes: Math.round(config.idleThresholdSeconds / 60),
     screenPermissionMissing,
     version: app.getVersion(),
+    update,
     message: message || "",
   };
 }
@@ -520,6 +528,11 @@ function updateTray() {
         label: tracker.tracking ? "Stop tracking" : "Start tracking",
         enabled: Boolean(store.auth),
         click: () => (tracker.tracking ? stopTracking() : startTracking()),
+      },
+      {
+        label: update?.manual ? `Download update (v${update.version})` : `Restart to update (v${update?.version})`,
+        visible: Boolean(update && (update.ready || update.manual)),
+        click: applyUpdate,
       },
       { label: "Open Driftline Tracker", click: showMainWindow },
       { type: "separator" },
@@ -561,6 +574,72 @@ ipcMain.handle("sign-in", (_e, creds) => signIn(creds));
 ipcMain.handle("sign-out", () => signOut());
 ipcMain.handle("start", () => startTracking());
 ipcMain.handle("stop", () => stopTracking());
+// ---------- auto-update ----------
+
+function setupAutoUpdate() {
+  // Only installed builds can update (not `npm start`).
+  if (!app.isPackaged) return;
+
+  const { autoUpdater } = require("electron-updater");
+  // macOS refuses to auto-install unsigned apps, so there we only announce
+  // the new version and link to the download.
+  autoUpdater.autoDownload = process.platform !== "darwin";
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on("update-available", (info) => {
+    if (process.platform === "darwin") {
+      update = { version: info.version, manual: true };
+      pushState();
+      updateTray();
+    }
+  });
+
+  autoUpdater.on("update-downloaded", (info) => {
+    update = { version: info.version, ready: true };
+    pushState();
+    updateTray();
+    installWhenQuiet();
+  });
+
+  autoUpdater.on("error", (error) => console.log("Update check failed:", error.message));
+
+  const check = () => autoUpdater.checkForUpdates().catch(() => {});
+  setTimeout(check, 30 * 1000);
+  setInterval(check, UPDATE_CHECK_MS);
+}
+
+// Install a downloaded update without interrupting work: as soon as the
+// employee is idle or not tracking. Tracking resumes after the restart.
+let installTimer = null;
+function installWhenQuiet() {
+  clearInterval(installTimer);
+  installTimer = setInterval(() => {
+    if (update?.ready && tracker.state !== "active") applyUpdate();
+  }, 30 * 1000);
+}
+
+async function applyUpdate() {
+  if (!update) return;
+  if (update.manual) {
+    shell.openExternal(RELEASES_URL);
+    return;
+  }
+  if (!update.ready || quitting) return;
+
+  clearInterval(installTimer);
+  quitting = true;
+  // remember: false keeps wasTracking, so tracking resumes after restart.
+  stopTracking({ remember: false });
+  await Promise.race([flush(), new Promise((r) => setTimeout(r, 4000))]);
+  saveStore();
+
+  const { autoUpdater } = require("electron-updater");
+  // Silent install, then relaunch the app.
+  autoUpdater.quitAndInstall(true, true);
+}
+
+ipcMain.handle("apply-update", () => applyUpdate());
+
 ipcMain.handle("open-screen-settings", () =>
   shell.openExternal("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")
 );
@@ -602,6 +681,8 @@ app.whenReady().then(() => {
     if (resumeAfterSleep) startTracking();
     resumeAfterSleep = false;
   });
+
+  setupAutoUpdate();
 
   // Keep the tray menu's "Active today" roughly current.
   setInterval(updateTray, 60 * 1000);

@@ -150,6 +150,8 @@ button {
 }
 .notice.warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
 .notice button { margin-top: 6px; }
+.notice.update { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
+.notice.update .link { color: #1d4ed8; font-weight: 700; }
 
 .offline {
   margin-top: 12px;

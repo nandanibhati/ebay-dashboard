@@ -42,11 +42,30 @@ own 90-day token that only works for `/api/tracker/agent/*`.
 
 The agent picks these up on its next heartbeat; no reinstall needed.
 
+## Releasing a new version (auto-update)
+
+1. Bump `version` in `desktop-agent/package.json` and commit.
+2. Push a matching tag: `git tag -a tracker-v1.2.0 -m "Driftline Tracker 1.2.0" && git push origin tracker-v1.2.0`
+3. The **Build desktop tracker** workflow builds both installers and
+   publishes a GitHub Release.
+
+Installed Windows apps check GitHub every 4 hours (and 30s after start),
+download the update in the background, and install it the next time the
+employee is idle or not tracking, then relaunch; tracking resumes on its
+own. Mac apps can't self-install while unsigned, so they show an
+"update available" link instead.
+
+Permanent download links (always the newest version):
+
+- Windows: https://github.com/nandanibhati/ebay-dashboard/releases/latest/download/Driftline-Tracker-Setup.exe
+- Mac: https://github.com/nandanibhati/ebay-dashboard/releases/latest/download/Driftline-Tracker.dmg
+
+The Release must stay public for updates to work (the repo is public).
+
 ## Building installers
 
-Run the **Build desktop tracker** workflow from GitHub's Actions tab, then
-download the installers from the run's artifacts. Pushing a tag like
-`tracker-v1.0.0` also attaches them to a GitHub Release.
+Run the **Build desktop tracker** workflow from GitHub's Actions tab to
+get installers as run artifacts without publishing a release.
 
 Locally (Windows installer only):
 

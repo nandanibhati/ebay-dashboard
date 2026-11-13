@@ -8,5 +8,6 @@ contextBridge.exposeInMainWorld("tracker", {
   stop: () => ipcRenderer.invoke("stop"),
   idleAnswer: (answer) => ipcRenderer.invoke("idle-answer", answer),
   openScreenSettings: () => ipcRenderer.invoke("open-screen-settings"),
+  applyUpdate: () => ipcRenderer.invoke("apply-update"),
   onState: (callback) => ipcRenderer.on("state", (_event, state) => callback(state)),
 });

@@ -40,6 +40,16 @@ function render() {
   toggle.className = s.state === "stopped" ? "btn-primary" : "btn-stop";
 
   $("offline").classList.toggle("hidden", s.online);
+
+  const u = s.update;
+  $("update").classList.toggle("hidden", !(u && (u.ready || u.manual)));
+  if (u?.manual) {
+    $("update-text").textContent = `Version ${u.version} is available.`;
+    $("update-btn").textContent = "Download the new version";
+  } else if (u?.ready) {
+    $("update-text").textContent = `Version ${u.version} is ready. It installs automatically next time you're idle.`;
+    $("update-btn").textContent = "Restart and update now";
+  }
   $("perm-warning").classList.toggle("hidden", !s.screenPermissionMissing);
 
   $("info").textContent =
@@ -97,3 +107,5 @@ $("sign-out").addEventListener("click", () => {
 });
 
 $("open-perm").addEventListener("click", () => window.tracker.openScreenSettings());
+
+$("update-btn").addEventListener("click", () => window.tracker.applyUpdate());
