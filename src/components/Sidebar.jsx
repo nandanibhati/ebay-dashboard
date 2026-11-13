@@ -17,6 +17,7 @@ import {
   Zap,
   Receipt,
   Timer,
+  ScanLine,
 } from "lucide-react";
 
 import { Link, useLocation } from "react-router-dom";
@@ -70,6 +71,11 @@ export default function Sidebar() {
       name: "Stock",
       icon: Package,
       path: "/stock",
+    },
+    {
+      name: "Scan In",
+      icon: ScanLine,
+      path: "/scan-in",
     },
 
     {

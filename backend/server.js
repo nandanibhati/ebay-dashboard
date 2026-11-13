@@ -57,6 +57,7 @@ const settingsRoutes = require("./routes/settingsRoutes");
 const googleSheetRoutes = require("./routes/googleSheetRoutes");
 const supplierLedgerRoutes = require("./routes/supplierLedgerRoutes");
 const trackerRoutes = require("./routes/trackerRoutes");
+const scanRoutes = require("./routes/scanRoutes");
 const { startTrackerCleanup } = require("./utils/trackerCleanup");
 const { startTaskScheduler } = require("./utils/taskScheduler");
 const { startGoogleSheetScheduler } = require("./utils/googleSheetScheduler");
@@ -190,6 +191,7 @@ app.use("/api/settings", settingsRoutes);
 app.use("/api/google-sheet", googleSheetRoutes);
 app.use("/api/supplier-ledger", supplierLedgerRoutes);
 app.use("/api/tracker", trackerRoutes);
+app.use("/api/scan", scanRoutes);
 
 // =========================
 // Root

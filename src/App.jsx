@@ -29,6 +29,7 @@ import EbayIntegration from "./pages/EbayIntegration";
 import Purchases from "./pages/Purchases";
 import SupplierLedger from "./pages/SupplierLedger";
 import TimeTracker from "./pages/TimeTracker";
+import ScanIn from "./pages/ScanIn";
 import Subscriptions from "./pages/Subscriptions";
 import Chat from "./pages/Chat";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -108,6 +109,16 @@ function App() {
     <PrivateRoute>
       {["admin", "manager"].includes(localStorage.getItem("role"))
         ? <TimeTracker />
+        : <Navigate to="/employee-dashboard" />}
+    </PrivateRoute>
+  }
+/>
+<Route
+  path="/scan-in"
+  element={
+    <PrivateRoute>
+      {["admin", "manager"].includes(localStorage.getItem("role"))
+        ? <ScanIn />
         : <Navigate to="/employee-dashboard" />}
     </PrivateRoute>
   }

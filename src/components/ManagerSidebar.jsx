@@ -8,6 +8,7 @@ import {
   Users,
   Zap,
   Timer,
+  ScanLine,
 } from "lucide-react";
 
 import { Link, useLocation } from "react-router-dom";
@@ -51,6 +52,11 @@ export default function ManagerSidebar() {
       name: "Time Tracker",
       icon: Timer,
       path: "/time-tracker",
+    },
+    {
+      name: "Scan In",
+      icon: ScanLine,
+      path: "/scan-in",
     },
     {
       name: "Notes",
