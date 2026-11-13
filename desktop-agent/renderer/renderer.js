@@ -70,6 +70,22 @@ function render() {
   }[u?.state];
   $("update-status").textContent = status ? ` · ${status}` : "";
   $("perm-warning").classList.toggle("hidden", !s.screenPermissionMissing);
+  $("ax-warning").classList.toggle("hidden", !s.accessibilityMissing);
+
+  const shot = s.shotStatus || {};
+  const shotEl = $("shot-status");
+  if (!s.screenshotsEnabled || s.state === "stopped") {
+    shotEl.textContent = "";
+  } else if (shot.error) {
+    shotEl.textContent = `📷 Screenshots not working: ${shot.error}`;
+    shotEl.className = "shot-status error";
+  } else if (shot.lastAt) {
+    shotEl.textContent = `📷 Last screenshot ${new Date(shot.lastAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} ✓`;
+    shotEl.className = "shot-status ok";
+  } else {
+    shotEl.textContent = `📷 First screenshot within ${s.screenshotIntervalMinutes} minutes`;
+    shotEl.className = "shot-status";
+  }
 
   $("info").textContent =
     `You become idle after ${s.idleThresholdMinutes} minutes without keyboard or mouse input. ` +
@@ -126,6 +142,7 @@ $("sign-out").addEventListener("click", () => {
 });
 
 $("open-perm").addEventListener("click", () => window.tracker.openScreenSettings());
+$("open-ax").addEventListener("click", () => window.tracker.openAccessibilitySettings());
 
 $("update-btn").addEventListener("click", () => window.tracker.applyUpdate());
 $("check-updates").addEventListener("click", () => window.tracker.checkUpdates());

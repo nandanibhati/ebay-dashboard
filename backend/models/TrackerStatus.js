@@ -17,6 +17,11 @@ const trackerStatusSchema = new mongoose.Schema(
     currentTitle: { type: String, default: "" },
     currentSite: { type: String, default: null },
 
+    // Last screenshot the agent managed to upload, or why it couldn't
+    // (e.g. Mac Screen Recording permission off).
+    screenshotLastAt: { type: Date, default: null },
+    screenshotError: { type: String, default: "" },
+
     device: {
       os: { type: String, default: "" },
       hostname: { type: String, default: "" },

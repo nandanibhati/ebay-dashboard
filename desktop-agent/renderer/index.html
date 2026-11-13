@@ -71,11 +71,20 @@
         <div id="offline" class="offline hidden">Offline — your time is saved and will sync when you're back online.</div>
 
         <div id="perm-warning" class="notice warn hidden">
-          Screenshots need permission. Open System Settings → Privacy &amp; Security → Screen Recording and allow
-          Driftline Tracker, then restart the app.
+          <strong>Screenshots are off.</strong> Turn on Driftline Tracker in System Settings → Privacy &amp; Security →
+          Screen Recording, then quit and reopen this app.
           <br />
           <button id="open-perm" class="link" type="button">Open Screen Recording settings</button>
         </div>
+
+        <div id="ax-warning" class="notice warn hidden">
+          <strong>App names aren't being recorded.</strong> Turn on Driftline Tracker in System Settings → Privacy &amp;
+          Security → Accessibility.
+          <br />
+          <button id="open-ax" class="link" type="button">Open Accessibility settings</button>
+        </div>
+
+        <p id="shot-status" class="shot-status"></p>
 
         <p id="info" class="notice"></p>
       </main>

@@ -54,6 +54,7 @@ let sendStoppedPing = false;
 let resumeAfterSleep = false;
 let today = { date: "", activeMs: 0, idleMs: 0, fetchedAt: 0 };
 let screenPermissionMissing = false;
+let accessibilityMissing = false;
 let sessionStartedAt = null;
 
 let sampleTimer = null;
@@ -206,6 +207,7 @@ async function uploadOnce() {
           segments: batch.segments,
           usage: usageItems.map(({ bucket, app, title, seconds }) => ({ bucket, app, title, seconds })),
           current: tracker.state === "active" ? windowWatcher.get() : null,
+          screenshot: shotStatus,
           device: device(),
         },
       });
@@ -259,6 +261,7 @@ function startTracking() {
   saveStore();
 
   windowWatcher.start();
+  checkMacPermissions({ prompt: true });
   clearInterval(sampleTimer);
   let ticks = 0;
   let lastTickAt = Date.now();
@@ -325,12 +328,39 @@ function scheduleScreenshot() {
   }, delay);
 }
 
+// Outcome of the last screenshot attempt, shown in the app window and sent
+// with each heartbeat so the dashboard's Live board can show problems.
+let shotStatus = { lastAt: null, error: "" };
+
+function setShotStatus(next) {
+  shotStatus = { ...shotStatus, ...next };
+  pushState();
+}
+
+// macOS: ask for Screen Recording and Accessibility up front, so the system
+// prompts appear when tracking starts rather than silently failing later.
+function checkMacPermissions({ prompt = false } = {}) {
+  if (process.platform !== "darwin") return;
+  const screen = systemPreferences.getMediaAccessStatus("screen");
+  if (prompt && screen === "not-determined") {
+    // Asking for a source is what makes macOS show its permission prompt.
+    desktopCapturer.getSources({ types: ["screen"], thumbnailSize: { width: 1, height: 1 } }).catch(() => {});
+  }
+  screenPermissionMissing = screen !== "granted";
+  accessibilityMissing = !systemPreferences.isTrustedAccessibilityClient(prompt);
+  pushState();
+}
+
 async function takeScreenshot() {
   if (tracker.state !== "active") return;
 
   if (process.platform === "darwin") {
-    screenPermissionMissing = systemPreferences.getMediaAccessStatus("screen") !== "granted";
-    pushState();
+    checkMacPermissions();
+    if (screenPermissionMissing) {
+      // Without it macOS only returns the desktop wallpaper.
+      setShotStatus({ error: "Screen Recording permission is off" });
+      return;
+    }
   }
 
   try {
@@ -338,19 +368,29 @@ async function takeScreenshot() {
       types: ["screen"],
       thumbnailSize: { width: 1600, height: 1000 },
     });
+    const usable = sources.filter((s) => !s.thumbnail.isEmpty());
+    if (usable.length === 0) {
+      setShotStatus({ error: "Couldn't capture the screen" });
+      return;
+    }
+
     const takenAt = new Date().toISOString();
     // What was in front when the screenshot was taken, shown as its caption.
     const win = windowWatcher.get() || { app: "", title: "" };
 
-    for (const [screenIndex, source] of sources.entries()) {
-      if (source.thumbnail.isEmpty()) continue;
+    for (const [screenIndex, source] of usable.entries()) {
       const jpeg = source.thumbnail.toJPEG(60);
       const meta = { takenAt, screenIndex, app: win.app, title: win.title };
-      const ok = await uploadScreenshot(jpeg, meta);
-      if (!ok) savePendingScreenshot(jpeg, meta);
+      const result = await uploadScreenshot(jpeg, meta);
+      if (result.ok) {
+        setShotStatus({ lastAt: takenAt, error: "" });
+      } else {
+        savePendingScreenshot(jpeg, meta);
+        setShotStatus({ error: `Upload failed (${result.error}) — will retry` });
+      }
     }
   } catch (error) {
-    console.log("Screenshot failed:", error.message);
+    setShotStatus({ error: `Couldn't capture the screen (${error.message})` });
   }
 }
 
@@ -363,9 +403,9 @@ async function uploadScreenshot(jpeg, { takenAt, screenIndex, app: appName = "",
     form.append("title", title);
     form.append("screenshot", new Blob([jpeg], { type: "image/jpeg" }), "screenshot.jpg");
     const res = await api("/api/tracker/agent/screenshot", { method: "POST", formData: form });
-    return res.ok;
-  } catch {
-    return false;
+    return res.ok ? { ok: true } : { ok: false, error: res.data.message || `HTTP ${res.status}` };
+  } catch (error) {
+    return { ok: false, error: error.name === "TimeoutError" ? "timed out" : "no connection" };
   }
 }
 
@@ -405,8 +445,9 @@ async function uploadPendingScreenshots() {
       const [ms, screenIndex] = file.replace(".jpg", "").split("-");
       meta = { takenAt: new Date(Number(ms)).toISOString(), screenIndex: Number(screenIndex) };
     }
-    const ok = await uploadScreenshot(fs.readFileSync(full), meta);
+    const { ok } = await uploadScreenshot(fs.readFileSync(full), meta);
     if (!ok) return;
+    setShotStatus({ lastAt: meta.takenAt, error: "" });
     fs.rmSync(full, { force: true });
     fs.rmSync(metaPath, { force: true });
   }
@@ -495,6 +536,8 @@ function stateForUi(message) {
     screenshotIntervalMinutes: config.screenshotIntervalMinutes,
     idleThresholdMinutes: Math.round(config.idleThresholdSeconds / 60),
     screenPermissionMissing,
+    accessibilityMissing,
+    shotStatus,
     version: app.getVersion(),
     update,
     message: message || "",
@@ -666,6 +709,9 @@ async function applyUpdate() {
 ipcMain.handle("apply-update", () => applyUpdate());
 ipcMain.handle("check-updates", () => checkForUpdates());
 
+ipcMain.handle("open-accessibility-settings", () =>
+  shell.openExternal("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+);
 ipcMain.handle("open-screen-settings", () =>
   shell.openExternal("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")
 );

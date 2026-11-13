@@ -201,6 +201,16 @@ async function applySegment(user, { start, end, date, state, markedAsWork }) {
   }
 }
 
+// Screenshot status from agents 1.2+ (older agents don't send it).
+function screenshotFields(shot) {
+  if (!shot || typeof shot !== "object") return {};
+  const lastAt = new Date(shot.lastAt);
+  return {
+    screenshotLastAt: shot.lastAt && !isNaN(lastAt) ? lastAt : null,
+    screenshotError: clip(shot.error, 200),
+  };
+}
+
 // HEARTBEAT — the agent sends everything since its last successful
 // heartbeat (it queues offline), plus its current state.
 router.post("/agent/heartbeat", async (req, res) => {
@@ -267,6 +277,7 @@ router.post("/agent/heartbeat", async (req, res) => {
         currentApp: clip(current?.app, 120),
         currentTitle: clip(current?.title, 300),
         currentSite: current ? siteFromWindow(current.app, current.title) : null,
+        ...screenshotFields(req.body.screenshot),
         device: {
           os: String(device.os || "").slice(0, 60),
           hostname: String(device.hostname || "").slice(0, 100),
@@ -442,6 +453,8 @@ dashboard.get("/live", async (req, res) => {
         currentTitle: online && s.state === "active" ? s.currentTitle : "",
         device: s?.device || null,
         hasTracker: Boolean(s),
+        screenshotLastAt: s?.screenshotLastAt || null,
+        screenshotError: s?.screenshotError || "",
         activeMs: t?.activeMs || 0,
         idleMs: t?.idleMs || 0,
         workedIdleMs: t?.workedIdleMs || 0,

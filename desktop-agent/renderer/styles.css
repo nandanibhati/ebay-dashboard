@@ -175,6 +175,10 @@ footer {
 
 footer.updates { margin-top: -8px; }
 
+.shot-status { margin: 10px 2px 0; font-size: 12px; font-weight: 600; color: var(--muted); }
+.shot-status.ok { color: #15803d; }
+.shot-status.error { color: #b91c1c; }
+
 /* Idle prompt */
 .idle-body { padding: 22px; text-align: center; }
 .idle-body h2 { margin: 0 0 6px; font-size: 18px; }

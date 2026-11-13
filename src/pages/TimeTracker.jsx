@@ -196,6 +196,18 @@ function LiveTab({ people, search }) {
               </div>
             )}
 
+            {p.hasTracker && p.screenshotError ? (
+              <p className="mt-3 flex items-start gap-1.5 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5">
+                <ImageIcon size={12} className="shrink-0 mt-0.5" />
+                <span>Screenshots not working: {p.screenshotError}</span>
+              </p>
+            ) : p.hasTracker && p.screenshotLastAt ? (
+              <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
+                <ImageIcon size={12} className="shrink-0" />
+                Last screenshot {fmtTime(p.screenshotLastAt)}
+              </p>
+            ) : null}
+
             {p.device?.hostname && (
               <p className="flex items-center gap-1.5 mt-3 text-[11px] text-slate-400 truncate">
                 <Monitor size={11} className="shrink-0" />
