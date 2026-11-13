@@ -27,7 +27,12 @@ function entryFields(body) {
     supplier: body.supplier,
     type: body.type,
     date: body.date,
-    amount: body.amount,
+    // Stored to the penny so totals add up exactly.
+    amount:
+      body.amount === undefined || body.amount === ""
+        ? body.amount
+        : // Exponent form rounds 1.005 → 1.01 (plain *100 gives 1.00).
+          Number(Math.round(`${Number(body.amount)}e2`) + "e-2"),
     reference: body.reference || "",
     notes: body.notes || "",
   };

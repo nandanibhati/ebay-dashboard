@@ -100,12 +100,19 @@ const inputCls =
   "w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#F4B400]/40 focus:border-[#F4B400] transition-all duration-200";
 const labelCls = "block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5";
 
+// Summed in whole pence so floating-point drift (0.1 + 0.2 ≠ 0.3) can't
+// creep into totals across many entries.
 function totalsOf(entries) {
-  const t = { Invoice: 0, Return: 0, Payment: 0 };
+  const p = { Invoice: 0, Return: 0, Payment: 0 };
   entries.forEach((e) => {
-    t[e.type] += Number(e.amount || 0);
+    if (e.type in p) p[e.type] += Math.round(Number(e.amount || 0) * 100);
   });
-  return { ...t, due: t.Invoice - t.Return - t.Payment };
+  return {
+    Invoice: p.Invoice / 100,
+    Return: p.Return / 100,
+    Payment: p.Payment / 100,
+    due: (p.Invoice - p.Return - p.Payment) / 100,
+  };
 }
 
 function DueAmount({ value, className = "" }) {
