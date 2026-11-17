@@ -33,6 +33,20 @@ const supplierLedgerEntrySchema = new mongoose.Schema(
 
     notes: { type: String, default: "" },
 
+    // Devices on an invoice, one row per phone (filled by the invoice
+    // reader, shown under the entry and in the Devices view).
+    devices: {
+      type: [
+        {
+          _id: false,
+          model: { type: String, default: "", trim: true },
+          imei: { type: String, default: "", trim: true },
+          price: { type: Number, default: null },
+        },
+      ],
+      default: [],
+    },
+
     file: { type: String, default: "" },
     fileName: { type: String, default: "" },
 

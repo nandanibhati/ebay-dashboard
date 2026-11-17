@@ -95,7 +95,125 @@ const emptyForm = () => ({
   existingFile: "",
   existingFileName: "",
   removeFile: false,
+  devices: [],
 });
+
+// One row per phone from what the invoice reader found: each product's
+// IMEIs become rows; a product with more units than IMEIs gets rows
+// without an IMEI; IMEIs not tied to a product are added on their own.
+function devicesFromInvoice(inv) {
+  const rows = [];
+  const used = new Set();
+  for (const item of inv.items || []) {
+    const imeis = item.imeis || [];
+    const price = Number.isFinite(Number(item.unit_price)) ? Number(item.unit_price) : null;
+    imeis.forEach((imei) => {
+      used.add(imei);
+      rows.push({ model: item.description || "", imei, price });
+    });
+    for (let i = imeis.length; i < Number(item.quantity || 0); i++) {
+      rows.push({ model: item.description || "", imei: "", price });
+    }
+  }
+  for (const imei of inv.allImeis || []) {
+    if (!used.has(imei)) rows.push({ model: "", imei, price: null });
+  }
+  return rows;
+}
+
+const SHOWN_DEVICES = 5;
+
+// The phones on one invoice, under its entry in the list.
+function EntryDevices({ entry }) {
+  const [open, setOpen] = useState(false);
+  const devices = entry.devices || [];
+  if (!devices.length) return null;
+  const shown = open ? devices : devices.slice(0, SHOWN_DEVICES);
+
+  return (
+    <div className="mt-2 rounded-lg border border-slate-200 overflow-hidden">
+      <div className="px-3 py-1.5 bg-slate-50 text-[11px] font-semibold text-slate-600 flex justify-between gap-2">
+        <span>{devices.length} device{devices.length === 1 ? "" : "s"} bought</span>
+        <span>{formatDay(entry.date)}</span>
+      </div>
+      <table className="w-full text-xs">
+        <tbody className="divide-y divide-slate-100">
+          {shown.map((d, i) => (
+            <tr key={i}>
+              <td className="px-3 py-1.5 text-slate-700">{d.model || <span className="text-slate-400">—</span>}</td>
+              <td className="px-3 py-1.5 text-slate-500 whitespace-nowrap" style={MONO}>{d.imei || "no IMEI"}</td>
+              <td className="px-3 py-1.5 text-right text-slate-700 whitespace-nowrap tabular-nums" style={MONO}>
+                {d.price !== null && d.price !== undefined ? money(d.price) : ""}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {devices.length > SHOWN_DEVICES && (
+        <button type="button" onClick={() => setOpen(!open)} className="w-full px-3 py-1.5 text-[11px] font-semibold text-blue-600 hover:bg-slate-50 border-t border-slate-100">
+          {open ? "Show less" : `Show all ${devices.length} devices`}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Every device bought, newest first — "which phone, from whom, when".
+function DevicesView({ entries, search }) {
+  const q = search.trim().toLowerCase();
+  const rows = entries
+    .filter((e) => e.type === "Invoice")
+    .flatMap((e) =>
+      (e.devices || []).map((d, i) => ({ ...d, key: `${e._id}-${i}`, date: e.date, supplier: e.supplier, reference: e.reference }))
+    )
+    // The entry filter matched the invoice; with a search, show only the
+    // devices that match it (or every device of an invoice that matched
+    // by vendor / invoice number).
+    .filter((d) => !q || `${d.model} ${d.imei} ${d.supplier} ${d.reference}`.toLowerCase().includes(q))
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  if (!rows.length) {
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-10 text-center text-sm text-slate-400">
+        No devices found. Devices are saved when an invoice is read with "Read invoice automatically".
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
+      <div className="px-4 py-2.5 bg-slate-50/80 border-b border-slate-100 text-sm font-bold text-slate-700" style={SORA}>
+        {rows.length} device{rows.length === 1 ? "" : "s"}
+      </div>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-[11px] uppercase tracking-wide text-slate-400 border-b border-slate-100">
+            <th className="px-4 py-2 font-semibold">Date</th>
+            <th className="px-4 py-2 font-semibold">Vendor</th>
+            <th className="px-4 py-2 font-semibold">Device</th>
+            <th className="px-4 py-2 font-semibold">IMEI</th>
+            <th className="px-4 py-2 font-semibold text-right">Price</th>
+            <th className="px-4 py-2 font-semibold">Invoice</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {rows.map((d) => (
+            <tr key={d.key} className="hover:bg-slate-50/60">
+              <td className="px-4 py-2 whitespace-nowrap text-slate-600">{formatDay(d.date)}</td>
+              <td className="px-4 py-2 whitespace-nowrap font-semibold text-slate-800">{d.supplier}</td>
+              <td className="px-4 py-2 text-slate-700 min-w-[12rem]">{d.model || "—"}</td>
+              <td className="px-4 py-2 whitespace-nowrap text-slate-600" style={MONO}>{d.imei || "—"}</td>
+              <td className="px-4 py-2 whitespace-nowrap text-right tabular-nums text-slate-800" style={MONO}>
+                {d.price !== null && d.price !== undefined ? money(d.price) : ""}
+              </td>
+              <td className="px-4 py-2 whitespace-nowrap text-slate-500">{d.reference}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 const inputCls =
   "w-full border border-slate-200 bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 text-sm p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#F4B400]/40 focus:border-[#F4B400] transition-all duration-200";
@@ -246,6 +364,8 @@ export default function SupplierLedger() {
 
   const [supplierFilter, setSupplierFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
+  // "entries" (by day) or "devices" (every phone bought).
+  const [view, setView] = useState("entries");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [search, setSearch] = useState("");
@@ -356,7 +476,7 @@ export default function SupplierLedger() {
       if (typeFilter !== "All" && e.type !== typeFilter) return false;
       if (fromDate && e.date < fromDate) return false;
       if (toDate && e.date > toDate) return false;
-      if (q && !`${e.supplier} ${e.reference} ${e.notes}`.toLowerCase().includes(q)) return false;
+      if (q && !`${e.supplier} ${e.reference} ${e.notes} ${(e.devices || []).map((d) => `${d.model} ${d.imei}`).join(" ")}`.toLowerCase().includes(q)) return false;
       return true;
     });
   }, [entries, supplierFilter, typeFilter, fromDate, toDate, search]);
@@ -412,14 +532,13 @@ export default function SupplierLedger() {
         return;
       }
 
-      const lines = inv.items
-        .map((i) => `${i.quantity}× ${i.description} @ ${money(i.unit_price)}`)
-        .join("; ");
       const allImeis = [...(inv.imeis || []), ...inv.items.flatMap((i) => i.imeis)];
       inv.allImeis = [...new Set(allImeis)];
-      const imeiCount = inv.allImeis.length;
+      // Devices are saved as their own list (shown under the entry), not
+      // packed into the notes.
+      const devices = devicesFromInvoice(inv);
       setEditingId(null);
-      const notes = [lines, imeiCount ? `${imeiCount} IMEI(s) listed` : ""].filter(Boolean).join(" · ").slice(0, 500);
+      const notes = "";
       setForm((prev) => {
         const typed = keepTyped ? prev : emptyForm();
         return {
@@ -432,6 +551,7 @@ export default function SupplierLedger() {
           notes: typed.notes ? [typed.notes, notes].filter(Boolean).join(" · ").slice(0, 500) : notes,
           // Attach the invoice itself to the entry when it's saved.
           file,
+          devices,
         };
       });
       setAiInvoice(inv);
@@ -458,6 +578,7 @@ export default function SupplierLedger() {
       existingFile: entry.file || "",
       existingFileName: entry.fileName || "",
       removeFile: false,
+      devices: entry.devices || [],
     });
     setFileInputKey((k) => k + 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -474,6 +595,7 @@ export default function SupplierLedger() {
     ["type", "supplier", "date", "amount", "reference", "notes"].forEach((key) =>
       formData.append(key, typeof form[key] === "string" ? form[key].trim() : form[key])
     );
+    formData.append("devices", JSON.stringify(form.type === "Invoice" ? form.devices || [] : []));
     if (form.file) formData.append("file", form.file);
     if (editingId && form.removeFile) formData.append("removeFile", "true");
     if (!editingId) formData.append("createdBy", localStorage.getItem("employeeName") || "");
@@ -940,6 +1062,31 @@ export default function SupplierLedger() {
                   />
                 </div>
 
+                {form.type === "Invoice" && form.devices?.length > 0 && (
+                  <div>
+                    <label className={labelCls}>Devices on this invoice ({form.devices.length})</label>
+                    <div className="rounded-xl border border-slate-200 max-h-56 overflow-y-auto divide-y divide-slate-100">
+                      {form.devices.map((d, i) => (
+                        <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-xs">
+                          <span className="flex-1 min-w-0 truncate text-slate-700" title={d.model}>{d.model || "—"}</span>
+                          <span className="text-slate-500 whitespace-nowrap" style={MONO}>{d.imei || "no IMEI"}</span>
+                          <span className="w-16 text-right text-slate-700 whitespace-nowrap" style={MONO}>
+                            {d.price !== null && d.price !== undefined ? money(d.price) : ""}
+                          </span>
+                          <button
+                            type="button"
+                            title="Remove this device"
+                            onClick={() => setForm({ ...form, devices: form.devices.filter((_, j) => j !== i) })}
+                            className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className={labelCls}>{form.type === "Invoice" ? "Invoice File" : "Attachment"} (PDF / image)</label>
                   {editingId && form.existingFile && !form.removeFile && !form.file && (
@@ -1037,7 +1184,25 @@ export default function SupplierLedger() {
               </div>
             </div>
 
-            {days.length === 0 ? (
+            <div className="flex gap-1 mb-4 p-1 bg-white rounded-xl border border-slate-100 shadow-sm w-fit">
+              {[
+                ["entries", "Entries"],
+                ["devices", "Devices bought"],
+              ].map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setView(key)}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${view === key ? "bg-[#F4B400] text-slate-900" : "text-slate-500 hover:text-slate-800"}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {view === "devices" ? (
+              <DevicesView entries={filtered} search={search} />
+            ) : days.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-10 text-center text-sm text-slate-400">
                 {loading ? "Loading…" : hasFilters ? "No entries match these filters." : "No entries yet."}
               </div>
@@ -1072,6 +1237,7 @@ export default function SupplierLedger() {
                                   {[entry.reference, entry.notes].filter(Boolean).join(" · ")}
                                 </p>
                               )}
+                              {entry.type === "Invoice" && <EntryDevices entry={entry} />}
                               {entry.file && (
                                 <a href={entry.file} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-blue-600 hover:underline max-w-full">
                                   <Paperclip size={11} className="shrink-0" />

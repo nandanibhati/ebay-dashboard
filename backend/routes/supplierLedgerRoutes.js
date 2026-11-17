@@ -34,8 +34,32 @@ const uploadFile = (req, res, next) => {
   });
 };
 
+// Devices arrive as a JSON string (the form is multipart for the file).
+// Returns undefined when not sent, so an edit without them keeps them.
+const MAX_DEVICES = 500;
+function parseDevices(raw) {
+  if (raw === undefined) return undefined;
+  let list;
+  try {
+    list = typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(list)) return [];
+  return list.slice(0, MAX_DEVICES).map((d) => {
+    const price = Number(d?.price);
+    return {
+      model: String(d?.model || "").trim().slice(0, 150),
+      imei: String(d?.imei || "").replace(/\D/g, "").slice(0, 20),
+      price: d?.price === null || d?.price === "" || !Number.isFinite(price) ? null : Math.round(price * 100) / 100,
+    };
+  }).filter((d) => d.model || d.imei);
+}
+
 function entryFields(body) {
+  const devices = parseDevices(body.devices);
   return {
+    ...(devices !== undefined && { devices }),
     supplier: body.supplier,
     type: body.type,
     date: body.date,
