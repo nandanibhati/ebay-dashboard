@@ -38,6 +38,20 @@ const stockSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+
+    // Selling price pushed to eBay from the Stock page (separate from
+    // `price`, which is the cost price used for profit).
+    ebayPrice: {
+      type: Number,
+      default: null,
+    },
+    // Result of the last push: "ok", "partial", "error" or "no-listing".
+    ebayPriceStatus: {
+      state: { type: String, default: "" },
+      message: { type: String, default: "" },
+      at: { type: Date, default: null },
+      by: { type: String, default: "" },
+    },
   },
   { timestamps: true }
 );

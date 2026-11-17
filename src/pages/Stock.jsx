@@ -17,8 +17,10 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import toast, { Toaster } from "react-hot-toast";
 import { apiFetch } from "../api";
 import useLiveRefresh from "../useLiveRefresh";
+import EbayPriceCell from "../components/EbayPriceCell";
 
 /* Design tokens - BuildMaster reference palette
    Gold: #F4B400  Blue: #2563EB  Emerald: #22C55E
@@ -101,6 +103,40 @@ export default function Stock() {
   }, []);
 
   useLiveRefresh(["stocks"], loadLiveData);
+
+  // eBay selling prices (admins and managers): live listings by SKU.
+  const canPriceEbay = role === "admin" || role === "manager";
+  const [ebayBySku, setEbayBySku] = useState(null); // null = loading
+  const [ebayRefreshing, setEbayRefreshing] = useState(false);
+
+  const loadEbayListings = async (force = false) => {
+    if (!canPriceEbay) return;
+    setEbayRefreshing(true);
+    try {
+      const res = await apiFetch(`/api/stock/ebay-listings${force ? "?refresh=1" : ""}`);
+      const data = await res.json();
+      if (data.success) {
+        setEbayBySku(data.bySku);
+        if (data.errors?.length) toast.error(`eBay: ${data.errors.join(" · ")}`);
+        else if (force) toast.success("eBay listings refreshed");
+      } else {
+        setEbayBySku({});
+        toast.error(data.message || "Couldn't load eBay listings");
+      }
+    } catch {
+      setEbayBySku({});
+    } finally {
+      setEbayRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadEbayListings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const replaceStockItem = (updated) =>
+    setStock((list) => list.map((s) => (s._id === updated._id ? updated : s)));
 
   const handleChange = (e) => {
     setForm({
@@ -210,6 +246,7 @@ export default function Stock() {
       className="min-h-screen w-full relative"
       style={{ fontFamily: "Inter, ui-sans-serif, system-ui" }}
     >
+      <Toaster position="top-right" reverseOrder={false} />
       <PremiumBackground />
 
       {/* Sidebar drawer (hamburger-triggered, not sticky) */}
@@ -520,12 +557,26 @@ export default function Stock() {
                 </span>
               </div>
 
-              <span
-                className="text-[10px] font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md"
-                style={{ fontFamily: "'JetBrains Mono', monospace" }}
-              >
-                {filteredStock.length} ITEMS
-              </span>
+              <div className="flex items-center gap-2">
+                {canPriceEbay && (
+                  <button
+                    type="button"
+                    onClick={() => loadEbayListings(true)}
+                    disabled={ebayRefreshing}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-lg hover:bg-slate-50 disabled:opacity-50"
+                    title="Re-read prices and SKUs from eBay"
+                  >
+                    <RefreshCw size={12} className={ebayRefreshing ? "animate-spin" : ""} />
+                    Refresh eBay prices
+                  </button>
+                )}
+                <span
+                  className="text-[10px] font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md"
+                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                >
+                  {filteredStock.length} ITEMS
+                </span>
+              </div>
             </div>
 
             <div className="relative w-full md:w-96">
@@ -549,15 +600,16 @@ export default function Stock() {
             </div>
           </div>
           <div className="overflow-auto h-[70vh] w-full">
-            <table className="w-full text-left border-collapse min-w-[1200px] table-fixed">
+            <table className={`w-full text-left border-collapse ${canPriceEbay ? "min-w-[1460px]" : "min-w-[1200px]"} table-fixed`}>
               <thead className="sticky top-0 z-20 bg-slate-50">
                 <tr className="border-b border-slate-200 bg-slate-50/90 backdrop-blur-sm text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   <th className="w-48 px-6 py-3.5">Listing SKU</th>
                   <th className="px-6 py-3.5">Product</th>
                   <th className="w-32 px-4 py-3.5 text-center">Quantity</th>
                   <th className="w-32 px-4 py-3.5 text-center">
-                    Price
+                    Cost Price
                   </th>
+                  {canPriceEbay && <th className="w-64 px-4 py-3.5">eBay Price</th>}
                   <th className="w-36 px-4 py-3.5 text-center">Status</th>
                   <th className="w-48 px-4 py-3.5 text-center">Updated By</th>
                   <th className="w-28 px-6 py-3.5 text-center sticky right-0 bg-slate-50/90 backdrop-blur-sm shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.03)]">
@@ -569,7 +621,7 @@ export default function Stock() {
               <tbody className="divide-y divide-slate-100 text-xs text-slate-600 font-medium">
                 {filteredStock.length === 0 && (
                   <tr>
-                    <td colSpan="7" className="text-center py-16 text-slate-400 font-bold bg-white">
+                    <td colSpan={canPriceEbay ? 8 : 7} className="text-center py-16 text-slate-400 font-bold bg-white">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl">
                           <Boxes size={22} className="text-slate-300" />
@@ -615,6 +667,21 @@ export default function Stock() {
                     <td className="px-4 py-3.5 text-center font-semibold text-slate-700" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                       £{Number(item.price || 0).toFixed(2)}
                     </td>
+
+                    {canPriceEbay && (
+                      <td className="px-4 py-2.5 align-top">
+                        <EbayPriceCell
+                          // Re-mount once eBay prices arrive, so the box starts at the live price.
+                          key={`${item._id}-${item.ebayPrice ?? ""}-${ebayBySku === null ? "loading" : "ready"}`}
+                          item={item}
+                          listings={ebayBySku === null ? null : ebayBySku[(item.sku || "").trim()] || []}
+                          onUpdated={(updated) => {
+                            replaceStockItem(updated);
+                            loadEbayListings();
+                          }}
+                        />
+                      </td>
+                    )}
 
                     <td className="px-4 py-3.5 text-center">
                       {item.quantity <= 5 ? (

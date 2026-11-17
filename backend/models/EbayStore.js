@@ -78,6 +78,13 @@ const ebayStoreSchema = new mongoose.Schema(
       default: null,
     },
 
+    // When the local copy of active listings (EbayListing) was last
+    // refreshed from eBay.
+    listingsRefreshedAt: {
+      type: Date,
+      default: null,
+    },
+
     autoSync: {
       type: Boolean,
       default: false,
