@@ -18,7 +18,7 @@ const STATUS_STYLE = {
 // Stock page cell: shows the price live on eBay for this SKU and lets an
 // admin/manager push a new selling price to every listing with the SKU.
 // `listings` are the item's eBay listings (null while still loading).
-export default function EbayPriceCell({ item, listings, onUpdated }) {
+export default function EbayPriceCell({ item, listings, onUpdated, onDraft }) {
   const live = (listings || []).map((l) => l.price).filter((p) => p > 0);
   const min = live.length ? Math.min(...live) : null;
   const max = live.length ? Math.max(...live) : null;
@@ -95,7 +95,11 @@ export default function EbayPriceCell({ item, listings, onUpdated }) {
           min="0.01"
           step="0.01"
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => {
+            setValue(e.target.value);
+            // Lets the Stock page's "Sync all to eBay" pick up unsent edits.
+            onDraft?.(e.target.value);
+          }}
           className="w-20 border border-slate-200 bg-white px-2 py-1 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:border-[#F4B400]"
           style={MONO}
           aria-label={`eBay price for ${item.sku}`}

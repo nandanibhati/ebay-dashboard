@@ -138,6 +138,75 @@ export default function Stock() {
   const replaceStockItem = (updated) =>
     setStock((list) => list.map((s) => (s._id === updated._id ? updated : s)));
 
+  // "Sync all to eBay": prices typed into the eBay Price boxes (drafts), or
+  // saved earlier, that differ from what's live on eBay.
+  const [drafts, setDrafts] = useState({});
+  const [syncProgress, setSyncProgress] = useState(null); // { done, total } while syncing
+
+  const pendingSync = useMemo(() => {
+    if (!ebayBySku) return [];
+    return stock
+      .map((item) => {
+        const listings = ebayBySku[(item.sku || "").trim()] || [];
+        if (!listings.length) return null;
+        const raw = drafts[item._id] ?? item.ebayPrice;
+        const target = Math.round(Number(raw) * 100) / 100;
+        if (!(target > 0)) return null;
+        const live = listings.map((l) => l.price).filter((p) => p > 0);
+        if (live.length && live.every((p) => Math.abs(p - target) < 0.005)) return null;
+        const current = live.length ? Math.min(...live) : null;
+        return { item, target, current, big: current ? Math.abs(target - current) / current > 0.5 : false };
+      })
+      .filter(Boolean);
+  }, [stock, ebayBySku, drafts]);
+
+  const syncAllToEbay = async () => {
+    if (!pendingSync.length || syncProgress) return;
+    const lines = pendingSync
+      .slice(0, 20)
+      .map((p) => `${p.big ? "⚠ " : ""}${p.item.sku}: ${p.current ? `£${p.current.toFixed(2)} → ` : ""}£${p.target.toFixed(2)}`);
+    const more = pendingSync.length > 20 ? `\n…and ${pendingSync.length - 20} more` : "";
+    const bigCount = pendingSync.filter((p) => p.big).length;
+    const warning = bigCount ? `\n\n⚠ ${bigCount} price${bigCount === 1 ? "" : "s"} change by more than 50% — check these.` : "";
+    if (!window.confirm(`Update ${pendingSync.length} product${pendingSync.length === 1 ? "" : "s"} on eBay?\n\n${lines.join("\n")}${more}${warning}`)) return;
+
+    const todo = [...pendingSync];
+    const failed = [];
+    let updated = 0;
+    setSyncProgress({ done: 0, total: todo.length });
+    for (const [i, p] of todo.entries()) {
+      try {
+        const res = await apiFetch(`/api/stock/${p.item._id}/ebay-price`, {
+          method: "POST",
+          body: { price: p.target, confirm: true },
+        });
+        const data = await res.json();
+        if (data.stock) replaceStockItem(data.stock);
+        if (data.success) {
+          updated += 1;
+          setDrafts((d) => {
+            const next = { ...d };
+            delete next[p.item._id];
+            return next;
+          });
+        } else {
+          failed.push(p.item.sku);
+        }
+      } catch {
+        failed.push(p.item.sku);
+      }
+      setSyncProgress({ done: i + 1, total: todo.length });
+    }
+    setSyncProgress(null);
+    loadEbayListings();
+
+    if (failed.length) {
+      toast.error(`Updated ${updated} on eBay. Failed: ${failed.join(", ")} — see each row for the reason.`, { duration: 8000 });
+    } else {
+      toast.success(`All ${updated} product${updated === 1 ? "" : "s"} updated on eBay`);
+    }
+  };
+
   const handleChange = (e) => {
     setForm({
       ...form,
@@ -570,6 +639,20 @@ export default function Stock() {
                     Refresh eBay prices
                   </button>
                 )}
+                {canPriceEbay && (
+                  <button
+                    type="button"
+                    onClick={syncAllToEbay}
+                    disabled={!pendingSync.length || Boolean(syncProgress)}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0F172A] px-2.5 py-1 rounded-lg disabled:opacity-40"
+                    style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)" }}
+                    title={pendingSync.length ? "Send all changed prices to eBay" : "No price changes to send"}
+                  >
+                    {syncProgress
+                      ? `Syncing ${syncProgress.done}/${syncProgress.total}…`
+                      : `Sync all to eBay${pendingSync.length ? ` (${pendingSync.length})` : ""}`}
+                  </button>
+                )}
                 <span
                   className="text-[10px] font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md"
                   style={{ fontFamily: "'JetBrains Mono', monospace" }}
@@ -675,8 +758,14 @@ export default function Stock() {
                           key={`${item._id}-${item.ebayPrice ?? ""}-${ebayBySku === null ? "loading" : "ready"}`}
                           item={item}
                           listings={ebayBySku === null ? null : ebayBySku[(item.sku || "").trim()] || []}
+                          onDraft={(value) => setDrafts((d) => ({ ...d, [item._id]: value }))}
                           onUpdated={(updated) => {
                             replaceStockItem(updated);
+                            setDrafts((d) => {
+                              const next = { ...d };
+                              delete next[item._id];
+                              return next;
+                            });
                             loadEbayListings();
                           }}
                         />
