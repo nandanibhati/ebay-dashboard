@@ -15,8 +15,10 @@ import {
   Sparkles,
   Smartphone,
   ExternalLink,
+  ArrowLeft,
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
+import { useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../api";
 import useLiveRefresh from "../useLiveRefresh";
 
@@ -346,7 +348,14 @@ export default function SupplierLedger() {
   const [aiProgress, setAiProgress] = useState("");
   const [aiInvoice, setAiInvoice] = useState(null);
 
-  const [supplierFilter, setSupplierFilter] = useState("All");
+  // Each vendor has its own page (/supplier-ledger/vendor/:vendorName);
+  // /supplier-ledger lists the vendors. "Filtering" by vendor = navigating.
+  const { vendorName } = useParams();
+  const navigate = useNavigate();
+  const isVendorPage = Boolean(vendorName);
+  const supplierFilter = vendorName || "All";
+  const setSupplierFilter = (name) =>
+    navigate(name === "All" ? "/supplier-ledger" : `/supplier-ledger/vendor/${encodeURIComponent(name)}`);
   const [typeFilter, setTypeFilter] = useState("All");
   // "entries" (by day) or "devices" (every phone bought).
   const [view, setView] = useState("entries");
@@ -390,6 +399,17 @@ export default function SupplierLedger() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Opening a vendor's page: new entries default to that vendor, and the
+  // previous page's search/filters don't carry over.
+  useEffect(() => {
+    if (!editingId) setForm((f) => (f.supplier && !vendorName ? f : { ...f, supplier: vendorName || f.supplier }));
+    setSearch("");
+    setTypeFilter("All");
+    setView("entries");
+    window.scrollTo({ top: 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vendorName]);
 
   useLiveRefresh(["supplierledgerentries"], loadEntries, role === "admin");
   useLiveRefresh(["vendors"], loadVendors, role === "admin");
@@ -477,7 +497,8 @@ export default function SupplierLedger() {
   }, [filtered]);
 
   const resetForm = () => {
-    setForm(emptyForm());
+    // On a vendor's page, new entries are for that vendor by default.
+    setForm({ ...emptyForm(), supplier: vendorName || "" });
     setEditingId(null);
     setFileInputKey((k) => k + 1);
     setAiInvoice(null);
@@ -696,10 +717,29 @@ export default function SupplierLedger() {
           <div className="relative z-10 flex items-center justify-between flex-wrap gap-4">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#F4B400" }}>Admin</p>
-              <h1 className="text-3xl font-bold tracking-tight" style={SORA}>Supplier Ledger</h1>
-              <p className="mt-1.5 text-slate-400 text-sm max-w-md">
-                Invoices − Returns − Payments = what's still due to each supplier.
-              </p>
+              {isVendorPage ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/supplier-ledger")}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-slate-300 hover:text-white mb-1"
+                  >
+                    <ArrowLeft size={13} />
+                    All vendors
+                  </button>
+                  <h1 className="text-3xl font-bold tracking-tight" style={SORA}>{vendorName}</h1>
+                  <p className="mt-1.5 text-slate-400 text-sm max-w-md">
+                    Everything with this vendor: invoices, returns, payments and devices bought.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-3xl font-bold tracking-tight" style={SORA}>Supplier Ledger</h1>
+                  <p className="mt-1.5 text-slate-400 text-sm max-w-md">
+                    Invoices − Returns − Payments = what's still due to each supplier. Click a vendor to open its page.
+                  </p>
+                </>
+              )}
             </div>
             <div
               className="flex items-center gap-3 backdrop-blur-sm border rounded-2xl px-4 py-2.5"
@@ -747,93 +787,6 @@ export default function SupplierLedger() {
               <p className={`text-xl sm:text-2xl font-bold tracking-tight tabular-nums ${color}`} style={MONO}>{value}</p>
             </div>
           ))}
-        </div>
-
-        {/* Supplier balances */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 mb-8 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <h2 className="text-base font-bold text-slate-800" style={SORA}>Vendors &amp; Balances</h2>
-              <p className="text-xs text-slate-400 mt-0.5">All-time totals. Click a vendor to filter the entries below.</p>
-            </div>
-            <div className="flex items-center gap-3">
-              {supplierFilter !== "All" && (
-                <button onClick={() => setSupplierFilter("All")} className="text-xs font-semibold text-slate-500 hover:text-slate-800">
-                  ✕ Show all
-                </button>
-              )}
-              <button
-                onClick={() => setVendorModal({})}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-[#0F172A] active:scale-[0.98] transition-all"
-                style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", boxShadow: "0 4px 12px -2px rgba(244,180,0,0.4)" }}
-              >
-                <Plus size={14} className="stroke-[2.5]" />
-                Add Vendor
-              </button>
-            </div>
-          </div>
-          {balances.length === 0 ? (
-            <p className="px-5 py-8 text-center text-sm text-slate-400">
-              {loading ? "Loading…" : "No vendors yet. Click Add Vendor to get started."}
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[640px]">
-                <thead>
-                  <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/60">
-                    <th className="text-left px-5 py-2.5">Vendor</th>
-                    <th className="text-right px-4 py-2.5">Invoiced</th>
-                    <th className="text-right px-4 py-2.5">Returns</th>
-                    <th className="text-right px-4 py-2.5">Paid</th>
-                    <th className="text-right px-4 py-2.5">Due</th>
-                    <th className="px-3 py-2.5 w-[76px]" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {balances.map((b) => (
-                    <tr
-                      key={b.name}
-                      onClick={() => setSupplierFilter(supplierFilter === b.name ? "All" : b.name)}
-                      className={`cursor-pointer transition-colors ${supplierFilter === b.name ? "bg-amber-50/70" : "hover:bg-slate-50"}`}
-                    >
-                      <td className="px-5 py-3">
-                        <p className="font-semibold text-slate-800">{b.name}</p>
-                        {b.vendor && (b.vendor.contactPerson || b.vendor.phone || b.vendor.email) && (
-                          <p className="text-[11px] text-slate-400 truncate max-w-[240px]">
-                            {[b.vendor.contactPerson, b.vendor.phone, b.vendor.email].filter(Boolean).join(" · ")}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-slate-700" style={MONO}>{money(b.Invoice)}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-amber-600" style={MONO}>{money(b.Return)}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-emerald-600" style={MONO}>{money(b.Payment)}</td>
-                      <td className="px-4 py-3 text-right"><DueAmount value={b.due} /></td>
-                      <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-end gap-1">
-                          <button
-                            onClick={() => setVendorModal(b.vendor || { name: b.name })}
-                            title={b.vendor ? "Edit vendor" : "Save as vendor"}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                          >
-                            <Pencil size={13} />
-                          </button>
-                          {b.vendor && b.entryCount === 0 && (
-                            <button
-                              onClick={() => deleteVendor(b.vendor)}
-                              title="Delete vendor"
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -1118,7 +1071,9 @@ export default function SupplierLedger() {
             </div>
           </div>
 
-          {/* Entries by day */}
+          {isVendorPage ? (
+            <>
+          {/* Entries by day (this vendor only) */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 mb-4 flex flex-col gap-3">
               <div className="relative">
@@ -1132,10 +1087,6 @@ export default function SupplierLedger() {
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <select value={supplierFilter} onChange={(e) => setSupplierFilter(e.target.value)} className="border border-slate-200 bg-slate-50 text-sm px-3 py-2 rounded-xl outline-none focus:border-[#F4B400] max-w-full">
-                  <option value="All">All suppliers</option>
-                  {suppliers.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
                 <div className="flex gap-1">
                   {["All", "Invoice", "Return", "Payment"].map((t) => (
                     <button
@@ -1251,6 +1202,97 @@ export default function SupplierLedger() {
               </div>
             )}
           </div>
+            </>
+          ) : (
+            <div className="lg:col-span-3">
+          {/* Supplier balances */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <h2 className="text-base font-bold text-slate-800" style={SORA}>Vendors &amp; Balances</h2>
+                <p className="text-xs text-slate-400 mt-0.5">All-time totals. Click a vendor to open its own page.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                {supplierFilter !== "All" && (
+                  <button onClick={() => setSupplierFilter("All")} className="text-xs font-semibold text-slate-500 hover:text-slate-800">
+                    ✕ Show all
+                  </button>
+                )}
+                <button
+                  onClick={() => setVendorModal({})}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-[#0F172A] active:scale-[0.98] transition-all"
+                  style={{ background: "linear-gradient(135deg, #F4B400, #F59E0B)", boxShadow: "0 4px 12px -2px rgba(244,180,0,0.4)" }}
+                >
+                  <Plus size={14} className="stroke-[2.5]" />
+                  Add Vendor
+                </button>
+              </div>
+            </div>
+            {balances.length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm text-slate-400">
+                {loading ? "Loading…" : "No vendors yet. Click Add Vendor to get started."}
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[640px]">
+                  <thead>
+                    <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/60">
+                      <th className="text-left px-5 py-2.5">Vendor</th>
+                      <th className="text-right px-4 py-2.5">Invoiced</th>
+                      <th className="text-right px-4 py-2.5">Returns</th>
+                      <th className="text-right px-4 py-2.5">Paid</th>
+                      <th className="text-right px-4 py-2.5">Due</th>
+                      <th className="px-3 py-2.5 w-[76px]" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {balances.map((b) => (
+                      <tr
+                        key={b.name}
+                        onClick={() => setSupplierFilter(supplierFilter === b.name ? "All" : b.name)}
+                        className={`cursor-pointer transition-colors ${supplierFilter === b.name ? "bg-amber-50/70" : "hover:bg-slate-50"}`}
+                      >
+                        <td className="px-5 py-3">
+                          <p className="font-semibold text-slate-800">{b.name}</p>
+                          {b.vendor && (b.vendor.contactPerson || b.vendor.phone || b.vendor.email) && (
+                            <p className="text-[11px] text-slate-400 truncate max-w-[240px]">
+                              {[b.vendor.contactPerson, b.vendor.phone, b.vendor.email].filter(Boolean).join(" · ")}
+                            </p>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums text-slate-700" style={MONO}>{money(b.Invoice)}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-amber-600" style={MONO}>{money(b.Return)}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-emerald-600" style={MONO}>{money(b.Payment)}</td>
+                        <td className="px-4 py-3 text-right"><DueAmount value={b.due} /></td>
+                        <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex justify-end gap-1">
+                            <button
+                              onClick={() => setVendorModal(b.vendor || { name: b.name })}
+                              title={b.vendor ? "Edit vendor" : "Save as vendor"}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                            {b.vendor && b.entryCount === 0 && (
+                              <button
+                                onClick={() => deleteVendor(b.vendor)}
+                                title="Delete vendor"
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

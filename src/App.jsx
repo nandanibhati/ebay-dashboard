@@ -105,6 +105,16 @@ function App() {
   }
 />
 <Route
+  path="/supplier-ledger/vendor/:vendorName"
+  element={
+    <PrivateRoute>
+      {localStorage.getItem("role") === "admin"
+        ? <SupplierLedger />
+        : <Navigate to="/dashboard" />}
+    </PrivateRoute>
+  }
+/>
+<Route
   path="/supplier-ledger/invoice/:id"
   element={
     <PrivateRoute>

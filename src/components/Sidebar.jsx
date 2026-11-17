@@ -182,7 +182,10 @@ export default function Sidebar() {
         <div className="space-y-1.5">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const active = location.pathname === item.path;
+            // Sub-pages (e.g. /supplier-ledger/vendor/…) keep their section lit.
+            const active =
+              location.pathname === item.path ||
+              (item.path !== "/" && location.pathname.startsWith(`${item.path.split("?")[0]}/`));
 
             return (
               <Link
