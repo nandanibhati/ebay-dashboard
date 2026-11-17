@@ -241,6 +241,7 @@ export default function SupplierLedger() {
   const [fileInputKey, setFileInputKey] = useState(0);
   // AI invoice reading: what was extracted, shown above the form for review.
   const [aiReading, setAiReading] = useState(false);
+  const [aiProgress, setAiProgress] = useState("");
   const [aiInvoice, setAiInvoice] = useState(null);
 
   const [supplierFilter, setSupplierFilter] = useState("All");
@@ -380,24 +381,40 @@ export default function SupplierLedger() {
 
   // Send the invoice to the server's AI reader and pre-fill the form with
   // what it found. Nothing is saved until the admin clicks Add Invoice.
+  // Uses the server's AI reader when an API key is configured; otherwise
+  // (503) falls back to the free in-browser reader (PDF text / OCR + rules).
   const readInvoiceWithAI = async (file) => {
     if (!file) return;
     setAiReading(true);
+    setAiProgress("Reading invoice…");
     setAiInvoice(null);
     try {
+      let inv = null;
+
       const body = new FormData();
       body.append("file", file);
       const res = await apiFetch("/api/supplier-ledger/read-invoice", { method: "POST", body });
       const data = await res.json();
-      if (!data.success) {
+      if (data.success) {
+        inv = { ...data.invoice, method: "ai" };
+      } else if (res.status === 503) {
+        const [{ extractInvoiceText }, { parseInvoiceText }] = await Promise.all([
+          import("../utils/invoiceText"),
+          import("../utils/invoiceParser"),
+        ]);
+        const { text, method } = await extractInvoiceText(file, setAiProgress);
+        inv = { ...parseInvoiceText(text, vendors.map((v) => v.name)), method };
+      } else {
         toast.error(data.message || "Couldn't read the invoice");
         return;
       }
-      const inv = data.invoice;
+
       const lines = inv.items
         .map((i) => `${i.quantity}× ${i.description} @ ${money(i.unit_price)}`)
         .join("; ");
-      const imeiCount = inv.items.reduce((n, i) => n + i.imeis.length, 0);
+      const allImeis = [...(inv.imeis || []), ...inv.items.flatMap((i) => i.imeis)];
+      inv.allImeis = [...new Set(allImeis)];
+      const imeiCount = inv.allImeis.length;
       setEditingId(null);
       setForm({
         ...emptyForm(),
@@ -412,10 +429,12 @@ export default function SupplierLedger() {
       });
       setAiInvoice(inv);
       toast.success("Invoice read — check the details, then save");
-    } catch {
-      toast.error("Couldn't read the invoice. Check the internet and try again.");
+    } catch (error) {
+      console.error("Invoice reading failed:", error?.name, error?.message || error);
+      toast.error(error?.message?.startsWith("Upload a PDF") ? error.message : "Couldn't read the invoice. Check the internet and try again.");
     } finally {
       setAiReading(false);
+      setAiProgress("");
     }
   };
 
@@ -719,10 +738,12 @@ export default function SupplierLedger() {
                     </span>
                     <span className="min-w-0">
                       <span className="block text-sm font-bold text-violet-900">
-                        {aiReading ? "Reading invoice…" : "Read invoice with AI"}
+                        {aiReading ? aiProgress || "Reading invoice…" : "Read invoice automatically"}
                       </span>
                       <span className="block text-xs text-violet-700/80">
-                        {aiReading ? "This takes a few seconds" : "Upload a PDF or photo — vendor, date, invoice no. and total fill in automatically"}
+                        {aiReading
+                          ? "Photos take a little longer than PDFs"
+                          : "Upload a PDF or photo — vendor, date, invoice no., total and IMEIs fill in automatically"}
                       </span>
                     </span>
                     <input
@@ -781,6 +802,13 @@ export default function SupplierLedger() {
                             </li>
                           ))}
                         </ul>
+                      )}
+
+                      {aiInvoice.items.length === 0 && aiInvoice.allImeis.length > 0 && (
+                        <div className="mt-2.5 border-y border-slate-100 py-2 text-xs">
+                          <p className="font-semibold text-slate-700">{aiInvoice.allImeis.length} IMEI(s) found</p>
+                          <p className="text-slate-400 break-all mt-0.5" style={MONO}>{aiInvoice.allImeis.join(", ")}</p>
+                        </div>
                       )}
 
                       <div className="mt-2 flex flex-wrap justify-end gap-x-4 gap-y-1 text-xs text-slate-500 tabular-nums" style={MONO}>

@@ -42,6 +42,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
+        // The PDF reader (used only by "Read invoice automatically") is big;
+        // load it on demand instead of pre-downloading it on every device.
+        globIgnores: ['**/assets/pdf-*.js', '**/assets/pdf.worker*'],
         navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
