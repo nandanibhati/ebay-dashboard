@@ -179,6 +179,11 @@ router.put("/:id", async (req, res) => {
         revenue,
         profit,
         margin,
+        // A hand-typed ad fee is kept until eBay posts a new ad fee charge
+        // for this order (see ebayAdFeeService).
+        ...(adFee !== Number(existingOrder.adFee || 0) && {
+          adFeeSource: "manual",
+        }),
       },
       { new: true }
     );

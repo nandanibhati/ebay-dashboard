@@ -2,6 +2,9 @@ const axios = require("axios");
 
 const ebayConfig = require("../config/ebayConfig");
 
+const FINANCES_SCOPE = "https://api.ebay.com/oauth/api_scope/sell.finances";
+exports.FINANCES_SCOPE = FINANCES_SCOPE;
+
 // ========================================
 // Generate eBay Login URL
 // ========================================
@@ -16,6 +19,8 @@ exports.getAuthorizationUrl = (
     "https://api.ebay.com/oauth/api_scope/sell.fulfillment",
     "https://api.ebay.com/oauth/api_scope/sell.marketing",
     "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
+    // Ad fees per order come from the Finances API.
+    FINANCES_SCOPE,
   ];
 
   const params = new URLSearchParams({
@@ -84,8 +89,13 @@ exports.getAccessToken =
 // Refresh Access Token
 // ========================================
 
+// `scopes` defaults to the scopes every store has had since it was first
+// connected. Asking for a scope the store never granted (e.g. sell.finances
+// on an older connection) makes eBay refuse the whole refresh, so newer
+// scopes are only ever requested on their own (see ebayAdFeeService).
 exports.refreshAccessToken = async (
-  refreshToken
+  refreshToken,
+  scopes
 ) => {
   try {
     const body = new URLSearchParams();
@@ -102,7 +112,7 @@ exports.refreshAccessToken = async (
 
     body.append(
       "scope",
-      [
+      scopes ? scopes.join(" ") : [
         "https://api.ebay.com/oauth/api_scope",
         "https://api.ebay.com/oauth/api_scope/sell.inventory",
         "https://api.ebay.com/oauth/api_scope/sell.account",

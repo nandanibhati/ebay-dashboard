@@ -26,6 +26,10 @@ const orderSchema = new mongoose.Schema(
 
     ebayFee: Number,
     adFee: Number,
+    // "ebay" once the ad fee was filled in from eBay's Finances API.
+    adFeeSource: String,
+    // eBay listing number of this line item (used to match ad fees).
+    ebayItemId: String,
     deliveryCost: Number,
 
     revenue: Number,

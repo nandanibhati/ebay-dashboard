@@ -25,4 +25,9 @@ module.exports = {
   apiUrl: isProduction
     ? "https://api.ebay.com"
     : "https://api.sandbox.ebay.com",
+
+  // The Finances API (ad fees, payouts) lives on a separate "apiz" host.
+  financesApiUrl: isProduction
+    ? "https://apiz.ebay.com"
+    : "https://apiz.sandbox.ebay.com",
 };

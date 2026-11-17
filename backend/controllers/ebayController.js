@@ -104,6 +104,13 @@ exports.callback = async (
     // sync miss every pre-existing order.
     store.lastError = "";
 
+    // A fresh connection includes the ad fee (Finances) permission; drop
+    // any token minted from the old connection so it's requested again.
+    store.financesAccessToken = "";
+    store.financesExpiresAt = null;
+    store.adFeeStatus = "unknown";
+    store.adFeeError = "";
+
     await store.save();
       return res.redirect(
   `${process.env.FRONTEND_URL}/ebay-integration?success=true`

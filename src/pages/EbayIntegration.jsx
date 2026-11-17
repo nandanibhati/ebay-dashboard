@@ -307,6 +307,41 @@ export default function EbayIntegration() {
 
               </div>
 
+              {/* Ad fees (Promoted Listings) - read from eBay's Finances API on every order sync */}
+
+              {store.connected && (
+                store.adFeeStatus === "needs-reconnect" ? (
+                  <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-amber-800">Ad fees need one reconnect</p>
+                      <p className="text-sm text-amber-700 mt-1">
+                        To fill in each order's ad fee automatically, reconnect this store once and log in to eBay. Orders keep syncing in the meantime.
+                      </p>
+                    </div>
+                    {isAdmin && (
+                      <button
+                        onClick={() => {
+                          window.location.href =
+                            `${API_BASE_URL}/api/ebay/connect/${store.storeName}?token=${getToken()}`;
+                        }}
+                        className="flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 font-semibold transition"
+                      >
+                        <Plug size={18} />
+                        Reconnect for ad fees
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-6 text-sm text-slate-500">
+                    {store.adFeeStatus === "ok" && store.adFeeLastSync
+                      ? `Ad fees: read from eBay ${new Date(store.adFeeLastSync).toLocaleString()}`
+                      : store.adFeeStatus === "error"
+                        ? `Ad fees: couldn't read last time (${store.adFeeError || "eBay error"}). Will retry on the next sync.`
+                        : "Ad fees: will be read on the next order sync."}
+                  </p>
+                )
+              )}
+
               {/* Buttons (admin only - connecting/syncing/disconnecting stores is an admin action) */}
 
               {isAdmin ? (

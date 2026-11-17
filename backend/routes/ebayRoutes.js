@@ -13,7 +13,7 @@ const {
 } = require("../controllers/ebayNotificationController");
 const { syncStoreOrders } = require("../services/ebayOrderSyncService");
 
-const HIDDEN_FIELDS = "-accessToken -refreshToken -tokenType";
+const HIDDEN_FIELDS = "-accessToken -refreshToken -tokenType -financesAccessToken";
 
 // =========================================
 // GET ALL STORES
@@ -133,6 +133,9 @@ router.post("/disconnect", protect, adminOnly, async (req, res) => {
     store.refreshToken = "";
     store.tokenType = "";
     store.expiresAt = null;
+    store.financesAccessToken = "";
+    store.financesExpiresAt = null;
+    store.adFeeStatus = "unknown";
 
     await store.save();
 
@@ -147,6 +150,17 @@ router.post("/disconnect", protect, adminOnly, async (req, res) => {
     });
   }
 });
+
+// One line for the Sync Orders alert about the ad fee part of the sync.
+function adFeeSummary(adFees) {
+  if (!adFees) return "";
+  if (adFees.ok) {
+    return ` Ad fees: ${adFees.ordersUpdated} order(s) updated.`;
+  }
+  return adFees.needsReconnect
+    ? " Ad fees: click Reconnect for ad fees on this store first."
+    : ` Ad fees could not be read: ${adFees.message}`;
+}
 
 // =========================================
 // SYNC STORE ORDERS (pulls orders from eBay's Fulfillment API)
@@ -178,7 +192,7 @@ router.post("/sync", protect, adminOnly, async (req, res) => {
 
     res.json({
       success: true,
-      message: `${storeName}: ${result.created} new order(s), ${result.updated} updated.`,
+      message: `${storeName}: ${result.created} new order(s), ${result.updated} updated.` + adFeeSummary(result.adFees),
       lastSync: store.lastSync,
       ...result,
     });
@@ -261,6 +275,9 @@ router.delete("/reset/:name", protect, adminOnly, async (req, res) => {
     store.refreshToken = "";
     store.tokenType = "";
     store.expiresAt = null;
+    store.financesAccessToken = "";
+    store.financesExpiresAt = null;
+    store.adFeeStatus = "unknown";
     store.lastSync = null;
     store.totalOrders = 0;
     store.totalProducts = 0;

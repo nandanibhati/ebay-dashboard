@@ -85,6 +85,38 @@ const ebayStoreSchema = new mongoose.Schema(
       default: null,
     },
 
+    // ==========================
+    // Ad fees (Finances API)
+    // ==========================
+
+    // Separate short-lived token with only the sell.finances scope, so
+    // stores connected before ad fees existed keep syncing orders.
+    financesAccessToken: {
+      type: String,
+      default: "",
+    },
+
+    financesExpiresAt: {
+      type: Date,
+      default: null,
+    },
+
+    // "unknown" (not tried yet), "ok", "needs-reconnect" or "error".
+    adFeeStatus: {
+      type: String,
+      default: "unknown",
+    },
+
+    adFeeLastSync: {
+      type: Date,
+      default: null,
+    },
+
+    adFeeError: {
+      type: String,
+      default: "",
+    },
+
     autoSync: {
       type: Boolean,
       default: false,

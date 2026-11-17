@@ -1,6 +1,7 @@
 const Order = require("../models/Order");
 const Stock = require("../models/Stock");
 const { fetchEbayOrders } = require("./ebayOrderService");
+const { syncStoreAdFees } = require("./ebayAdFeeService");
 const {
   adjustStockForOrder,
   RESTOCKED_STATUSES,
@@ -72,6 +73,8 @@ async function upsertLineItem(store, ebayOrder, lineItem, orderId, status, fallb
       ? Number(stockItem.shipping || 0)
       : fallbackDeliveryCost;
 
+    // Filled in from eBay's Finances API right after this sync
+    // (syncStoreAdFees), once eBay has posted the charge.
     const adFee = 0;
 
     const { revenue, profit, margin } = computeFinancials({
@@ -95,6 +98,7 @@ async function upsertLineItem(store, ebayOrder, lineItem, orderId, status, fallb
       sellingPrice,
       ebayFee,
       adFee,
+      ebayItemId: String(lineItem.legacyItemId || ""),
       deliveryCost,
       revenue,
       profit,
@@ -138,6 +142,7 @@ async function syncStoreOrders(store) {
 
   let created = 0;
   let updated = 0;
+  const createdOrderIds = new Set();
 
   for (const ebayOrder of ebayOrders) {
     const lineItems = ebayOrder.lineItems || [];
@@ -179,7 +184,10 @@ async function syncStoreOrders(store) {
         perItemFee
       );
 
-      if (result === "created") created++;
+      if (result === "created") {
+        created++;
+        createdOrderIds.add(ebayOrder.orderId);
+      }
       if (result === "updated") updated++;
     }
   }
@@ -190,7 +198,13 @@ async function syncStoreOrders(store) {
 
   await store.save();
 
-  return { created, updated, fetched: ebayOrders.length };
+  // Ad fees come from a different eBay API; a problem there (e.g. the
+  // store needs reconnecting) is recorded on the store, never thrown.
+  const adFees = await syncStoreAdFees(store, {
+    alsoApplyTo: [...createdOrderIds],
+  });
+
+  return { created, updated, fetched: ebayOrders.length, adFees };
 }
 
 module.exports = { syncStoreOrders };
