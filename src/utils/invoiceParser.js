@@ -362,16 +362,23 @@ export function parseInvoiceText(text, vendors = []) {
   }
   if (!invoice_date) invoice_date = findDates(clean)[0] || "";
 
+  // The invoice's own total, never a running account balance: "Balance
+  // due" on a statement-style invoice includes the previous balance, which
+  // the ledger already has from earlier invoices (counting it again would
+  // double it). So the invoice/grand total comes first, and balance lines
+  // are skipped entirely when the invoice mentions a previous balance.
+  const hasPreviousBalance = /\b(previous|prior|opening|old)\s+balance\b|\bbrought\s+forward\b|\bb\/f\b/i.test(clean);
   const total = amountByLabel(
     lines,
     [
-      /\b(amount|balance|total)\s+(due|payable|to pay)\b/i,
       /\b(grand|invoice)\s+total\b/i,
       /\btotal\s*\(?\s*(inc|incl|including)\.?\s*vat\b/i,
+      /\b(amount|total)\s+(due|payable|to pay)\b/i,
+      ...(hasPreviousBalance ? [] : [/\bbalance\s+(due|payable|to pay)\b/i]),
       /\btotal\s*(gbp|£)/i,
       /\btotal\b/i,
     ],
-    /\b(sub\s?-?total|net total|total net|total ex|total excl|total vat|vat total|total qty|total quantity|total items)\b/i
+    /\b(sub\s?-?total|net total|total net|total ex|total excl|total vat|vat total|total qty|total quantity|total items|previous balance|prior balance|brought forward|total payment|total paid)\b/i
   );
   const subtotal = amountByLabel(lines, [/\b(sub\s?-?total|net total|total net|total (ex|excl)\.?\s*vat|net amount)\b/i]);
   const vat = amountByLabel(lines, [/\bvat\b(?!\s*(no|number|reg|registration|#))/i], /\b(inc|incl|including|ex|excl)\.?\s*vat\b|vat\s*(no|number|reg)/i);

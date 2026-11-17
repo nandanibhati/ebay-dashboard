@@ -13,6 +13,8 @@ import {
   Search,
   Plus,
   Sparkles,
+  Smartphone,
+  ExternalLink,
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import { apiFetch } from "../api";
@@ -121,40 +123,22 @@ function devicesFromInvoice(inv) {
   return rows;
 }
 
-const SHOWN_DEVICES = 5;
-
-// The phones on one invoice, under its entry in the list.
+// Under each invoice: how many devices, and a button that opens the full
+// device table in a new browser tab.
 function EntryDevices({ entry }) {
-  const [open, setOpen] = useState(false);
-  const devices = entry.devices || [];
-  if (!devices.length) return null;
-  const shown = open ? devices : devices.slice(0, SHOWN_DEVICES);
-
+  const count = (entry.devices || []).length;
+  if (!count) return null;
   return (
-    <div className="mt-2 rounded-lg border border-slate-200 overflow-hidden">
-      <div className="px-3 py-1.5 bg-slate-50 text-[11px] font-semibold text-slate-600 flex justify-between gap-2">
-        <span>{devices.length} device{devices.length === 1 ? "" : "s"} bought</span>
-        <span>{formatDay(entry.date)}</span>
-      </div>
-      <table className="w-full text-xs">
-        <tbody className="divide-y divide-slate-100">
-          {shown.map((d, i) => (
-            <tr key={i}>
-              <td className="px-3 py-1.5 text-slate-700">{d.model || <span className="text-slate-400">—</span>}</td>
-              <td className="px-3 py-1.5 text-slate-500 whitespace-nowrap" style={MONO}>{d.imei || "no IMEI"}</td>
-              <td className="px-3 py-1.5 text-right text-slate-700 whitespace-nowrap tabular-nums" style={MONO}>
-                {d.price !== null && d.price !== undefined ? money(d.price) : ""}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {devices.length > SHOWN_DEVICES && (
-        <button type="button" onClick={() => setOpen(!open)} className="w-full px-3 py-1.5 text-[11px] font-semibold text-blue-600 hover:bg-slate-50 border-t border-slate-100">
-          {open ? "Show less" : `Show all ${devices.length} devices`}
-        </button>
-      )}
-    </div>
+    <a
+      href={`/supplier-ledger/invoice/${entry._id}`}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-1.5 mt-1.5 mr-3 px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 hover:border-amber-400 hover:bg-amber-50"
+    >
+      <Smartphone size={12} className="text-slate-500" />
+      {count} device{count === 1 ? "" : "s"} · View
+      <ExternalLink size={11} className="text-slate-400" />
+    </a>
   );
 }
 

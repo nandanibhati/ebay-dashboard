@@ -322,6 +322,23 @@ router.get("/", async (req, res) => {
   }
 });
 
+// ONE ENTRY (the invoice's device page opens in its own tab).
+// Registered after GET /vendors, so "vendors" never reaches here.
+router.get("/:id", async (req, res) => {
+  try {
+    if (!/^[a-f0-9]{24}$/i.test(req.params.id)) {
+      return res.status(404).json({ success: false, message: "Entry not found" });
+    }
+    const entry = await SupplierLedgerEntry.findById(req.params.id);
+    if (!entry) {
+      return res.status(404).json({ success: false, message: "Entry not found" });
+    }
+    res.json({ success: true, entry });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // CREATE ENTRY
 router.post("/", uploadFile, async (req, res) => {
   try {

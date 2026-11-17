@@ -28,6 +28,7 @@ import Templates from "./pages/Templates";
 import EbayIntegration from "./pages/EbayIntegration";
 import Purchases from "./pages/Purchases";
 import SupplierLedger from "./pages/SupplierLedger";
+import InvoiceDevices from "./pages/InvoiceDevices";
 import TimeTracker from "./pages/TimeTracker";
 import ScanIn from "./pages/ScanIn";
 import Subscriptions from "./pages/Subscriptions";
@@ -99,6 +100,16 @@ function App() {
     <PrivateRoute>
       {localStorage.getItem("role") === "admin"
         ? <SupplierLedger />
+        : <Navigate to="/dashboard" />}
+    </PrivateRoute>
+  }
+/>
+<Route
+  path="/supplier-ledger/invoice/:id"
+  element={
+    <PrivateRoute>
+      {localStorage.getItem("role") === "admin"
+        ? <InvoiceDevices />
         : <Navigate to="/dashboard" />}
     </PrivateRoute>
   }
