@@ -62,6 +62,7 @@ const { startTrackerCleanup } = require("./utils/trackerCleanup");
 const { startTaskScheduler } = require("./utils/taskScheduler");
 const { startGoogleSheetScheduler } = require("./utils/googleSheetScheduler");
 const { startOrderSyncScheduler } = require("./utils/orderSyncScheduler");
+const { fixAutomatedOrderRevenue } = require("./utils/orderRevenueFix");
 // =========================
 // MongoDB
 // =========================
@@ -213,4 +214,5 @@ server.listen(PORT, () => {
   startTrackerCleanup();
   startGoogleSheetScheduler();
   startOrderSyncScheduler();
+  fixAutomatedOrderRevenue();
 });

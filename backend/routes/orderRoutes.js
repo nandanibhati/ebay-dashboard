@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const Order = require("../models/Order");
+const { isLineTotalOrder } = require("../utils/orderRevenueFix");
 const { protect } = require("../middleware/auth");
 const { adjustStockForOrder, RESTOCKED_STATUSES } = require("../utils/stockAdjustment");
 
@@ -157,7 +158,11 @@ router.put("/:id", async (req, res) => {
     const adFee = Number(req.body.adFee || 0);
     const deliveryCost = Number(req.body.deliveryCost || 0);
 
-    const revenue = quantity * sellingPrice;
+    // eBay/Backmarket orders ("Automated") store the whole line total as
+    // sellingPrice, so multiplying by quantity would double-count it.
+    const revenue = isLineTotalOrder(existingOrder)
+      ? sellingPrice
+      : quantity * sellingPrice;
 
     const totalCost =
       quantity * costPrice + ebayFee + adFee + deliveryCost;

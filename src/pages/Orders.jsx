@@ -80,7 +80,11 @@ export default function Orders() {
       const ebayFee = Number(editingOrder.ebayFee || 0);
       const adFee = Number(editingOrder.adFee || 0);
       const deliveryCost = Number(editingOrder.deliveryCost || 0);
-      const revenue = quantity * sellingPrice;
+      // Synced eBay/Backmarket orders hold the line total in sellingPrice.
+      const revenue =
+        editingOrder.employeeName === "Automated"
+          ? sellingPrice
+          : quantity * sellingPrice;
 
       const totalCost =
         quantity * costPrice +
