@@ -79,12 +79,24 @@ function luhnValid(digits) {
 }
 
 // 15-digit numbers with a valid IMEI check digit. OCR sometimes splits
-// them with spaces, so groups of digits are joined first.
+// them with spaces, so neighbouring digit groups are tried joined too —
+// but only groups adding up to exactly 15 digits, so an IMEI followed by
+// a price ("354044114377641 40.00") is still found.
 export function findImeis(text) {
   const found = new Set();
-  for (const m of text.matchAll(/\b\d[\d ]{13,22}\d\b/g)) {
-    const digits = m[0].replace(/ /g, "");
-    if (digits.length === 15 && luhnValid(digits)) found.add(digits);
+  for (const m of text.matchAll(/(?<![\d.,])\d[\d ]*\d(?![\d])/g)) {
+    const groups = m[0].split(/ +/);
+    for (let i = 0; i < groups.length; i++) {
+      let digits = "";
+      for (let j = i; j < groups.length && digits.length < 15; j++) {
+        digits += groups[j];
+        if (digits.length === 15 && luhnValid(digits)) {
+          found.add(digits);
+          i = j;
+          break;
+        }
+      }
+    }
   }
   return [...found];
 }
@@ -95,11 +107,56 @@ const normalizeName = (s) =>
     .replace(/\b(ltd|limited|llp|plc|inc|co|company|uk|the)\b/g, "")
     .replace(/[^a-z0-9]+/g, "");
 
-export function matchVendor(text, vendorNames) {
+// Short forms a supplier may print instead of its full name, e.g.
+// "Phone Mart" → "PMart" or "PM". Only matched as whole words.
+function shortForms(name) {
+  const words = String(name || "")
+    .toLowerCase()
+    .replace(/\b(ltd|limited|llp|plc|inc|co|company|uk|the)\b/g, "")
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+  if (words.length < 2) return [];
+  const forms = [words.slice(0, -1).map((w) => w[0]).join("") + words[words.length - 1]];
+  const initials = words.map((w) => w[0]).join("");
+  if (initials.length >= 3) forms.push(initials);
+  return forms;
+}
+
+function matchIn(text, vendorNames) {
   const hay = normalizeName(text);
-  // Longest name first, so "Phone Hub Wholesale" beats "Phone Hub".
-  const sorted = [...vendorNames].sort((a, b) => normalizeName(b).length - normalizeName(a).length);
-  return sorted.find((v) => normalizeName(v).length >= 3 && hay.includes(normalizeName(v))) || "";
+  const words = new Set(String(text).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean));
+  // The longest thing matched wins, so "Phone Hub Wholesale" beats
+  // "Phone Hub", and "PMart" (Phone Mart) beats a vendor called "Mart".
+  let best = "";
+  let bestLen = 0;
+  for (const v of vendorNames) {
+    const full = normalizeName(v);
+    if (full.length >= 3 && hay.includes(full) && full.length > bestLen) {
+      best = v;
+      bestLen = full.length;
+    }
+    for (const f of shortForms(v)) {
+      if (words.has(f) && f.length > bestLen) {
+        best = v;
+        bestLen = f.length;
+      }
+    }
+  }
+  return best;
+}
+
+// The seller is named above the customer's address, so look there first;
+// otherwise a vendor who is also the buyer ("Bill to: …") would win.
+const BUYER_RE = /\b(bill(ed)? to|ship(ped)? to|deliver(y)? to|sold to|customer|invoice to)\b/i;
+
+export function matchVendor(text, vendorNames) {
+  const lines = String(text || "").split("\n");
+  const buyerAt = lines.findIndex((l) => BUYER_RE.test(l));
+  if (buyerAt > 0) {
+    const fromHeader = matchIn(lines.slice(0, buyerAt).join("\n"), vendorNames);
+    if (fromHeader) return fromHeader;
+  }
+  return matchIn(text, vendorNames);
 }
 
 // First line that looks like a company name (top of the invoice is
@@ -107,8 +164,11 @@ export function matchVendor(text, vendorNames) {
 function guessVendorName(lines) {
   for (const line of lines.slice(0, 12)) {
     const l = line.trim();
+    if (BUYER_RE.test(l)) break;
     if (l.length < 3 || l.length > 60) continue;
     if (/invoice|receipt|bill to|ship to|date|page|tel|phone|email|@|www\.|vat|^\d/i.test(l)) continue;
+    // Reference numbers like "INV-004788" aren't names.
+    if (/^[A-Z]{0,5}[-/#]?\d[\w\-/]*$/i.test(l)) continue;
     if (/[a-z]/i.test(l)) return l;
   }
   return "";
@@ -119,6 +179,9 @@ function guessVendorName(lines) {
 const INVOICE_NO_RE =
   /\b(?:invoice|inv|bill|receipt)[ \t]*(?:no\.?|number|num\.?|#|ref(?:erence)?\.?|id)?[ \t]*[:#.]?[ \t]*([A-Z0-9][A-Z0-9\-/_]{1,24})/gi;
 
+// A line that is nothing but a reference, e.g. "INV-004788" or "SI/10233".
+const BARE_REF_RE = /^([A-Z]{1,5}[-/#]?\d{3,}[\w\-/]*)$/i;
+
 function findInvoiceNumber(lines) {
   for (const line of lines) {
     for (const m of line.matchAll(INVOICE_NO_RE)) {
@@ -127,7 +190,58 @@ function findInvoiceNumber(lines) {
       if (/\d/.test(value) && !/^(date|to|from|total)$/i.test(value)) return value.replace(/[.,;:]+$/, "");
     }
   }
+  // Label on its own line ("RECEIPT #") with the number a line or two below.
+  for (let i = 0; i < lines.length; i++) {
+    if (!/^(invoice|inv|receipt|bill)\.?\s*(no\.?|number|num\.?|#|ref(erence)?)\s*:?$/i.test(lines[i])) continue;
+    for (const next of lines.slice(i + 1, i + 4)) {
+      const m = next.match(BARE_REF_RE);
+      if (m) return m[1];
+    }
+  }
+  // Last resort: an "INV-…" style number anywhere.
+  for (const line of lines) {
+    const m = line.match(/\b((?:INV|INVOICE|RCPT|REC|SI)[-/#]?\d{3,}[\w\-/]*)\b/i);
+    if (m) return m[1];
+  }
   return "";
+}
+
+// Product lines ending in "unit price, quantity, line total", where
+// price × quantity = total, e.g.
+//   "Samsung A10 32GB A 354044114377641 40.00 7 280.00"
+// followed by lines holding only more IMEIs for that product.
+function findItems(lines) {
+  const items = [];
+  let current = null;
+  for (const line of lines) {
+    const m = line.match(/^(.*?)\s+£?(\d[\d,]*\.\d{2})\s+(\d{1,4})\s+£?(\d[\d,]*\.\d{2})$/);
+    if (m) {
+      const unit = Number(m[2].replace(/,/g, ""));
+      const qty = Number(m[3]);
+      const lineTotal = Number(m[4].replace(/,/g, ""));
+      if (qty > 0 && Math.abs(unit * qty - lineTotal) < 0.02) {
+        const imeis = findImeis(m[1]);
+        let description = m[1];
+        imeis.forEach((imei) => (description = description.replace(imei, " ")));
+        description = description.replace(/\s+/g, " ").trim();
+        if (description && !/^(totals?|sub\s?-?total)\b/i.test(description)) {
+          current = { description: description.slice(0, 120), quantity: qty, unit_price: unit, imeis };
+          items.push(current);
+          continue;
+        }
+      }
+    }
+    // Continuation line with only IMEIs belongs to the product above.
+    if (current && /^[\d\s]+$/.test(line)) {
+      const more = findImeis(line);
+      if (more.length) {
+        current.imeis.push(...more);
+        continue;
+      }
+    }
+    current = null;
+  }
+  return items;
 }
 
 // The amount on the line(s) labelled with one of `labels`, best label first.
@@ -201,7 +315,7 @@ export function parseInvoiceText(text, vendorNames = []) {
     subtotal,
     vat,
     total,
-    items: [],
+    items: findItems(lines),
     imeis,
     notes: notes.join(" "),
   };

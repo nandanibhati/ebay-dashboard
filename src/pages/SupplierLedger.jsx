@@ -383,7 +383,10 @@ export default function SupplierLedger() {
   // what it found. Nothing is saved until the admin clicks Add Invoice.
   // Uses the server's AI reader when an API key is configured; otherwise
   // (503) falls back to the free in-browser reader (PDF text / OCR + rules).
-  const readInvoiceWithAI = async (file) => {
+  // `keepTyped`: used when the file was chosen in the Invoice File box at
+  // the bottom — anything the admin already typed is kept where the
+  // reader found nothing.
+  const readInvoiceWithAI = async (file, { keepTyped = false } = {}) => {
     if (!file) return;
     setAiReading(true);
     setAiProgress("Reading invoice…");
@@ -416,16 +419,20 @@ export default function SupplierLedger() {
       inv.allImeis = [...new Set(allImeis)];
       const imeiCount = inv.allImeis.length;
       setEditingId(null);
-      setForm({
-        ...emptyForm(),
-        type: "Invoice",
-        supplier: inv.matched_vendor,
-        date: inv.invoice_date || todayStr(),
-        amount: inv.total ? String(inv.total) : "",
-        reference: inv.invoice_number,
-        notes: [lines, imeiCount ? `${imeiCount} IMEI(s) listed` : ""].filter(Boolean).join(" · ").slice(0, 500),
-        // Attach the invoice itself to the entry when it's saved.
-        file,
+      const notes = [lines, imeiCount ? `${imeiCount} IMEI(s) listed` : ""].filter(Boolean).join(" · ").slice(0, 500);
+      setForm((prev) => {
+        const typed = keepTyped ? prev : emptyForm();
+        return {
+          ...emptyForm(),
+          type: "Invoice",
+          supplier: inv.matched_vendor || typed.supplier || "",
+          date: inv.invoice_date || typed.date || todayStr(),
+          amount: inv.total ? String(inv.total) : typed.amount || "",
+          reference: inv.invoice_number || typed.reference || "",
+          notes: typed.notes ? [typed.notes, notes].filter(Boolean).join(" · ").slice(0, 500) : notes,
+          // Attach the invoice itself to the entry when it's saved.
+          file,
+        };
       });
       setAiInvoice(inv);
       toast.success("Invoice read — check the details, then save");
@@ -934,9 +941,18 @@ export default function SupplierLedger() {
                     type="file"
                     accept="application/pdf,image/jpeg,image/png,image/webp"
                     className={`${inputCls} file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-slate-200 file:text-slate-700 file:text-xs file:font-semibold`}
-                    onChange={(e) => setForm({ ...form, file: e.target.files[0] || null })}
+                    onChange={(e) => {
+                      const file = e.target.files[0] || null;
+                      setForm({ ...form, file });
+                      // A new invoice's file is also read, same as the
+                      // "Read invoice automatically" box at the top.
+                      if (file && !editingId && form.type === "Invoice" && !aiReading) {
+                        readInvoiceWithAI(file, { keepTyped: true });
+                      }
+                    }}
                   />
                   <p className="text-[11px] text-slate-400 mt-1">
+                    {aiReading && form.type === "Invoice" ? `${aiProgress || "Reading invoice…"} ` : ""}
                     {form.file ? `📎 ${form.file.name} will be attached. ` : ""}
                     Max 10MB.{editingId && form.existingFile ? " Choosing a file replaces the current one." : ""}
                   </p>
