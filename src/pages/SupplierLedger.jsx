@@ -406,7 +406,7 @@ export default function SupplierLedger() {
           import("../utils/invoiceParser"),
         ]);
         const { text, method } = await extractInvoiceText(file, setAiProgress);
-        inv = { ...parseInvoiceText(text, vendors.map((v) => v.name)), method };
+        inv = { ...parseInvoiceText(text, vendors), method };
       } else {
         toast.error(data.message || "Couldn't read the invoice");
         return;
@@ -487,6 +487,18 @@ export default function SupplierLedger() {
       const data = await res.json();
       if (data.success) {
         toast.success(editingId ? "Entry updated" : `${form.type} added`);
+        // The vendor's name wasn't readable on this invoice: remember its
+        // layout for the vendor chosen, so the next one is recognised.
+        const chosen = vendors.find((v) => v.name === form.supplier);
+        if (!editingId && form.type === "Invoice" && chosen && aiInvoice?.layout?.length >= 5 &&
+            (aiInvoice.vendor_recognised || aiInvoice.matched_vendor !== form.supplier)) {
+          apiFetch(`/api/supplier-ledger/vendors/${chosen._id}/layout`, {
+            method: "POST",
+            body: JSON.stringify({ lines: aiInvoice.layout }),
+          })
+            .then(loadVendors)
+            .catch((error) => console.log(error));
+        }
         resetForm();
         loadEntries();
       } else {
@@ -777,7 +789,12 @@ export default function SupplierLedger() {
                       </div>
 
                       {aiInvoice.matched_vendor ? (
-                        <p className="mt-1.5 text-emerald-700 text-xs font-semibold">✓ Vendor matched: {aiInvoice.matched_vendor}</p>
+                        <p className="mt-1.5 text-emerald-700 text-xs font-semibold">
+                          ✓ Vendor matched: {aiInvoice.matched_vendor}
+                          {aiInvoice.vendor_recognised && (
+                            <span className="block font-normal text-emerald-600">Recognised from an earlier invoice with the same layout — check it's right.</span>
+                          )}
+                        </p>
                       ) : aiInvoice.vendor_name ? (
                         <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
                           <span>“{aiInvoice.vendor_name}” isn't in your vendors yet.</span>

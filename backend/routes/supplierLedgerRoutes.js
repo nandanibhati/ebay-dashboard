@@ -120,6 +120,52 @@ router.post("/vendors", async (req, res) => {
   }
 });
 
+// REMEMBER AN INVOICE LAYOUT for this vendor (sent after saving an invoice
+// whose vendor the reader couldn't read). The same layout is removed from
+// other vendors, so correcting a wrong recognition fixes it next time.
+const MAX_LAYOUTS_PER_VENDOR = 5;
+
+function layoutOverlap(a, b) {
+  const setB = new Set(b);
+  const shared = a.filter((l) => setB.has(l)).length;
+  return shared / (a.length + b.length - shared || 1);
+}
+
+router.post("/vendors/:id/layout", async (req, res) => {
+  try {
+    const lines = Array.isArray(req.body.lines)
+      ? [...new Set(req.body.lines.filter((l) => typeof l === "string").map((l) => l.trim().slice(0, 120)).filter(Boolean))].slice(0, 80)
+      : [];
+    if (lines.length < 5) {
+      return res.status(400).json({ success: false, message: "Not enough layout text to remember" });
+    }
+
+    const vendor = await Vendor.findById(req.params.id);
+    if (!vendor) {
+      return res.status(404).json({ success: false, message: "Vendor not found" });
+    }
+
+    const others = await Vendor.find({ _id: { $ne: vendor._id }, "invoiceLayouts.0": { $exists: true } });
+    for (const other of others) {
+      const kept = other.invoiceLayouts.filter((l) => layoutOverlap(lines, l) < 0.8);
+      if (kept.length !== other.invoiceLayouts.length) {
+        other.invoiceLayouts = kept;
+        await other.save();
+      }
+    }
+
+    // Replace a near-identical layout instead of storing it twice.
+    const layouts = vendor.invoiceLayouts.filter((l) => layoutOverlap(lines, l) < 0.9);
+    layouts.push(lines);
+    vendor.invoiceLayouts = layouts.slice(-MAX_LAYOUTS_PER_VENDOR);
+    await vendor.save();
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // UPDATE VENDOR (a rename also renames its ledger entries)
 router.put("/vendors/:id", async (req, res) => {
   try {

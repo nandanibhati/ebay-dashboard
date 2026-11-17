@@ -159,6 +159,10 @@ export function matchVendor(text, vendorNames) {
   return matchIn(text, vendorNames);
 }
 
+const HEADING_WORDS = new Set(
+  "imei imeis serial serials list sale sales tax statement order orders delivery packing credit debit proforma pro forma quotation quote note copy original customer details summary of no number stock items item products".split(" ")
+);
+
 // First line that looks like a company name (top of the invoice is
 // usually the seller), used only as a suggestion when no vendor matches.
 function guessVendorName(lines) {
@@ -167,6 +171,9 @@ function guessVendorName(lines) {
     if (BUYER_RE.test(l)) break;
     if (l.length < 3 || l.length > 60) continue;
     if (/invoice|receipt|bill to|ship to|date|page|tel|phone|email|@|www\.|vat|^\d/i.test(l)) continue;
+    // Headings made only of document words ("IMEI LIST", "SALES ORDER").
+    const words = l.toLowerCase().split(/[^a-z]+/).filter(Boolean);
+    if (words.length && words.every((w) => HEADING_WORDS.has(w))) continue;
     // Reference numbers like "INV-004788" aren't names.
     if (/^[A-Z]{0,5}[-/#]?\d[\w\-/]*$/i.test(l)) continue;
     if (/[a-z]/i.test(l)) return l;
@@ -231,6 +238,25 @@ function findItems(lines) {
         }
       }
     }
+    // One device per line: "1 SAMSUNG A33 5G 128GB … 352698473829724 £80.00"
+    const single = line.match(/^(\d{1,4})[.)]?\s+(.*\S)\s+£?(\d[\d,]*\.\d{2})$/);
+    if (single) {
+      const imeis = findImeis(single[2]);
+      if (imeis.length === 1) {
+        const description = single[2].replace(imeis[0], " ").replace(/\s+/g, " ").replace(/[,\s]+$/, "").trim().slice(0, 120);
+        const unit = Number(single[3].replace(/,/g, ""));
+        // Same model and price as an earlier line → count it there.
+        const same = items.find((it) => it.description === description && it.unit_price === unit);
+        if (same) {
+          same.quantity += 1;
+          same.imeis.push(imeis[0]);
+        } else {
+          items.push({ description, quantity: 1, unit_price: unit, imeis: [imeis[0]] });
+        }
+        current = null;
+        continue;
+      }
+    }
     // Continuation line with only IMEIs belongs to the product above.
     if (current && /^[\d\s]+$/.test(line)) {
       const more = findImeis(line);
@@ -259,11 +285,69 @@ function amountByLabel(lines, labels, exclude) {
   return 0;
 }
 
-export function parseInvoiceText(text, vendorNames = []) {
+// ---------- recognising a vendor by its invoice layout ----------
+// Some invoices only show the seller's name in a logo (a picture), so it
+// can't be read. Instead, the fixed text of the layout — headings, labels,
+// footer and terms, i.e. lines without any digits — is remembered for the
+// vendor the admin picked, and later invoices with the same layout are
+// matched to it.
+
+const MAX_LAYOUT_LINES = 80;
+
+export function layoutLines(text) {
+  const out = new Set();
+  for (const raw of String(text || "").split("\n")) {
+    const l = raw.toLowerCase().replace(/\s+/g, " ").trim();
+    if (l.length < 4 || /\d/.test(l)) continue;
+    out.add(l.slice(0, 120));
+    if (out.size >= MAX_LAYOUT_LINES) break;
+  }
+  return [...out];
+}
+
+export function layoutSimilarity(a, b) {
+  if (!a?.length || !b?.length) return { score: 0, shared: 0 };
+  const setB = new Set(b);
+  const shared = a.filter((l) => setB.has(l)).length;
+  return { score: shared / (a.length + b.length - shared), shared };
+}
+
+// `known`: [{ name, layouts: [[line, …], …] }]. Returns the vendor's name
+// only when one vendor clearly matches better than any other.
+export function recognizeVendorByLayout(layout, known = []) {
+  const scored = known
+    .map((v) => ({
+      name: v.name,
+      ...(v.layouts || []).reduce(
+        (best, l) => {
+          const s = layoutSimilarity(layout, l);
+          return s.score > best.score ? s : best;
+        },
+        { score: 0, shared: 0 }
+      ),
+    }))
+    .sort((x, y) => y.score - x.score);
+  const [best, second] = scored;
+  if (!best || best.score < 0.5 || best.shared < 5) return "";
+  if (second && best.score - second.score < 0.15) return ""; // too close to call
+  return best.name;
+}
+
+// `vendors`: vendor names, or vendor objects { name, invoiceLayouts }.
+export function parseInvoiceText(text, vendors = []) {
   const clean = String(text || "").replace(/\r/g, "").replace(/[ \t]+/g, " ");
   const lines = clean.split("\n").map((l) => l.trim()).filter(Boolean);
+  const vendorNames = vendors.map((v) => (typeof v === "string" ? v : v.name));
 
-  const matched_vendor = matchVendor(clean, vendorNames);
+  const layout = layoutLines(clean);
+  const named_vendor = matchVendor(clean, vendorNames);
+  const recognised_vendor = named_vendor
+    ? ""
+    : recognizeVendorByLayout(
+        layout,
+        vendors.filter((v) => typeof v === "object").map((v) => ({ name: v.name, layouts: v.invoiceLayouts }))
+      );
+  const matched_vendor = named_vendor || recognised_vendor;
   const vendor_name = matched_vendor || guessVendorName(lines);
 
   const invoice_number = findInvoiceNumber(lines);
@@ -309,6 +393,9 @@ export function parseInvoiceText(text, vendorNames = []) {
   return {
     vendor_name,
     matched_vendor,
+    // true when the vendor came from the layout, not a name in the text.
+    vendor_recognised: Boolean(recognised_vendor),
+    layout,
     invoice_number,
     invoice_date,
     currency,
