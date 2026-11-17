@@ -12,7 +12,7 @@ const settingsSchema = new mongoose.Schema(
 
     orderSites: {
       type: [String],
-      default: ["TPS", "SmartZone", "Veluntra", "Amazon", "TikTok", "Shopify", "Backmarket"],
+      default: ["SmartZone", "Veluntra", "Amazon", "TikTok", "Shopify", "Backmarket"],
     },
 
     orderStatuses: {

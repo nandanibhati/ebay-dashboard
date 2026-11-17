@@ -63,6 +63,7 @@ const { startTaskScheduler } = require("./utils/taskScheduler");
 const { startGoogleSheetScheduler } = require("./utils/googleSheetScheduler");
 const { startOrderSyncScheduler } = require("./utils/orderSyncScheduler");
 const { fixAutomatedOrderRevenue } = require("./utils/orderRevenueFix");
+const { retireClosedStores } = require("./utils/retiredStores");
 // =========================
 // MongoDB
 // =========================
@@ -215,4 +216,5 @@ server.listen(PORT, () => {
   startGoogleSheetScheduler();
   startOrderSyncScheduler();
   fixAutomatedOrderRevenue();
+  retireClosedStores();
 });

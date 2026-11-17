@@ -21,7 +21,8 @@ exports.connectStore = async (
         storeName,
       });
 
-    if (!store) {
+    // Closed stores (isActive: false) can't be connected again.
+    if (!store || !store.isActive) {
       return res.status(404).json({
         success: false,
         message: "Store not found",

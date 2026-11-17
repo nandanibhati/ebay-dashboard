@@ -20,12 +20,6 @@ import EmployeeSidebar from "../components/EmployeeSidebar";
 export default function EbayIntegration() {
   const [stores, setStores] = useState([
     {
-      storeName: "TPS",
-      connected: false,
-      lastSync: null,
-      marketplace: "eBay UK",
-    },
-    {
       storeName: "SmartZone",
       connected: false,
       lastSync: null,

@@ -171,7 +171,7 @@ async function refreshStoreListings(store, http) {
 }
 
 async function refreshAllListings({ maxAgeMs = 0, http } = {}) {
-  const stores = await EbayStore.find({ connected: true });
+  const stores = await EbayStore.find({ connected: true, isActive: true });
   const results = [];
   for (const store of stores) {
     const fresh = store.listingsRefreshedAt && Date.now() - store.listingsRefreshedAt.getTime() < maxAgeMs;
@@ -195,7 +195,7 @@ async function updatePriceForSku(sku, price, { http } = {}) {
 
   await refreshAllListings({ maxAgeMs: LISTINGS_MAX_AGE_MS, http });
   const listings = await EbayListing.find({ sku: cleanSku });
-  const stores = new Map((await EbayStore.find({ connected: true })).map((s) => [String(s._id), s]));
+  const stores = new Map((await EbayStore.find({ connected: true, isActive: true })).map((s) => [String(s._id), s]));
 
   const results = [];
   for (const listing of listings) {

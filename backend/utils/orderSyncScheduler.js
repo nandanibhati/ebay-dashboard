@@ -7,7 +7,7 @@ const { syncBackmarketOrders } = require("../services/backmarketOrderSyncService
 // figures drift stale between visits — so this runs the same sync
 // automatically in the background instead.
 async function runEbaySync() {
-  const stores = await EbayStore.find({ connected: true });
+  const stores = await EbayStore.find({ connected: true, isActive: true });
 
   for (const store of stores) {
     try {

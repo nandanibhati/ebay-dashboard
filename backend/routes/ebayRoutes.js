@@ -24,11 +24,8 @@ router.get("/stores", protect, async (req, res) => {
     const allStoresCount = await EbayStore.countDocuments();
 
     if (allStoresCount === 0) {
+      // TPS was closed (see utils/retiredStores.js).
       await EbayStore.insertMany([
-        {
-          storeName: "TPS",
-          marketplace: "eBay UK",
-        },
         {
           storeName: "SmartZone",
           marketplace: "eBay UK",
@@ -181,7 +178,7 @@ router.post("/sync", protect, adminOnly, async (req, res) => {
       });
     }
 
-    if (!store.connected) {
+    if (!store.connected || !store.isActive) {
       return res.status(400).json({
         success: false,
         message: "Store is not connected to eBay.",
