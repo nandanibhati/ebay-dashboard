@@ -8,6 +8,9 @@ const {
 } = require("../utils/stockAdjustment");
 
 const DEFAULT_LOOKBACK_DAYS = 30;
+// The first sync after switching to "changed since" re-checks the status
+// of orders changed in this many days (eBay's order search covers ~90).
+const STATUS_BACKFILL_DAYS = 90;
 
 function mapStatus(ebayOrder) {
   if (ebayOrder.cancelStatus?.cancelState === "CANCELED") {
@@ -51,10 +54,14 @@ function computeFinancials({
 
 // New line items become new Order rows; existing ones only have their
 // status refreshed so manually-entered cost/fee data is never overwritten.
-async function upsertLineItem(store, ebayOrder, lineItem, orderId, status, fallbackDeliveryCost, ebayFee) {
+async function upsertLineItem(store, ebayOrder, lineItem, orderId, status, fallbackDeliveryCost, ebayFee, createCutoff) {
   const existing = await Order.findOne({ orderId });
 
   if (!existing) {
+    if (createCutoff && new Date(ebayOrder.creationDate) < createCutoff) {
+      return "skipped";
+    }
+
     const quantity = Number(lineItem.quantity || 1);
     const sellingPrice = Number(
       lineItem.total?.value ?? lineItem.lineItemCost?.value ?? 0
@@ -134,9 +141,23 @@ async function upsertLineItem(store, ebayOrder, lineItem, orderId, status, fallb
 }
 
 async function syncStoreOrders(store) {
+  // Until the switch to "changed since" has run once, look back far enough
+  // to pick up status changes that were missed on older orders. A few
+  // minutes of overlap covers changes eBay records slightly late.
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const OVERLAP_MS = 10 * 60 * 1000;
   const since =
-    store.lastSync ||
-    new Date(Date.now() - DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+    store.lastSync && store.statusBackfillDone
+      ? new Date(store.lastSync.getTime() - OVERLAP_MS)
+      : new Date(Date.now() - STATUS_BACKFILL_DAYS * DAY_MS);
+
+  // Changed-since also returns old orders. Only orders created after the
+  // last sync are new; an older order that isn't in the dashboard (e.g.
+  // from before the store was connected) is left out rather than added
+  // now, which would also take its stock off again.
+  const createCutoff = store.lastSync
+    ? new Date(store.lastSync.getTime() - OVERLAP_MS)
+    : new Date(Date.now() - DEFAULT_LOOKBACK_DAYS * DAY_MS);
 
   const ebayOrders = await fetchEbayOrders(store, since);
 
@@ -181,7 +202,8 @@ async function syncStoreOrders(store) {
         orderId,
         status,
         perItemDelivery,
-        perItemFee
+        perItemFee,
+        createCutoff
       );
 
       if (result === "created") {
@@ -193,6 +215,7 @@ async function syncStoreOrders(store) {
   }
 
   store.lastSync = new Date();
+  store.statusBackfillDone = true;
   store.totalOrders = await Order.countDocuments({ site: store.storeName });
   store.lastError = "";
 

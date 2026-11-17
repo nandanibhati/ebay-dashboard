@@ -78,6 +78,13 @@ const ebayStoreSchema = new mongoose.Schema(
       default: null,
     },
 
+    // Set after the first sync that asked eBay for orders *changed* since
+    // a date (not just created), which re-checks older orders once.
+    statusBackfillDone: {
+      type: Boolean,
+      default: false,
+    },
+
     // When the local copy of active listings (EbayListing) was last
     // refreshed from eBay.
     listingsRefreshedAt: {

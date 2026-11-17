@@ -29,8 +29,11 @@ async function getValidAccessToken(store) {
   return store.accessToken;
 }
 
-// Pulls every order created on/after `since` from eBay's Fulfillment API,
-// paging through results (eBay caps each page at 50 orders).
+// Pulls every order created OR changed (shipped, refunded, cancelled…)
+// on/after `since` from eBay's Fulfillment API, paging through results
+// (eBay caps each page at 50 orders). Filtering by last-modified date is
+// what lets status changes on older orders come through; new orders count
+// as modified when they're created, so they're included too.
 async function fetchEbayOrders(store, since) {
   const accessToken = await getValidAccessToken(store);
 
@@ -47,7 +50,7 @@ async function fetchEbayOrders(store, since) {
           Authorization: `Bearer ${accessToken}`,
         },
         params: {
-          filter: `creationdate:[${since.toISOString()}..]`,
+          filter: `lastmodifieddate:[${since.toISOString()}..]`,
           limit,
           offset,
         },
